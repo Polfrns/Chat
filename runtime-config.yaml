@@ -1,0 +1,199 @@
+version: 1.3.12
+cache: true
+
+interface:
+  endpointsMenu: true
+  modelSelect: true
+  parameters: true
+  sidePanel: true
+  presets: true
+  bookmarks: true
+  multiConvo: true
+  webSearch: false
+  fileSearch: true
+  runCode: true
+  memories: true
+  prompts:
+    use: true
+    create: true
+    share: false
+    public: false
+  agents:
+    use: true
+    create: true
+    share: true
+    public: false
+  peoplePicker:
+    users: true
+    groups: true
+    roles: true
+  marketplace:
+    use: true
+  fileCitations: true
+
+# Not necessary for cli endpoints like Claude/Codex Bridge, but required for endpoints that require a baseURL and apiKey.
+webSearch:
+  searchProvider: "serper"
+  serperApiKey: "${SERPER_API_KEY}"
+  scraperProvider: "serper"
+  rerankerType: "jina"
+  jinaApiKey: "${JINA_API_KEY}"
+
+endpoints:
+  agents:
+    disableBuilder: false
+    capabilities:
+#      - "context"
+#      - "file_search"
+      - "web_search"
+      - "tools"
+      - "actions"
+      - "artifacts"
+#      - "execute_code"
+      - "ocr"
+
+  custom:
+    - name: "LM Studio"
+      apiKey: "${LMSTUDIO_API_KEY}"
+      baseURL: "http://host.docker.internal:1234/v1"
+      models:
+        default:
+          - "unsloth/gemma-4-e4b-it"
+        fetch: true
+      titleConvo: true
+      titleModel: "current_model"
+      modelDisplayLabel: "LM Studio"
+
+    - name: "Claude Max"
+      apiKey: "${CLAUDE_BRIDGE_KEY}"
+      baseURL: "${ROKO_BRIDGE_BASE_URL}"
+      models:
+        default:
+          - "claude-max"
+          - "claude-max-fast"
+          - "claude-max-deep"
+        fetch: false
+      dropParams: [temperature, top_p, frequency_penalty, presence_penalty, max_tokens, max_completion_tokens, max_output_tokens, stop, seed, logit_bias, logprobs, top_logprobs, verbosity, reasoning_summary]
+      titleConvo: true
+      modelDisplayLabel: "Claude Max"
+
+    - name: "ChatGPT Codex"
+      apiKey: "${CLAUDE_BRIDGE_KEY}"
+      baseURL: "${ROKO_BRIDGE_BASE_URL}"
+      models:
+        default:
+          - "gpt-codex"
+          - "gpt-codex-fast"
+          - "gpt-codex-deep"
+        fetch: false
+      dropParams: [temperature, top_p, frequency_penalty, presence_penalty, max_tokens, max_completion_tokens, max_output_tokens, stop, seed, logit_bias, logprobs, top_logprobs]
+      titleConvo: true
+      modelDisplayLabel: "ChatGPT Codex"
+      tokenConfig:
+        gpt-codex:
+          prompt: 0
+          completion: 0
+          context: 1050000
+
+fileConfig:
+  endpoints:
+    "LM Studio":
+      fileLimit: 10
+      fileSizeLimit: 25
+      totalSizeLimit: 100
+      supportedMimeTypes:
+        - "image/.*"
+        - "text/.*"
+        - "application/pdf"
+        - "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    "Claude Max":
+      fileLimit: 10
+      fileSizeLimit: 14
+      totalSizeLimit: 14
+      supportedMimeTypes: [".*"]
+
+    "ChatGPT Codex":
+      fileLimit: 10
+      fileSizeLimit: 14
+      totalSizeLimit: 14
+      supportedMimeTypes: [".*"]
+
+    "agents":
+      fileLimit: 10
+      fileSizeLimit: 25
+      totalSizeLimit: 100
+      supportedMimeTypes: [".*"]
+
+  serverFileSizeLimit: 100
+  avatarSizeLimit: 2
+
+mcpServers:
+  leedeo-filestore:
+    type: streamable-http
+    url: ${ROKO_SERVER_URL}/mcp
+    headers:
+      Authorization: "Bearer ${ROKO_API_KEY}"
+    timeout: 60000
+    chatMenu: false
+
+modelSpecs:
+  list:
+    - name: "codex-personalizado"
+      label: "Codex"
+      group: "ChatGPT Codex"
+      preset:
+        endpoint: "ChatGPT Codex"
+        model: "gpt-codex"
+        maxContextTokens: 1050000
+        reasoning_effort: "medium"
+        resendFiles: true
+
+    - name: "codex-fast"
+      label: "Codex Fast"
+      group: "ChatGPT Codex"
+      preset:
+        endpoint: "ChatGPT Codex"
+        model: "gpt-codex-fast"
+        maxContextTokens: 1050000
+        reasoning_effort: "low"
+        resendFiles: true
+
+    - name: "codex-deep"
+      label: "Codex Deep"
+      group: "ChatGPT Codex"
+      preset:
+        endpoint: "ChatGPT Codex"
+        model: "gpt-codex-deep"
+        maxContextTokens: 1050000
+        reasoning_effort: "high"
+        resendFiles: true
+
+    - name: "claude-max-personalizado"
+      label: "Claude"
+      group: "Claude Max"
+      preset:
+        endpoint: "Claude Max"
+        model: "claude-max"
+        maxContextTokens: 1000000
+        reasoning_effort: "medium"
+        resendFiles: true
+
+    - name: "claude-fast"
+      label: "Claude Fast (Sonnet)"
+      group: "Claude Max"
+      preset:
+        endpoint: "Claude Max"
+        model: "claude-max-fast"
+        maxContextTokens: 1000000
+        reasoning_effort: "low"
+        resendFiles: true
+
+    - name: "claude-deep"
+      label: "Claude Deep (Opus)"
+      group: "Claude Max"
+      preset:
+        endpoint: "Claude Max"
+        model: "claude-max-deep"
+        maxContextTokens: 1000000
+        reasoning_effort: "high"
+        resendFiles: true

@@ -1,0 +1,25 @@
+{
+  "release": "0.7.2",
+  "base": "Roko(4).zip",
+  "modified_or_added": [
+    ".env.example",
+    "CHANGELOG.md",
+    "DEPLOY.md",
+    "LIMITATIONS.md",
+    "OBSERVABILITY-V072.md",
+    "SPEC.md",
+    "TEST-RESULTS.md",
+    "TESTS.md",
+    "VERIFY-LANGFUSE.md",
+    "ci/test.sh",
+    "config/observability/context.cjs",
+    "config/observability/privacy.cjs",
+    "docker-compose.override.yml",
+    "scripts/content-privacy.test.cjs",
+    "scripts/interaction-export.test.cjs",
+    "scripts/patch-observability.cjs",
+    "MODIFIED-FILES.json"
+  ],
+  "dependencies_updated": false,
+  "excluded": "Private env/auth, Git, node_modules, runtimes, user data, logs, caches and temporary files are not delivered."
+}
