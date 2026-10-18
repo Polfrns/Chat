@@ -1,0 +1,41 @@
+services:
+  api:
+    image: roko-librechat:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      CONFIG_PATH: /app/runtime-config.yaml
+      CLAUDE_BRIDGE_KEY: ${CLAUDE_BRIDGE_KEY}
+      ROKO_BRIDGE_BASE_URL: ${ROKO_BRIDGE_BASE_URL:-http://192.168.1.50:4000/v1}
+      BRIDGE_DEBUG_ATTACHMENTS: ${BRIDGE_DEBUG_ATTACHMENTS:-0}
+      # Langfuse settings must reach the LibreChat API process, not only Compose.
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_TRACING_ENABLED: ${LANGFUSE_TRACING_ENABLED:-true}
+      LANGFUSE_SAMPLE_RATE: ${LANGFUSE_SAMPLE_RATE:-1}
+      OBSERVABILITY_TRACE_SECRET: ${OBSERVABILITY_TRACE_SECRET:-}
+      OBSERVABILITY_SESSION_SECRET: ${OBSERVABILITY_SESSION_SECRET:-}
+      OBSERVABILITY_TRACE_TARGETS: ${OBSERVABILITY_TRACE_TARGETS:-}
+      OBSERVABILITY_CONTENT_MODE: ${OBSERVABILITY_CONTENT_MODE:-redacted}
+      OBSERVABILITY_CONTENT_MAX_CHARS: ${OBSERVABILITY_CONTENT_MAX_CHARS:-4000}
+      OBSERVABILITY_FILE_NAMES: ${OBSERVABILITY_FILE_NAMES:-false}
+      OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-always_on}
+      ROKO_BRIDGE_ACTIVITY_ENABLED: ${ROKO_BRIDGE_ACTIVITY_ENABLED:-true}
+    volumes:
+      - type: bind
+        source: ./.env
+        target: /app/.env
+        read_only: true
+      - type: bind
+        source: ./runtime-config.yaml
+        target: /app/runtime-config.yaml
+        read_only: true
+    networks:
+      - default
+      - cli_bridge
+networks:
+  cli_bridge:
+    external: true
+    name: roko-cli-bridge
