@@ -1,180 +1,108 @@
-# Roko — actualización de archivos para bridge 0.6.0
+# Integración de Roko con Bridge
 
-Una cuenta de Codex y una cuenta de Claude Code pueden atender a los usuarios de
-Roko. Cada petición recibe identidad firmada, configuración propia y directorios
-privados de estado. LibreChat conserva el historial y los documentos.
+Bridge vive en un repositorio independiente. Roko se conecta mediante endpoints
+compatibles con Chat Completions y Responses configurados en
+[runtime-config.yaml](runtime-config.yaml). Esta guía describe el contrato actual,
+no una instalación mediante ZIP ni una versión remota garantizada.
 
-## Actualizar a 0.6.0
+## Conexión e identidad
 
-Sigue **FORMATOS-0.6.0.md** para extensiones y pasos completos. Aplica el ZIP
-`main/...` sobre la carpeta que contiene `main`, conserva `.env` y datos y
-reconstruye `api` con `docker compose up -d --build api`. El bridge se actualiza
-por separado: hay nuevas dependencias Python y conversores externos.
-Docker los instala al reconstruir; el modo nativo requiere `npm run setup:files`
-y LibreOffice/FFmpeg/Tesseract según los formatos usados.
-
-## Referencia histórica: actualización a 0.5.5
-
-Actualiza **Roko y el bridge juntos**. Un Roko antiguo no manda la firma requerida
-por el bridge 0.5 y recibirá un error de identidad.
-
-1. Copia los archivos de actualización de `Roko/main/` sobre tu carpeta `main` de
-   Roko, y los de `ai-librechat-bridge/` sobre el bridge. Conserva `.env`, las bases
-   de datos, los directorios de archivos y `runtime-tools/`.
-2. En Roko, `CLAUDE_BRIDGE_KEY` debe seguir siendo exactamente el mismo secreto
-   que `BRIDGE_API_KEY` en el bridge. No hace falta generar otro.
-3. Desde `main` de Roko reconstruye la imagen, porque hay cambios en los paquetes
-   internos TypeScript y en los controles de parámetros:
-
-   ```powershell
-   docker compose up -d --build api
-   ```
-
-4. Detén el bridge anterior y, desde su carpeta, ejecuta `npm start`.
-   `http://localhost:4000/health` debe indicar versión `0.5.5`.
-
-No hay dependencias nuevas. Para una instalación limpia usa `npm ci` y Node 24.
-Si ya tienes el entorno de edición instalado, conserva `runtime-tools/`; si no,
-instala Python 3.10+ y ejecuta `npm run setup:files`.
-
-La URL actual es `http://host.docker.internal:4000/v1`. Si la cambias, actualiza
-ambos `baseURL` de `runtime-config.yaml` y `ROKO_BRIDGE_BASE_URL` en el `.env` de
-Roko. El servidor solamente firma peticiones destinadas a esa URL fija.
-Se conserva el despliegue actual de CLI en Windows; no se introduce otro compose.
-
-## Modelos y parámetros reales
-
-| Variante | Modelo real | Esfuerzo inicial |
-|---|---|---|
-| Codex | `CODEX_MODEL` o predeterminado del CLI | medium |
-| Codex Fast | `CODEX_FAST_MODEL`, en su defecto `CODEX_MODEL`/CLI | low |
-| Codex Deep | `CODEX_DEEP_MODEL`, en su defecto `CODEX_MODEL`/CLI | high |
-| Claude | `CLAUDE_MODEL` o predeterminado de Claude | medium |
-| Claude Fast | `CLAUDE_FAST_MODEL` o `sonnet` | low |
-| Claude Deep | `CLAUDE_DEEP_MODEL` o `opus` | high |
-
-Todos usan el mismo bridge y la misma cuenta por proveedor. Cambiar el esfuerzo
-con el control de Roko modifica la invocación real, con prioridad sobre el preset.
-En Auto se conserva el preset. Cada proceso recibe su configuración; no se
-modifican `process.env` ni los archivos globales de configuración por petición.
-Los modelos/esfuerzos disponibles dependen de la cuenta y del modelo elegido:
-el bridge valida las opciones del SDK, pero el proveedor puede rechazar una
-combinación que tu cuenta no soporte.
-
-Codex recibe `model`, `modelReasoningEffort`, `model_verbosity` y
-`model_reasoning_summary`. Claude recibe `model`, `effort` y
-`persistSession: false`. Claude conserva Read/Write/Edit, con hasta 12 turnos
-internos para completar una edición; no tiene shell ni herramientas de Office.
-Para modificar DOCX/XLSX/PPTX/PDF/imágenes mediante Python, usa Codex.
-
-Los paneles de conversación, presets y agentes conservan todos los controles
-OpenAI de LibreChat aplicables a estos endpoints. El nombre, prefijo de
-instrucciones, contexto, tokens de archivos y reenvío los gestiona LibreChat.
-Temperatura, top-p, penalizaciones, stop, detalle de imagen y máximo de tokens de
-salida se muestran deshabilitados con explicación: el SDK de suscripción instalado
-no expone esos controles. Mostrar un control no añade soporte al modelo.
-Los valores antiguos de esos parámetros se retiran antes de invocar el SDK;
-el bridge rechaza valores API no predeterminados recibidos por otros clientes.
-
-Codex admite todos los esfuerzos del SDK instalado: minimal, low, medium, high,
-xhigh, max, ultra y persistent. Claude admite low, medium, high, xhigh y max.
-Auto conserva el preset. La cuenta y el modelo pueden rechazar un nivel concreto.
-Codex recibe verbosidad low/medium/high y resumen auto/concise/detailed/none.
-El nuevo valor Ninguno (`none`) sí desactiva el resumen; Auto no lo desactiva.
-Solo se transportan los resúmenes públicos entregados por el SDK, mediante
-reasoning_content en Chat y reasoning items/eventos en Responses.
-
-Búsqueda web de Codex funciona con ambos protocolos sin forzar Responses.
-Su interruptor explícito, incluida la posición apagada, se firma por petición.
-La captura con Web Search apagado no permite consultar el tiempo en directo;
-habilítalo para datos actuales. Claude puede usar la herramienta de búsqueda
-como función de un agente de LibreChat; su búsqueda CLI nativa sigue deshabilitada.
-El interruptor Responses selecciona el transporte Roko→bridge; Codex sigue
-utilizando internamente su protocolo nativo.
-
-`maxContextTokens` es el presupuesto del historial en LibreChat: no aumenta
-la ventana real del modelo. Disable Streaming cambia el transporte HTTP; los
-resultados Codex siguen validándose completos antes de enviarse, para impedir
-entregas de archivos inexistentes o metadatos inválidos. Las opciones de sandbox,
-permisos y rutas continúan siendo exclusivas del administrador.
-
-`CODEX_ALLOWED_MODELS` y `CLAUDE_ALLOWED_MODELS` permiten al administrador añadir
-IDs reales autorizados para integraciones internas que envíen `cli_options.model`.
-No se admite una lista de argumentos arbitraria.
-
-## Identidad, estado y autenticación
+`ROKO_BRIDGE_BASE_URL` fija el origen y ruta autorizados. Los `baseURL` de Codex y
+Claude Max deben apuntar a ese destino. `CLAUDE_BRIDGE_KEY` en Roko coincide con
+`BRIDGE_API_KEY` en Bridge y tiene al menos 32 caracteres.
 
 Roko firma un contexto HMAC con usuario autenticado, tenant, conversación,
-modelo, opciones efectivas y fecha. La API requiere además el bearer actual.
-`body.user`, metadata y headers sin firma no sirven como identidad.
-Los nombres de directorio se generan mediante HMAC; no contienen IDs ni emails.
-La caché `previous_response_id` pertenece a usuario + tenant + conversación +
-proveedor. Cambiar Fast/Normal/Deep dentro del mismo proveedor no pierde esa
-pertenencia. Un ID ajeno produce el mismo error que un ID desconocido.
+modelo, opciones efectivas y timestamp. El bearer sigue siendo necesario.
+Identidad sin firma, `body.user` o metadata aportada por el cliente no sustituyen
+esa verificación. El adaptador rechaza destinos ajenos y redirecciones.
 
-Los CLI usan un HOME/USERPROFILE y CODEX_HOME/CLAUDE_CONFIG_DIR nuevos por
-petición. Solo se copia el fichero de autenticación de la cuenta compartida;
-no se copian configuraciones, sesiones, memorias, skills, instrucciones ni MCP
-personales. La copia renovada del login se conserva para la siguiente petición;
-el resto se elimina al finalizar, incluyendo errores y cancelaciones normales.
-Se usa una cola por proveedor para evitar carreras de renovación de tokens:
-dos peticiones a Codex se atienden sucesivamente, Codex y Claude pueden ejecutar
-en paralelo dentro del límite global. Usa una sola instancia del bridge y no
-renueves el mismo login desde otro CLI mientras una petición esté activa.
+## Modelos y parámetros
 
-La cuenta se autentica **una sola vez**, en el host que ejecuta el bridge.
-Por defecto se leen `~/.codex/auth.json` y `~/.claude/.credentials.json` (en Windows,
-los directorios de tu perfil). `CODEX_AUTH_DIR` y `CLAUDE_AUTH_DIR` permiten cambiar
-estas rutas. Si ya existe `CODEX_HOME` o `CLAUDE_CONFIG_DIR` en el entorno del
-bridge, se usan como origen del login, no como estado del proceso hijo.
-En Codex, si tu login está en el almacén del sistema operativo en vez de un archivo,
-crea un login de archivo con:
+| Alias normal | Alias rápido | Alias profundo | Esfuerzo inicial normal / rápido / profundo |
+| --- | --- | --- | --- |
+| `gpt-codex` | `gpt-codex-fast` | `gpt-codex-deep` | medium / low / high |
+| `claude-max` | `claude-max-fast` | `claude-max-deep` | medium / low / high |
 
-```powershell
-codex -c 'cli_auth_credentials_store="file"' login
-```
+El modelo real lo decide la configuración de Bridge. El esfuerzo explícito tiene
+prioridad sobre el preset; Auto conserva la selección del preset. El proveedor
+puede rechazar un nivel aunque el SDK lo acepte para otro modelo o cuenta.
 
-Claude también admite `CLAUDE_CODE_OAUTH_TOKEN` si ya lo usas. No se copian keys
-API ni se activa facturación API como fallback. Un login ausente o incompatible
-produce un error explícito de `login_required`.
+| Control | Codex | Claude |
+| --- | --- | --- |
+| Esfuerzo | minimal, low, medium, high, xhigh, max, ultra, persistent | low, medium, high, xhigh, max |
+| Resumen público | default, auto, concise, detailed, none | Sin control Codex |
+| Verbosidad | low, medium, high | Sin control Codex |
+| Búsqueda web nativa | Booleano explícito, también se firma `false` | No habilitada por ese control |
+| Temperatura, top-p, penalizaciones, stop, límite de salida API | No expuestos por el SDK integrado | No expuestos por el SDK integrado |
 
-**Alcance del aislamiento:** se separa el contexto y el estado de las aplicaciones;
-no se implementan usuarios del sistema o contenedores por usuario. El sandbox de
-Codex limita escrituras, pero no garantiza que un proceso hostil no pueda leer
-otras rutas legibles por la cuenta del sistema. Para esa frontera adicional hace
-falta ejecutar workers con permisos/volúmenes independientes. No publiques el
-bridge directamente en Internet; conserva el acceso interno del despliegue.
+Default y Auto del resumen son opciones distintas. `none` desactiva la inclusión
+de resúmenes públicos. La normalización elimina opciones antiguas incompatibles
+y mantiene defaults válidos. Cambiar a Claude retira resumen, verbosidad y búsqueda
+nativa de Codex. `maxContextTokens` limita historial en Roko, no amplía la ventana
+real del modelo. El interruptor Responses selecciona el transporte a Bridge.
 
-## Continuar editando sin volver a adjuntar
+La fuente de capacidades del lado Roko es el código compartido de parámetros;
+[bridge-parameters.test.cjs](scripts/bridge-parameters.test.cjs) comprueba la
+normalización y los valores firmados. Permisos, sandbox, rutas y herramientas de
+CLI se administran en Bridge, no mediante parámetros libres del usuario.
 
-La versión más reciente de los archivos generados se guarda como adjunto en
-LibreChat/Roko. En el siguiente turno, Roko la recupera automáticamente, comprobando
-propietario y tenant, y la vuelve a enviar al workspace nuevo. Funciona al cambiar
-entre las variantes y también entre proveedores que puedan editar ese formato.
-`resendFiles` debe estar habilitado y los archivos deben seguir existiendo en el
-almacenamiento de Roko. Sus volúmenes de archivos deben persistir al recrear Docker.
-No dependas de `runtime/` del bridge para conservar documentos.
+## Login y aislamiento del Bridge
 
-Un nuevo adjunto explícito tiene prioridad. Se utiliza la última salida de la rama
-actual; no otra rama. Si esa última versión fue eliminada, se muestra un error y
-se pide adjuntarla, sin volver silenciosamente a la original. Se conservan los
-límites de salida existentes (10 archivos / 15 MiB total).
+Bridge utiliza el login de la cuenta de CLI configurada en su host. No necesita
+copiar credenciales de Claude/Codex a Roko. El estado de aplicación y workspace se
+separan por petición; las continuaciones pertenecen al usuario, tenant,
+conversación y proveedor. Un ID de continuación ajeno no permite acceso.
 
-## Validación
+El HOME temporal copia el login autorizado, no instrucciones, MCP, memorias o
+sesiones personales. La renovación del login se serializa por proveedor. Una
+instancia debe ser la responsable de ese estado compartido. Este aislamiento de
+aplicación no equivale a usuarios de sistema o contenedores independientes.
 
-En el bridge: `node --test test/*.test.mjs`.
-Pruebas de identidad, opciones, filesystem y SDK: `node --test test/isolation.test.mjs test/providers.test.mjs`.
-En Roko: `node --test scratchpad/bridge-continuation.test.cjs scratchpad/bridge-context.test.mjs`.
-Para DOCX firmado, desde Roko/main:
+## Actividad progresiva
 
-```powershell
-node scratchpad/verify-bridge-files.mjs C:\ruta\al\bridge scratchpad/input.docx scratchpad/edited.docx
-```
+Bridge debe emitir eventos públicos durante la ejecución: inicio, progreso,
+finalización, error o cancelación de operaciones reales, más el comentario público
+que entregue el proveedor. Roko no puede recuperar eventos que Bridge envíe solo
+al final ni acciones que el SDK no exponga.
 
-La suite del bridge tiene 47 éxitos y 4 fallos preexistentes, reproducidos en el
-ZIP original (42 éxitos y los mismos 4 fallos): expectativas antiguas de web-search,
-chunking de Responses y decisiones tras un tool-result. Las 9 pruebas de Roko y
-el transporte DOCX firmado pasan. La prueba de aislamiento falla deliberadamente
-si se elimina la comprobación del propietario de `previous_response_id`.
-No se ha probado una sesión real de las suscripciones ni una compilación completa
-Docker/React/TypeScript con todas las dependencias de Roko.
+Los registros V1 se deduplican por operación y mantienen el orden del comentario.
+Los códigos reconocidos en
+[bridgeActivityDescriptions.json](client/src/components/Chat/Messages/Content/bridgeActivityDescriptions.json)
+son identificadores de protocolo; al añadir códigos hay que mantener compatible
+el catálogo de Bridge. Los registros se usan para presentación, no para ejecutar
+acciones. Las explicaciones deben basarse en descripción, argumentos y resultado
+observados; no afirmar una validación completa por un simple exit code cero.
+
+El chat agrupa la actividad en un desplegable y muestra explicaciones breves,
+sin el panel técnico anterior. Los tiempos son segundos; el contador del
+encabezado mide la generación general mientras está montado. La procedencia y
+los límites de esas medidas están en [SPEC.md](SPEC.md). Los ajustes de privacidad
+de Langfuse solo afectan a la exportación, véase [OBSERVABILITY.md](OBSERVABILITY.md).
+
+## Archivos y continuación
+
+Bridge entrega salidas recogidas y validadas mediante su protocolo de adjuntos.
+Roko guarda el archivo, su basename original y sus metadatos; no publica una ruta
+privada del workspace como enlace descargable. El Markdown de la misma respuesta
+se asocia al archivo concreto mediante el flujo de descarga autenticado.
+
+Con `resendFiles` activo, el siguiente turno recupera la última salida de la rama
+actual y la envía al workspace nuevo después de verificar propietario y tenant.
+Un nuevo adjunto explícito tiene prioridad. Si falta la última versión se informa
+del error, sin retroceder silenciosamente a la original. Los límites del protocolo
+de salida son 10 archivos y 15 MiB en total.
+
+La preview nativa y la conversión Office se resuelven en Roko. No requieren que
+Bridge permita rutas públicas ni ejecute HTML en el chat. La fidelidad y los
+formatos dependen de los conversores y códecs disponibles.
+
+## Operación
+
+Roko usa un timeout configurable `ROKO_BRIDGE_REQUEST_TIMEOUT_MS`, default
+620000 ms, para dejar margen sobre Bridge. Ajusta los dos servicios si una tarea
+legítima necesita más tiempo. Aumentar el timeout no instala compiladores,
+dependencias ni conversores ausentes en el workspace.
+
+Las suites del Bridge deben ejecutarse en su repositorio y con sus propias
+instrucciones. No se mantienen aquí resultados de ZIP antiguos ni comandos que
+dependan de scripts temporales de `scratchpad/`. Para Roko véase [TESTS.md](TESTS.md).

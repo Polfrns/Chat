@@ -1,0 +1,9 @@
+# Configure these in the chosen CI service; do not copy over the app's .env.
+CI_IMAGE_REPOSITORY=ghcr.io/your-namespace/roko
+# Deployment production:
+ROKO_DEPLOY_DIR=/home/rokoface/services/roko
+# Protected registry credentials for the publishing environment:
+# CI_REGISTRY_PUSH_USER=usuario-publicador
+# CI_REGISTRY_PUSH_TOKEN=TOKEN_SEGURO
+# Opcional, Roko:
+# CI_NODE_MAX_OLD_SPACE_SIZE=4096

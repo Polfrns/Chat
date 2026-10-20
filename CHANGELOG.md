@@ -1,36 +1,54 @@
-# v0.7.2 — 2026-10-16
+# Historial de Roko
 
-Raíz activa roko.interaction alrededor del streaming real de agents; callbacks y títulos heredan contexto. Se conservan IDs deterministas para feedback. URL fija del Bridge autorizada sin abrir destinos externos. Exportación redacted/debug saneada, presupuesto de texto y pruebas CI nuevas; variables propagadas por Compose.
+Este historial recoge cambios de la adaptación. El paquete raíz declara
+`v0.8.6` como base LibreChat; las etiquetas 0.7.x de las entregas anteriores
+identificaban integraciones y no una nueva versión del paquete raíz.
 
-Entrega basada únicamente en los ZIP actuales del 16/10. Véase OBSERVABILITY-V072.md.
+## Sin publicar — estado documental del 20 de octubre de 2026
 
-## Histórico anterior
+### Funcionalidad presente en el código
 
-# Observabilidad v0.7.1 — 2026-10-15
+- Registro: error `EMAIL_ALREADY_EXISTS` para correo duplicado dentro del tenant,
+  incluida la colisión del índice compuesto, en lugar de confirmar un registro fallido.
+- Parámetros Bridge: capacidades según proveedor, defaults válidos, distinción
+  Default/Auto del resumen y opciones efectivas firmadas; se retiran controles
+  API incompatibles y se preservan llamadas/resultados al filtrar replay Responses.
+- Actividad: agrupación de comentario, THINK y herramientas, plegado al finalizar,
+  orden estable y explicaciones contextuales breves sin panel técnico.
+- Tiempos: presentación en segundos y contador general de generación en el
+  encabezado. El total depende del montaje y no se persiste para respuestas antiguas.
+- Archivos: enlaces Markdown asociados a descargas autenticadas, basename original
+  conservado y preview nativa o conversión Office aislada según soporte.
+- Telemetría: privacidad en la copia de exportación, uso/coste numérico validado
+  y contabilidad sin duplicación para los seis alias Bridge.
+- Entrega: build y selección de pruebas en Docker/CI, publicación por digest
+  y despliegue con snapshots, salud y rollback.
 
-## Bridge
-- Base exclusiva del adjunto bridge(1).zip; versión previa 0.7.0.
-- Clasificación por datos reales de Codex SDK 0.161.0 y Claude Agent SDK 0.3.291: intérpretes directos, cambios de archivo, web, MCP y herramientas de lectura/escritura.
-- Nombres específicos en spans y marcadores V1 ampliados con duración, cancelación, intento, extensión, estado, salida numérica y categorías de error disponibles.
-- Una observación por llamada/intento; terminales duplicados y regresiones ignorados. Cierre de actividad pendiente también con tracing deshabilitado.
-- Instrumentación de preparación de adjuntos, listado del workspace, recogida y validación reales; eventos de archivo generado solo después de validación. Nada se deriva de la petición textual.
-- Streaming de actividad por Chat Completions y Responses, antes de terminar inferencia. Nunca se transforma actividad interna en tool_calls ejecutables.
-- Sesiones estables con HMAC, nuevas trazas por petición, contexto remoto firmado y acotado. Mantiene las claves de aislamiento originales.
-- Exportación con proyección privada previa al procesador Langfuse y a media uploads. Dependencias de observabilidad fijadas en package-lock, incluyendo instalación local.
+### Consolidación documental
 
-## Roko
-- Base exclusiva Roko(3).zip; LibreChat v0.8.6, @librechat/api 1.7.31, @librechat/agents 3.2.35, Langfuse 5.3.0.
-- Consumidor V1 retrocompatible: nombres traducidos, duración, reintentos, cancelación y basenames opcionales. Mantiene el componente ToolCall de las tarjetas originales; son solo presentación.
-- Sesiones seudonimizadas en el exportador real de agents, conservando conversationId y thread_id de LibreChat.
-- Propagación dinámica por petición hacia Bridge y MCP, con HMAC y lista explícita de destinos. No almacena contexto de trazado en conexiones MCP compartidas.
-- Protección del exportador nativo LangChain/Langfuse CJS y ESM, y del exportador OTLP general. Modelos y documentos reales permanecen intactos.
-- Parche de instalación idempotente, verificado contra agents 3.2.35; fallo de build si cambia esa versión. Dockerfile y Dockerfile.multi aplican el parche.
-- Lockfile corregido para el workspace adjunto packages/roko-server; no se sustituye por una versión antigua. No modifica la versión funcional de LibreChat.
+- `SPEC-old.md` se integra en `SPEC.md`, corrigiendo el modelo de sesión y la
+  autenticación del filestore externo.
+- `ROKO-LANGFUSE-BRIDGE.md`, `OBSERVABILITY-V072.md` y `VERIFY-LANGFUSE.md` se
+  integran en `OBSERVABILITY.md`.
+- `TEST-RESULTS.md` deja de funcionar como certificado vigente; garantías y
+  alcance se concentran en `TESTS.md`, sin reutilizar recuentos históricos.
+- `BRIDGE-ACTIVITY-PROMPT.md` se sustituye por el contrato vigente en `CLI-BRIDGE.md`.
+- Se retira `README.zh.md`, duplicado de la presentación upstream sin mantenimiento
+  de los cambios Roko. `README.md` concentra navegación y arranque.
+- Se actualizan las guías de despliegue, CI, paquetes, Helm, traducción y contribución.
+  Las políticas de agentes y la fixture E2E de skill conservan su función propia.
 
-## Filestore
-- Base exclusiva server(2).zip; Django 6.1.1, MCP 2.2.0, OpenTelemetry 1.45.0.
-- Mantiene las 12 funciones MCP y sus firmas, autenticación y reglas de acceso. Spans mcp.<nombre_real>, estado, duración, categoría de error y extensión segura.
-- Contexto W3C aceptado únicamente tras autenticar y verificar HMAC de servicio vigente. ContextVars restauradas al terminar.
-- El exportador OTLP elimina atributos no autorizados, eventos y texto de errores. No exporta argumentos ni resultados documentales.
-- Cierre ante cancelaciones y excepciones, tracing fail-open sin repetir herramientas.
-- Conserva Bitbucket main, runner self-hosted, /opt/test.sh y /opt/deploy.sh. Compose conserva image/build en todos los servicios.
+Esta revisión documental no ejecuta pruebas de aplicación ni publica una imagen.
+
+## Entrega de integración 0.7.2 — histórico
+
+Raíz `roko.interaction` alrededor del streaming, contexto heredado por callbacks y
+títulos, destinos confiables explícitos y modos redacted/debug saneados. Se
+añadieron pruebas de privacidad y exportación y propagación de variables por Compose.
+
+## Entrega de integración 0.7.1 — histórico
+
+Clasificación y ciclo de vida de operaciones, sesiones seudonimizadas, propagación
+de contexto firmado entre servicios y protección de adjuntos antes de exportar.
+La telemetría conserva límites derivados de los eventos que realmente ofrecen
+los SDK. Estas notas históricas no acreditan el estado del despliegue actual.

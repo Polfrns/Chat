@@ -1,23 +1,55 @@
-# Actualización v0.7.2
+# Límites actuales
 
-v0.7.2 añade contenido debug filtrado y una raíz de streaming; no captura procesos SDK invisibles. Véanse las limitaciones actuales, títulos anticipados, proyectos separados, modos y alcance temporal en [OBSERVABILITY-V072.md](OBSERVABILITY-V072.md).
+## Actividad y tiempos
 
-## Histórico v0.7.1
+- Solo se muestran eventos y resúmenes públicos que el proveedor o Bridge emiten.
+  No se recupera razonamiento privado ni cada operación de lectura dentro de un shell.
+- La descripción se basa en datos observados. Un comando opaco no demuestra la
+  intención exacta del usuario; exit code cero no garantiza la corrección del archivo.
+- La interfaz muestra explicaciones breves. Los argumentos, comandos y rutas del
+  registro no se presentan como un panel técnico.
+- Un SDK puede no comunicar el inicio real. Un intervalo observado mide eventos,
+  no necesariamente toda la ejecución. Los segundos no eliminan esa limitación.
+- El contador del encabezado incluye espera y generación mientras está montado;
+  no se persiste y no aparece como una duración histórica inventada tras recargar.
+- El streaming depende del proveedor, de Bridge y de los proxies intermedios.
+  Agrupar tarjetas en React no convierte una salida final en eventos incrementales.
 
-# Límites y cobertura real
+## Archivos y herramientas
 
-- No se emiten llamadas deducidas de la intención del usuario, del texto de la respuesta ni de la extensión solicitada. `file.generated.*` acredita un archivo realmente recogido y validado por el flujo existente; no afirma qué comando lo creó.
-- Codex 0.161.0 expone command_execution, file_change, mcp_tool_call, web_search, todo_list y mensajes/razonamiento. Estos últimos no se registran como herramientas. No expone por separado cada lectura, escritura, mkdir o acceso web dentro de un proceso shell. Esos subpasos no se inventan.
-- Python/JavaScript solo se clasifican ante un ejecutable directo reconocido. Comandos compuestos, shell wrappers, redirecciones con separadores y comandos ambiguos conservan command_execution. No se presume code.test, web.download o workspace.read porque aparezca una palabra en un comando.
-- Los cambios Codex se clasifican por changes.kind; cambios mixtos quedan file_change. WebSearch/WebFetch, Read/Write/Edit, Glob/Grep se clasifican cuando el SDK Claude los comunica. Su registro no habilita herramientas que las políticas actuales de Claude mantienen deshabilitadas.
-- La duración de una operación SDK sin evento de inicio no es recuperable. Su span incluye missingStart=true; no se muestra una duración inventada. El instante de exportación no demuestra cuándo empezó la acción.
-- Los reintentos del ciclo de reparación de artefactos son conocidos y llevan attempt 1/2. Reintentos internos de red/modelo no expuestos por el SDK no se inventan. La generación model.codex/model.claude mide la ejecución del proveedor y agrega uso de sus turnos de reparación; no descompone submodelos internos.
-- Los eventos generados por el Bridge corresponden a preparación, snapshot/listado, recogida y validación realmente invocados. La instrumentación no añade ejecuciones de validación ni comandos al sandbox. El toolkit conserva su comportamiento previo si faltan utilidades opcionales; una llamada de validación no garantiza que exista cada validador externo.
-- Las observaciones de inicio existen en memoria; Langfuse recibe normalmente spans finalizados. Las tarjetas sí se actualizan en streaming. Un SIGKILL/crash de proceso puede impedir exportar spans no terminados; no se promete un cierre después de matar el proceso.
-- Límite de 1000 operaciones distintas por petición en el Bridge y 1000 tarjetas; no se repiten las terminaciones ya vistas. La exportación es asíncrona y de mejor esfuerzo, con colas acotadas; una caída prolongada puede descartar telemetría. No se reintenta una herramienta por un fallo de telemetría.
-- Solo se aceptan contextos remotos firmados con antigüedad máxima de 60 segundos, además de la autenticación normal. La identidad Roko conserva su verificación independiente de 10 minutos. MCP stdio, llamadas directas de otros hosts o conexiones sin contexto firmado producen trazas locales sin sesión de conversación; no se atribuyen a una conversación arbitraria.
-- Los clientes MCP HTTP actuales se conservan; no se exige modificar el protocolo MCP. Solo se agregan cabeceras HTTP por petición. No se habilita acceso a destinos nuevos, dominios externos, lectura o escritura adicional.
-- La telemetría HTTP/Undici automática general de Roko queda deshabilitada para impedir extracción de cabeceras de clientes arbitrarios y propagación indiscriminada. La correlación explícita autorizada de Bridge y MCP permanece. Otras instrumentaciones de backend se exportan con el mismo filtro privado.
-- Exportadores identificados: Langfuse directo del Bridge; procesador Langfuse de @librechat/agents 3.2.35 (LangChain callbacks, generaciones, títulos y ToolNode); SDK OTLP general de Roko; OTLP explícito de transport/langfuse_tracing.py. Feedback de Roko envía puntuaciones y metadatos de feedback, no documentos. Un exportador adicional instalado fuera de estos ZIP requiere una revisión adicional.
-- El parche de agents cubre CJS/ESM en instalación/build. No es una bifurcación antigua del SDK. Se verifica su versión y sus puntos de inserción; nuevas versiones requieren adaptar y probar el parche antes de desplegar.
-- No se han ejecutado inferencias reales con suscripciones, despliegues Docker, pipeline Bitbucket, pruebas con tu PostgreSQL de producción ni inspección de la UI Langfuse. Sí se compilan los paquetes y se prueban contratos y exportaciones locales. La prueba integral de Filestore usa SQLite y no certifica características específicas de PostgreSQL.
+- Preview depende de formato, tamaño, tiempo de conversión y códecs disponibles.
+  HTML original se muestra como texto; Office convertido se aísla en sandbox.
+- Un fallo de preview conserva la descarga. Archivos antiguos sin conversión
+  pueden requerir regeneración. No existe soporte universal para cualquier binario.
+- Los enlaces se resuelven entre los adjuntos de la respuesta actual; nombres
+  ambiguos no se asignan al primer archivo arbitrariamente.
+- Bridge necesita sus compiladores, librerías y conversores. Ampliar un timeout
+  no permite producir un ejecutable de otra plataforma sin el toolchain adecuado.
+- El workspace Bridge es efímero. Continuar una edición depende de los archivos
+  persistidos en Roko, sus permisos y `resendFiles`.
+
+## Aislamiento y permisos
+
+- El correo es único por `email + tenantId`, no globalmente entre todos los tenants.
+  La protección de registro no repara duplicados antiguos automáticamente.
+- El Bridge usa aislamiento de estado de aplicación, no una cuenta de sistema o
+  contenedor independiente por usuario. Los permisos del host siguen siendo relevantes.
+- Roko accede al filestore externo con una API key de servicio. Los permisos de
+  sesión de Roko no sustituyen los permisos de esa cuenta en el servicio externo.
+- El fallback de solicitudes en memoria no coordina procesos distintos. Para
+  varias instancias hay que configurar el transporte compartido correspondiente.
+
+## Telemetría y verificación
+
+- Langfuse recibe exportaciones acotadas y de mejor esfuerzo. Una caída puede
+  perder observaciones; un proceso terminado abruptamente puede dejar spans sin exportar.
+- Los proyectos Langfuse separados no se fusionan en un árbol automáticamente.
+- Debug permite texto saneado y limitado; no equivale a clasificar toda información
+  confidencial posible. Los filtros nuevos no eliminan trazas antiguas.
+- Alias Bridge nuevos requieren revisar la política de contabilidad para evitar
+  duplicar uso/coste. Los procesos internos no expuestos no se desglosan ficticiamente.
+- La selección CI no ejecuta la suite completa ni modelos reales. Consulta
+  [TESTS.md](TESTS.md) antes de interpretar un build verde como validación del producto.
+
+Arquitectura: [SPEC.md](SPEC.md). Operación: [DEPLOY.md](DEPLOY.md).
+Privacidad y comprobaciones: [OBSERVABILITY.md](OBSERVABILITY.md).
