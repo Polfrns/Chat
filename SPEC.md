@@ -179,7 +179,7 @@ La configuración, la propagación firmada y sus límites se documentan en
 [OBSERVABILITY.md](OBSERVABILITY.md).
 
 El Dockerfile aplica el parche de instrumentación, compila el frontend y hace
-depender la imagen de producción de la etapa CI. El flujo de CI publica imágenes
+depender la imagen de producción de la etapa CI. GitHub Actions publica imágenes
 identificadas por digest y despliega `api` mediante snapshots de configuración,
 comprobación de salud y rollback. [CI-CLOUD.md](CI-CLOUD.md) describe ese contrato;
 [TESTS.md](TESTS.md) distingue la selección CI del resto de suites disponibles.

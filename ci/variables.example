@@ -1,9 +1,10 @@
-# Configure these in the chosen CI service; do not copy over the app's .env.
-CI_IMAGE_REPOSITORY=ghcr.io/your-namespace/roko
+# Configurar en GitHub Actions; no copiar sobre el .env de la aplicación.
+# Repository variables:
+CI_IMAGE_REPOSITORY=crg.apkg.io/tu-workspace/roko
 # Deployment production:
 ROKO_DEPLOY_DIR=/home/rokoface/services/roko
-# Protected registry credentials for the publishing environment:
+# Solo para registros sin autenticación nativa, como secretos de GitHub Actions:
 # CI_REGISTRY_PUSH_USER=usuario-publicador
-# CI_REGISTRY_PUSH_TOKEN=TOKEN_SEGURO
+# CI_REGISTRY_PUSH_TOKEN=TOKEN_SEGURO_CONFIGURADO_EN_GITHUB
 # Opcional, Roko:
 # CI_NODE_MAX_OLD_SPACE_SIZE=4096

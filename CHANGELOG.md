@@ -21,7 +21,7 @@ identificaban integraciones y no una nueva versión del paquete raíz.
   conservado y preview nativa o conversión Office aislada según soporte.
 - Telemetría: privacidad en la copia de exportación, uso/coste numérico validado
   y contabilidad sin duplicación para los seis alias Bridge.
-- Entrega: build y selección de pruebas en Docker/CI, publicación por digest
+- Entrega: build y selección de pruebas en Docker/GitHub Actions, publicación por digest
   y despliegue con snapshots, salud y rollback.
 
 ### Consolidación documental

@@ -1,0 +1,69 @@
+name: CI and deployment
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: roko-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CI_COMMIT_SHA: ${{ github.sha }}
+      CI_BUILD_NUMBER: ${{ github.run_number }}
+      CI_BRANCH: ${{ github.ref_name }}
+      CI_IMAGE_REPOSITORY: ${{ vars.CI_IMAGE_REPOSITORY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Build, test, and publish on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          CI_REGISTRY_PUSH_USER: ${{ secrets.CI_REGISTRY_PUSH_USER }}
+          CI_REGISTRY_PUSH_TOKEN: ${{ secrets.CI_REGISTRY_PUSH_TOKEN }}
+        run: bash ci/cloud-build.sh roko publish
+      - name: Build and test
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        run: bash ci/cloud-build.sh roko test
+      - name: Save deployment manifest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-result
+          path: ci-result.json
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, roko.bridge.prod]
+    environment: production
+    concurrency:
+      group: roko-production
+      cancel-in-progress: false
+    env:
+      CI_COMMIT_SHA: ${{ github.sha }}
+      CI_BUILD_NUMBER: ${{ github.run_number }}
+      CI_BRANCH: ${{ github.ref_name }}
+      CI_IMAGE_REPOSITORY: ${{ vars.CI_IMAGE_REPOSITORY }}
+      ROKO_DEPLOY_DIR: ${{ vars.ROKO_DEPLOY_DIR }}
+      CI_HEALTH_ATTEMPTS: ${{ vars.CI_HEALTH_ATTEMPTS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: ci-result
+      - name: Deploy tested image
+        run: bash ci/deploy.sh roko

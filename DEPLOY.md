@@ -47,7 +47,7 @@ requieren recrearlo; `restart` conserva el entorno anterior.
 
 ## Despliegue gestionado por CI
 
-En producción gestionada por CI, usa el flujo de
+En producción gestionada mediante GitHub Actions, usa el flujo de
 [CI-CLOUD.md](CI-CLOUD.md). El host ejecuta la imagen probada y publicada, sin
 reconstruir código. Los snapshots están bajo `.ci-deploy/` del directorio de
 despliegue; no los edites para cambiar manualmente la imagen activa.

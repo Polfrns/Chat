@@ -18,7 +18,7 @@ ni acreditan qué imagen está desplegada en producción.
 | Paquetes compartidos | `packages/`: API TypeScript, tipos, esquemas MongoDB y UI |
 | Bridge | Repositorio externo: adapta los SDK de CLI de Claude y Codex |
 | leedeo-filestore | Servicio externo: almacenamiento y herramientas MCP |
-| Infraestructura | Compose para desarrollo/despliegue y scripts CI genéricos |
+| Infraestructura | Compose para desarrollo/despliegue y workflow GitHub Actions |
 
 El `packages/roko-server` incluido es un servicio local heredado; no es el
 leedeo-filestore externo configurado en `runtime-config.yaml`.
