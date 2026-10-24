@@ -17,11 +17,13 @@ import { useGetEndpointsQuery } from '~/data-provider';
 import { componentMapping, DynamicSetting } from './components';
 import { useChatContext } from '~/Providers';
 import { logger } from '~/utils';
+import useChatWebSearch from '~/hooks/Chat/useChatWebSearch';
 
 export default function Parameters() {
   const localize = useLocalize();
   const { conversation, setConversation } = useChatContext();
   const { setOption } = useSetIndexOptions();
+  const search = useChatWebSearch();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [preset, setPreset] = useState<TPreset | null>(null);
@@ -110,6 +112,7 @@ export default function Parameters() {
   }, [parameters, setConversation]);
 
   const resetParameters = useCallback(() => {
+    if (search.isCustom && !search.bridge) search.setEnabled(false);
     setConversation((prev) => {
       if (!prev) {
         return prev;
@@ -132,7 +135,7 @@ export default function Parameters() {
       logger.log('parameters', 'parameters reset, affected keys:', resetKeys);
       return updatedConversation;
     });
-  }, [setConversation]);
+  }, [setConversation, search]);
 
   const openDialog = useCallback(() => {
     const newPreset = tConvoUpdateSchema.parse({

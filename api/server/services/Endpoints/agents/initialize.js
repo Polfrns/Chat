@@ -287,6 +287,10 @@ const initializeClient = async ({ req, res, signal, endpointOption }) => {
   if (!primaryAgent) {
     throw new Error('Agent not found');
   }
+  if (process.env.NEXTCLOUD_URL) {
+    // Add only to the request's chat agent; memory workers keep their own tool scope.
+    primaryAgent.tools = [...new Set([...(primaryAgent.tools || []), 'nextcloud_files'])];
+  }
 
   const modelsConfig = await getModelsConfig(req);
   const validationResult = await validateAgentModel({

@@ -516,6 +516,7 @@ const nativeTools = new Set([
   /** Roko: chat<->filestore transfer tools, injected for session chats. */
   'upload_chat_file',
   'deliver_filestore_file',
+  'nextcloud_files',
 ]);
 
 /** Checks if a tool name is a known built-in tool */

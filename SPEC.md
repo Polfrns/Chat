@@ -98,6 +98,35 @@ Las rutas `/api/filestores` adaptan la gestión del servicio externo. El servici
 SQLite/JWT de [packages/roko-server](packages/roko-server/README.md) conserva un
 contrato anterior y no es intercambiable con el filestore externo.
 
+## Nextcloud e inicio de sesión
+
+La integración de Nextcloud es independiente del filestore. Con `NEXTCLOUD_URL`
+configurado, Roko utiliza Login Flow v2 y WebDAV bajo la raíz del UID canónico
+del usuario. Las credenciales de aplicación se cifran en MongoDB; ninguna
+credencial compartida sustituye a la cuenta personal. Consultas, vinculaciones
+y propuestas se filtran explícitamente por propietario y tenant.
+
+El login con Nextcloud puede provisionar una cuenta USER sin registro separado.
+Una identidad previamente vinculada abre la cuenta Roko existente; no se fusionan
+usuarios por coincidencia de email. Las cuentas nuevas usan un email técnico
+determinista `@nextcloud.invalid`. Las vinculaciones de identidad son únicas
+por servidor + UID + tenant y se conservan al revocar el acceso a archivos.
+El flujo anónimo está ligado a un nonce HttpOnly del navegador y al tenant.
+La verificación adicional de Roko se mantiene al emitir su sesión.
+
+`nextcloud_files` ofrece lectura y propuestas de escritura a los chats de
+agentes. El panel permite navegar, adjuntar copias y aprobar escrituras. Una
+propuesta guarda el contenido cifrado y la revisión de la cuenta, caduca y se
+consume atómicamente una sola vez. Las copias no sobrescriben y los reemplazos
+exigen un ETag fuerte. El modelo no puede aprobar mediante sus herramientas.
+No hay sincronización automática entre copias del chat, Nextcloud y filestore.
+
+`PERSISTENT_SESSIONS=true`, activado en el override Docker, conserva sesiones
+locales/Nextcloud sin caducidad práctica por inactividad (fecha del año 9999),
+manteniendo acceso JWT corto y revocación de sesiones. Las cookies siguen
+sujetas a los límites del navegador y OIDC externo mantiene sus propias reglas.
+Configuración, límites y rutas de uso: [NEXTCLOUD.md](NEXTCLOUD.md).
+
 ## Modelos y Bridge
 
 Los endpoints personalizados usan seis alias: `gpt-codex`, `gpt-codex-fast`,
@@ -114,6 +143,30 @@ conservando mensajes y pares de llamadas/resultados.
 
 El código OAuth de `packages/api/src/endpoints/claude` sigue presente. Es una
 integración distinta del endpoint personalizado Claude Max que usa Bridge.
+
+### Memorias y herramientas del chat
+
+`runtime-config.yaml` habilita memorias personales con actualización automática
+mediante el proveedor `ChatGPT Codex`, modelo `gpt-codex-fast`. La ejecución real
+requiere que el Bridge admita las llamadas de herramientas del agente de memoria.
+Se mantienen los controles de personalización y la gestión manual de memorias.
+
+Los menús habilitan búsqueda web, búsqueda de archivos, ejecución de código,
+artifacts, skills y gestión de MCP. Los parámetros readonly conservan su control
+visible en gris, deshabilitado y sin un setter efectivo.
+
+El botón Web Search y el parámetro de endpoints personalizados consultan el
+mismo estado: `conversation.web_search` para Codex Bridge y
+`ephemeralAgent.web_search` para otros proveedores personalizados, como LM Studio.
+Claude Bridge conserva el control deshabilitado según su matriz de capacidades.
+La búsqueda mediante herramienta mantiene la comprobación de credenciales de
+LibreChat; Codex no necesita las credenciales de Serper/Jina para su búsqueda nativa.
+
+Compose proporciona un valor por defecto para `LMSTUDIO_BASE_URL` que conserva
+la dirección anterior. `LIBRECHAT_CODE_BASEURL` permite conectar el sandbox
+compatible con la librería de agentes; habilitar la capacidad de código no crea
+ese servicio. El MCP futuro de edición/workspace queda como plantilla comentada,
+sin conexión ni herramientas ficticias. Véase [CHAT-TOOLS.md](CHAT-TOOLS.md).
 
 ## Actividad de la respuesta
 

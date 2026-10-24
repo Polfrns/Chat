@@ -16,6 +16,7 @@ import MCPSubMenu from '~/components/Chat/Input/MCPSubMenu';
 import { useGetStartupConfig } from '~/data-provider';
 import { useBadgeRowContext } from '~/Providers';
 import { cn } from '~/utils';
+import useChatWebSearch from '~/hooks/Chat/useChatWebSearch';
 
 interface ToolsDropdownProps {
   disabled?: boolean;
@@ -24,6 +25,7 @@ interface ToolsDropdownProps {
 const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
   const localize = useLocalize();
   const context = useBadgeRowContext();
+  const search = useChatWebSearch();
   const { data: startupConfig } = useGetStartupConfig();
 
   const { codeEnabled, webSearchEnabled, artifactsEnabled, fileSearchEnabled, skillsEnabled } =
@@ -68,26 +70,27 @@ const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
 
   const { setIsDialogOpen: setIsSearchDialogOpen, menuTriggerRef: searchMenuTriggerRef } =
     searchApiKeyForm ?? {};
-  const {
-    isPinned: isSearchPinned,
-    setIsPinned: setIsSearchPinned,
-    authData: webSearchAuthData,
-  } = webSearch ?? {};
+  const { authData: webSearchAuthData } = webSearch ?? {};
   const { isPinned: isCodePinned, setIsPinned: setIsCodePinned } = codeInterpreter ?? {};
   const { isPinned: isFileSearchPinned, setIsPinned: setIsFileSearchPinned } = fileSearch ?? {};
   const { isPinned: isArtifactsPinned, setIsPinned: setIsArtifactsPinned } = artifacts ?? {};
   const { isPinned: isSkillsPinned, setIsPinned: setIsSkillsPinned } = skills ?? {};
 
   const showWebSearchSettings = useMemo(() => {
+    if (search.bridge) return false;
     const authTypes = webSearchAuthData?.authTypes ?? [];
     if (authTypes.length === 0) return true;
     return !authTypes.every(([, authType]) => authType === AuthType.SYSTEM_DEFINED);
-  }, [webSearchAuthData?.authTypes]);
+  }, [search.bridge, webSearchAuthData?.authTypes]);
 
   const handleWebSearchToggle = useCallback(() => {
+    if (search.bridge) {
+      search.setEnabled(!search.enabled);
+      return;
+    }
     const newValue = !webSearch?.toggleState;
     webSearch?.debouncedChange({ value: newValue });
-  }, [webSearch]);
+  }, [webSearch, search]);
 
   const handleCodeInterpreterToggle = useCallback(() => {
     const newValue = !codeInterpreter?.toggleState;
@@ -167,9 +170,12 @@ const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
     });
   }
 
-  if (canUseWebSearch && webSearchEnabled) {
+  if (canUseWebSearch && (webSearchEnabled || search.bridge)) {
     dropdownItems.push({
       onClick: handleWebSearchToggle,
+      disabled: !search.available,
+      className: !search.available ? 'text-text-secondary opacity-50 grayscale' : undefined,
+      ariaChecked: search.bridge ? search.enabled : webSearch?.isToolEnabled,
       hideOnClick: false,
       render: (props) => (
         <div {...props}>
@@ -198,23 +204,6 @@ const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
                 </div>
               </button>
             )}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsSearchPinned?.(!isSearchPinned);
-              }}
-              className={cn(
-                'rounded p-1 transition-all duration-200',
-                'hover:bg-surface-secondary hover:shadow-sm',
-                !isSearchPinned && 'text-text-secondary hover:text-text-primary',
-              )}
-              aria-label={isSearchPinned ? 'Unpin' : 'Pin'}
-            >
-              <div className="h-4 w-4">
-                <PinIcon unpin={isSearchPinned} />
-              </div>
-            </button>
           </div>
         </div>
       ),

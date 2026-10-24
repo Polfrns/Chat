@@ -6,6 +6,14 @@ services:
       dockerfile: Dockerfile
     environment:
       CONFIG_PATH: /app/runtime-config.yaml
+      NEXTCLOUD_URL: ${NEXTCLOUD_URL:-}
+      NEXTCLOUD_LOGIN_ENABLED: ${NEXTCLOUD_LOGIN_ENABLED:-true}
+      NEXTCLOUD_AUTO_REGISTER: ${NEXTCLOUD_AUTO_REGISTER:-true}
+      PERSISTENT_SESSIONS: ${PERSISTENT_SESSIONS:-true}
+      LMSTUDIO_BASE_URL: ${LMSTUDIO_BASE_URL:-http://host.docker.internal:1234/v1}
+      # Consumed by @librechat/agents for isolated code sessions.
+      # Keep unset until a compatible sandbox service is available.
+      LIBRECHAT_CODE_BASEURL: ${LIBRECHAT_CODE_BASEURL:-}
       CLAUDE_BRIDGE_KEY: ${CLAUDE_BRIDGE_KEY}
       ROKO_BRIDGE_BASE_URL: ${ROKO_BRIDGE_BASE_URL:-http://host.docker.internal:4000/v1}
       BRIDGE_DEBUG_ATTACHMENTS: ${BRIDGE_DEBUG_ATTACHMENTS:-0}

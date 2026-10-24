@@ -242,6 +242,7 @@ const loadTools = async ({
       return createUploadChatFileTool({ req: options.req });
     },
     deliver_filestore_file: async () => createDeliverFilestoreFileTool({ req: options.req }),
+    nextcloud_files: async () => require('../structured/Nextcloud').createNextcloudTool({ req: options.req }),
   };
 
   const requestedTools = {};

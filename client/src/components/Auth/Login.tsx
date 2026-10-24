@@ -9,6 +9,7 @@ import SocialButton from '~/components/Auth/SocialButton';
 import { useAuthContext } from '~/hooks/AuthContext';
 import { useLocalize } from '~/hooks';
 import LoginForm from './LoginForm';
+import NextcloudLogin from './NextcloudLogin';
 
 interface LoginLocationState {
   redirect_to?: string;
@@ -101,6 +102,7 @@ function Login() {
   return (
     <>
       {error != null && <ErrorMessage>{localize(getLoginError(error))}</ErrorMessage>}
+      {startupConfig?.nextcloudLoginEnabled && <NextcloudLogin />}
       {startupConfig?.emailLoginEnabled === true && (
         <LoginForm
           onSubmit={login}

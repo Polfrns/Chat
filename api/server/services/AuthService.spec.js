@@ -1236,6 +1236,11 @@ describe('CloudFront cookie integration', () => {
   });
 
   describe('setAuthTokens', () => {
+    const initialPersistentSessions = process.env.PERSISTENT_SESSIONS;
+    afterEach(() => {
+      if (initialPersistentSessions === undefined) delete process.env.PERSISTENT_SESSIONS;
+      else process.env.PERSISTENT_SESSIONS = initialPersistentSessions;
+    });
     beforeEach(() => {
       getUserById.mockResolvedValue({ _id: 'user-123', tenantId: 'tenantA' });
       generateToken.mockResolvedValue('mock-access-token');
@@ -1259,6 +1264,24 @@ describe('CloudFront cookie integration', () => {
         },
         null,
       );
+    });
+
+    it('creates a persistent refresh session while keeping the access token lifetime', async () => {
+      process.env.PERSISTENT_SESSIONS = 'true';
+      await setAuthTokens('user-123', mockResponse());
+      expect(createSession).toHaveBeenCalledWith('user-123', expect.objectContaining({
+        expiration: new Date('9999-12-31T23:59:59.000Z'),
+      }));
+      expect(generateToken).toHaveBeenCalledWith(expect.anything(), expect.any(Number));
+    });
+
+    it('extends an existing session on refresh without changing its identity', async () => {
+      process.env.PERSISTENT_SESSIONS = 'true';
+      const session = { _id: 'session-1', expiration: new Date(Date.now() + 10000) };
+      await setAuthTokens('user-123', mockResponse(), session);
+      expect(session.expiration).toEqual(new Date('9999-12-31T23:59:59.000Z'));
+      expect(generateRefreshToken).toHaveBeenCalledWith(session);
+      expect(createSession).not.toHaveBeenCalled();
     });
 
     it('uses the fetched user id as the canonical CloudFront user scope', async () => {

@@ -56,5 +56,6 @@ export { default as createPayload } from './createPayload';
 export * from './feedback';
 export * from './parameterSettings';
 export * from './bridgeModels';
+export * from './nextcloud';
 /* code-execution sandbox */
 export * from './codeEnvRef';

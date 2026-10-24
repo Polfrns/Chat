@@ -58,6 +58,8 @@ const isDuplicateEmailError = (error) =>
   (error?.keyPattern?.email != null || /index: email_1_tenantId_1/.test(error?.message ?? ''));
 const invalidEmailVerificationMessage = 'Invalid or expired email verification token';
 const OPENID_SESSION_ID_TOKEN_EXPIRY_BUFFER_SECONDS = 30;
+// Persistent sessions remain revocable in MongoDB while having no practical idle expiry.
+const PERSISTENT_SESSION_EXPIRATION = new Date('9999-12-31T23:59:59.000Z');
 
 const findPasswordResetToken = async (userId) => {
   const typedToken = await findToken(
@@ -660,12 +662,17 @@ const setAuthTokens = async (userId, res, _session = null, req = null) => {
     let refreshToken;
     let refreshTokenExpires;
     const expiresIn = math(process.env.REFRESH_TOKEN_EXPIRY, DEFAULT_REFRESH_TOKEN_EXPIRY);
+    const persistent = isEnabled(process.env.PERSISTENT_SESSIONS);
 
     if (session && session._id && session.expiration != null) {
+      if (persistent) session.expiration = new Date(PERSISTENT_SESSION_EXPIRATION);
       refreshTokenExpires = session.expiration.getTime();
       refreshToken = await generateRefreshToken(session);
     } else {
-      const result = await createSession(userId, { expiresIn });
+      const result = await createSession(userId, {
+        expiresIn,
+        ...(persistent ? { expiration: new Date(PERSISTENT_SESSION_EXPIRATION) } : {}),
+      });
       session = result.session;
       refreshToken = result.refreshToken;
       refreshTokenExpires = session.expiration.getTime();

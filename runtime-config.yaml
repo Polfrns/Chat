@@ -9,10 +9,22 @@ interface:
   presets: true
   bookmarks: true
   multiConvo: true
-  webSearch: false
+  webSearch: true
   fileSearch: true
   runCode: true
   memories: true
+  temporaryChat: true
+  contextUsage: true
+  mcpServers:
+    use: true
+    create: true
+    share: false
+    public: false
+  skills:
+    use: true
+    create: true
+    share: false
+    public: false
   prompts:
     use: true
     create: true
@@ -31,7 +43,23 @@ interface:
     use: true
   fileCitations: true
 
-# Not necessary for cli endpoints like Claude/Codex Bridge, but required for endpoints that require a baseURL and apiKey.
+memory:
+  disabled: false
+  personalize: true
+  tokenLimit: 10000
+  maxInputTokens: 12000
+  agent:
+    enabled: true
+    provider: "ChatGPT Codex"
+    model: "gpt-codex-fast"
+    instructions: >-
+      Store durable user preferences and useful work context. Update existing
+      memories instead of duplicating them. Do not store credentials, secrets,
+      transient tool output, or information the user asks you to forget.
+    model_parameters:
+      reasoning_effort: "low"
+
+# LibreChat search for tool-capable models; Bridge native search needs no Serper key.
 webSearch:
   searchProvider: "serper"
   serperApiKey: "${SERPER_API_KEY}"
@@ -43,19 +71,20 @@ endpoints:
   agents:
     disableBuilder: false
     capabilities:
-#      - "context"
-#      - "file_search"
+      - "context"
+      - "file_search"
       - "web_search"
       - "tools"
       - "actions"
       - "artifacts"
-#      - "execute_code"
+      - "execute_code"
+      - "skills"
       - "ocr"
 
   custom:
     - name: "LM Studio"
       apiKey: "${LMSTUDIO_API_KEY}"
-      baseURL: "http://host.docker.internal:1234/v1"
+      baseURL: "${LMSTUDIO_BASE_URL}"
       models:
         default:
           - "unsloth/gemma-4-e4b-it"
@@ -127,7 +156,20 @@ fileConfig:
   serverFileSizeLimit: 100
   avatarSizeLimit: 2
 
+# Enable the editing workspace server below only after it exists.
+# Permit its exact private host:port in mcpSettings.allowedAddresses if needed.
+# mcpSettings:
+#   allowedAddresses:
+#     - 'host.docker.internal:8080'
 mcpServers:
+  # editing-workspace:
+  #   type: streamable-http
+  #   url: ${WORKSPACE_MCP_URL}
+  #   headers:
+  #     Authorization: "Bearer ${WORKSPACE_MCP_TOKEN}"
+  #   startup: false
+  #   chatMenu: true
+  #   timeout: 60000
   leedeo-filestore:
     type: streamable-http
     url: ${ROKO_SERVER_URL}/mcp

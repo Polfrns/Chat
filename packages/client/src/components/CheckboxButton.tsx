@@ -9,6 +9,7 @@ const CheckboxButton: React.ForwardRefExoticComponent<
     label: string;
     className?: string;
     checked?: boolean;
+    disabled?: boolean;
     defaultChecked?: boolean;
     isCheckedClassName?: string;
     setValue?: (values: {
@@ -23,6 +24,7 @@ const CheckboxButton: React.ForwardRefExoticComponent<
     label: string;
     className?: string;
     checked?: boolean;
+    disabled?: boolean;
     defaultChecked?: boolean;
     isCheckedClassName?: string;
     setValue?: (values: {
@@ -30,11 +32,12 @@ const CheckboxButton: React.ForwardRefExoticComponent<
       value: boolean | string;
     }) => void;
   }
->(({ icon, label, setValue, className, checked, defaultChecked, isCheckedClassName }, ref) => {
+>(({ icon, label, setValue, className, checked, disabled, defaultChecked, isCheckedClassName }, ref) => {
   const checkbox = useCheckboxStore();
   const isChecked = useStoreState(checkbox, (state) => state?.value);
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
+    if (disabled) return;
     if (typeof isChecked !== 'boolean') {
       return;
     }
@@ -59,6 +62,7 @@ const CheckboxButton: React.ForwardRefExoticComponent<
     <Checkbox
       ref={ref}
       store={checkbox}
+      disabled={disabled}
       onChange={onChange}
       className={cn(
         // Base styling from MultiSelect's selectClassName

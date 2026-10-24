@@ -28,6 +28,7 @@ const setBalanceConfig = createSetBalanceConfig({
 });
 
 const router = express.Router();
+router.use('/nextcloud', require('./nextcloudAuth'));
 const getCloudFrontAuthCookieRefreshResult = (req, res) => {
   const warmedResult = req.cloudFrontAuthCookieRefreshResult;
   if (warmedResult && (warmedResult.attempted || !warmedResult.enabled)) {

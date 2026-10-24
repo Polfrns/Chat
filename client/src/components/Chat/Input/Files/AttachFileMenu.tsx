@@ -37,6 +37,7 @@ import { useGetStartupConfig } from '~/data-provider';
 import { ephemeralAgentByConvoId } from '~/store';
 import { MenuItemProps } from '~/common';
 import { cn } from '~/utils';
+import NextcloudPanel from '~/components/Nextcloud/NextcloudPanel';
 
 type FileUploadType =
   | 'image'
@@ -80,7 +81,7 @@ const AttachFileMenu = ({
     ephemeralAgentByConvoId(conversationId),
   );
   const toolResourceRef = useRef<EToolResources | undefined>();
-  const { handleFileChange } = useFileHandlingNoChatContext(undefined, {
+  const { handleFileChange, handleFiles } = useFileHandlingNoChatContext(undefined, {
     files,
     setFiles,
     setFilesLoading,
@@ -281,25 +282,32 @@ const AttachFileMenu = ({
 
   return (
     <>
-      <FileUpload
-        ref={inputRef}
-        handleFileChange={(e) => {
-          handleFileChange(e, toolResourceRef.current);
-          toolResourceRef.current = undefined;
-        }}
-      >
-        <DropdownPopup
-          menuId="attach-file-menu"
-          className="overflow-visible"
-          isOpen={isPopoverActive}
-          setIsOpen={setIsPopoverActive}
-          modal={true}
-          unmountOnHide={true}
-          trigger={menuTrigger}
-          items={dropdownItems}
-          iconClassName="mr-0"
+      <div className="flex items-center gap-1">
+        <NextcloudPanel
+          conversationId={conversationId}
+          disabled={isUploadDisabled}
+          onAttach={(selected) => handleFiles(selected)}
         />
-      </FileUpload>
+        <FileUpload
+          ref={inputRef}
+          handleFileChange={(e) => {
+            handleFileChange(e, toolResourceRef.current);
+            toolResourceRef.current = undefined;
+          }}
+        >
+          <DropdownPopup
+            menuId="attach-file-menu"
+            className="overflow-visible"
+            isOpen={isPopoverActive}
+            setIsOpen={setIsPopoverActive}
+            modal={true}
+            unmountOnHide={true}
+            trigger={menuTrigger}
+            items={dropdownItems}
+            iconClassName="mr-0"
+          />
+        </FileUpload>
+      </div>
       <SharePointPickerDialog
         isOpen={isSharePointDialogOpen}
         onOpenChange={setIsSharePointDialogOpen}
