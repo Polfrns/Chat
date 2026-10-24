@@ -95,7 +95,7 @@ endpoints:
 
     - name: "Claude Max"
       apiKey: "${CLAUDE_BRIDGE_KEY}"
-      baseURL: "http://host.docker.internal:4000/v1"
+      baseURL: "http://cli-bridge:4000/v1"
       models:
         default:
           - "claude-max"
@@ -108,7 +108,7 @@ endpoints:
 
     - name: "ChatGPT Codex"
       apiKey: "${CLAUDE_BRIDGE_KEY}"
-      baseURL: "http://host.docker.internal:4000/v1"
+      baseURL: "http://cli-bridge:4000/v1"
       models:
         default:
           - "gpt-codex"
@@ -134,6 +134,7 @@ fileConfig:
         - "image/.*"
         - "text/.*"
         - "application/pdf"
+        - "application/octet-stream"
         - "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     "Claude Max":
       fileLimit: 10
@@ -170,13 +171,6 @@ mcpServers:
   #   startup: false
   #   chatMenu: true
   #   timeout: 60000
-  leedeo-filestore:
-    type: streamable-http
-    url: ${ROKO_SERVER_URL}/mcp
-    headers:
-      Authorization: "Bearer ${ROKO_API_KEY}"
-    timeout: 60000
-    chatMenu: false
 
 modelSpecs:
   list:

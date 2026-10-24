@@ -1,7 +1,7 @@
 const express = require('express');
 const { identity } = require('~/server/services/Nextcloud/store');
 const { getNextcloudService } = require('~/server/services/Nextcloud/service');
-const { NextcloudError } = require('~/server/services/Nextcloud/webdav');
+const { NextcloudError, MAX_DOWNLOAD_BYTES } = require('~/server/services/Nextcloud/webdav');
 const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
 
 const router = express.Router();
@@ -26,7 +26,7 @@ router.get('/files', route(async (req, res, service, owner) => {
 }));
 router.get('/download', route(async (req, res, service, owner) => {
   if (typeof req.query.path !== 'string') throw new NextcloudError('A path is required');
-  const result = await service.read(owner, req.query.path);
+  const result = await service.read(owner, req.query.path, MAX_DOWNLOAD_BYTES);
   res.set('Content-Type', 'application/octet-stream');
   res.set('X-Nextcloud-Content-Type', result.contentType);
   res.set('X-Content-Type-Options', 'nosniff');

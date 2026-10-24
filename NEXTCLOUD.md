@@ -91,10 +91,16 @@ Un conflicto o fallo de transporte no se convierte en un éxito. Tras aprobar,
 el modelo puede consultar el estado de la propuesta; la aprobación no lanza
 automáticamente otra generación del modelo.
 
-Límites iniciales: 8 MiB por archivo transferido, 512 KiB para leer/proponer
-texto y 2 MiB para la respuesta de un listado de carpeta. Los archivos cifrados
-de las propuestas deben caber en un documento MongoDB. Esta versión no incluye
-borrado, movimientos, edición colaborativa ni sincronización en segundo plano.
+El selector permite navegar por carpetas y descargar adjuntos de hasta 100 MiB;
+el límite efectivo al adjuntar también depende del tamaño total, los tipos
+aceptados y el límite del endpoint/modelo elegido. Los tipos no reconocidos se
+adjuntan como binarios genéricos y el modelo puede no analizar su contenido.
+Las propuestas de escritura siguen limitadas a 8 MiB por el tamaño máximo del
+documento MongoDB que las guarda cifradas; leer y adjuntar desde `/backups` está
+permitido, pero crear o reemplazar archivos en esa carpeta o sus descendientes
+se rechaza en el servidor. Leer/proponer texto conserva el límite de 512 KiB y
+el listado de carpeta el de 2 MiB. Esta versión no incluye borrado, movimientos,
+edición colaborativa ni sincronización en segundo plano.
 
 Desvincular elimina las credenciales guardadas y las propuestas, e intenta
 revocar la credencial en Nextcloud. Si la revocación remota falla, el panel lo

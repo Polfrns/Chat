@@ -1,5 +1,13 @@
 const { randomUUID } = require('crypto');
-const { NextcloudWebDAV, NextcloudError, filePath, MAX_FILE_BYTES, MAX_TEXT_BYTES } = require('./webdav');
+const {
+  NextcloudWebDAV,
+  NextcloudError,
+  filePath,
+  assertWritablePath,
+  isReadOnlyPath,
+  MAX_FILE_BYTES,
+  MAX_TEXT_BYTES,
+} = require('./webdav');
 const store = require('./store');
 
 const PROPOSAL_TTL_MS = 10 * 60 * 1000;
@@ -110,7 +118,7 @@ class NextcloudService {
   /** @param {NextcloudIdentity} identity @param {NextcloudWriteInput} input */
   async propose(identity, { conversationId, path, mode, buffer, contentType, expectedEtag, text = false, sourceName }) {
     if (typeof conversationId !== 'string' || !conversationId || conversationId.length > 100) throw new NextcloudError('A conversation is required');
-    path = filePath(path);
+    path = assertWritablePath(path);
     if (!['create', 'replace'].includes(mode)) throw new NextcloudError('Invalid write mode');
     if (!Buffer.isBuffer(buffer) || buffer.length > MAX_FILE_BYTES) throw new NextcloudError('File exceeds 8 MiB', 413);
     if (text && buffer.length > MAX_TEXT_BYTES) throw new NextcloudError('Text exceeds 512 KiB', 413);
@@ -132,7 +140,20 @@ class NextcloudService {
 
   async publicProposal(proposal) {
     const payload = await this.repository.unseal(proposal.payload);
-    return { id: proposal.id, conversationId: proposal.conversationId, path: proposal.path, mode: proposal.mode, bytes: proposal.bytes, status: proposal.status, error: proposal.error, expiresAt: proposal.expiresAt, before: payload.before, after: payload.after, sourceName: payload.sourceName };
+    return {
+      id: proposal.id,
+      conversationId: proposal.conversationId,
+      path: proposal.path,
+      mode: proposal.mode,
+      bytes: proposal.bytes,
+      status: proposal.status,
+      error: proposal.error,
+      expiresAt: proposal.expiresAt,
+      before: payload.before,
+      after: payload.after,
+      sourceName: payload.sourceName,
+      readOnly: isReadOnlyPath(proposal.path),
+    };
   }
 
   async pending(identity, conversationId) {
@@ -158,6 +179,7 @@ class NextcloudService {
     if (!proposal) throw new NextcloudError('Proposal not found, expired or already decided', 409);
     if (!approve) return { id, status: 'rejected' };
     try {
+      assertWritablePath(proposal.path);
       const account = await this.account(identity);
       if (account.revision !== proposal.revision) throw new NextcloudError('The linked account changed; propose the operation again', 409);
       const payload = await this.repository.unseal(proposal.payload);

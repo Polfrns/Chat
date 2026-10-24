@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { apiBaseUrl, request } from 'librechat-data-provider';
+import { markNextcloudAttachment } from 'librechat-data-provider';
 import type { NextcloudEntry, NextcloudProposal, NextcloudStatus } from 'librechat-data-provider';
 
 const base = () => `${apiBaseUrl()}/api/nextcloud`;
@@ -13,6 +14,12 @@ export const nextcloud = {
   decide: (id: string, approve: boolean): Promise<{ status: string }> => request.post(`${base()}/proposals/${encodeURIComponent(id)}/decision`, { approve }),
   download: async (entry: NextcloudEntry): Promise<File> => {
     const result = await axios.get<Blob>(`${base()}/download?path=${encodeURIComponent(entry.path)}`, { responseType: 'blob' });
-    return new File([result.data], entry.name, { type: result.headers['x-nextcloud-content-type'] || 'application/octet-stream' });
+    const contentType = (result.headers['x-nextcloud-content-type'] || 'application/octet-stream')
+      .split(';', 1)[0]
+      .trim()
+      .toLowerCase();
+    return markNextcloudAttachment(new File([result.data], entry.name, {
+      type: contentType,
+    }));
   },
 };

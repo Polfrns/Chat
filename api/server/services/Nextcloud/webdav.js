@@ -2,9 +2,12 @@ const { XMLParser, XMLValidator } = require('fast-xml-parser');
 
 // Encrypted proposal bodies must fit in a MongoDB document, including base64 overhead.
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
+// Matches this deployment's serverFileSizeLimit; endpoint-specific upload caps can be lower.
+const MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024;
 const MAX_TEXT_BYTES = 512 * 1024;
 const MAX_LIST_BYTES = 2 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 30000;
+const FILE_DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000;
 
 class NextcloudError extends Error {
   constructor(message, status = 400) {
@@ -33,6 +36,19 @@ function filePath(value = '', allowRoot = false) {
   }
   const normalized = segments.filter(Boolean).join('/');
   if (!normalized && !allowRoot) throw new NextcloudError('A file path is required');
+  return normalized;
+}
+
+function isReadOnlyPath(value) {
+  const normalized = filePath(value, true);
+  return normalized.split('/')[0]?.toLowerCase() === 'backups';
+}
+
+function assertWritablePath(value) {
+  const normalized = filePath(value);
+  if (isReadOnlyPath(normalized)) {
+    throw new NextcloudError('The /backups folder is read-only', 403);
+  }
   return normalized;
 }
 
@@ -71,13 +87,13 @@ class NextcloudWebDAV {
   }
 
   /** The fixed administrator URL is the only destination; redirects never receive credentials. */
-  async request(url, options = {}, credentials) {
+  async request(url, options = {}, credentials, timeoutMs = REQUEST_TIMEOUT_MS) {
     let response;
     try {
       response = await this.transport(this.trustedUrl(url), {
         ...options,
         redirect: 'manual',
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
         headers: {
           'User-Agent': 'Roko Nextcloud',
           ...options.headers,
@@ -179,17 +195,29 @@ class NextcloudWebDAV {
       const statuses = Array.isArray(item.propstat) ? item.propstat : [item.propstat];
       const properties = statuses.find((entry) => /\s200\s/.test(entry?.status))?.prop;
       if (!properties) continue;
-      entries.push({ path: relative, name: relative.split('/').pop(), directory: properties.resourcetype?.collection != null, bytes: Number(properties.getcontentlength) || 0, etag: properties.getetag || '' });
+      const resourceType = properties.resourcetype;
+      const hasCollectionMarker = resourceType != null && typeof resourceType === 'object'
+        && Object.prototype.hasOwnProperty.call(resourceType, 'collection');
+      entries.push({
+        path: relative,
+        name: relative.split('/').pop(),
+        directory: hasCollectionMarker || href.pathname.endsWith('/'),
+        bytes: Number(properties.getcontentlength) || 0,
+        etag: properties.getetag || '',
+      });
     }
     return entries;
   }
 
   async read(credentials, path, limit = MAX_FILE_BYTES) {
-    const response = await this.checked(await this.request(this.url(credentials, filePath(path)), {}, credentials));
+    const response = await this.checked(await this.request(
+      this.url(credentials, filePath(path)), {}, credentials, limit > MAX_FILE_BYTES ? FILE_DOWNLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+    ));
     return { buffer: await boundedBody(response, limit), etag: response.headers.get('etag') || '', contentType: response.headers.get('content-type') || 'application/octet-stream' };
   }
 
   async write(credentials, path, buffer, contentType, etag) {
+    path = assertWritablePath(path);
     if (buffer.length > MAX_FILE_BYTES) throw new NextcloudError('File exceeds 8 MiB', 413);
     if (etag && (!/^"[^\r\n"]*"$/.test(etag))) throw new NextcloudError('A strong ETag is required to replace a file');
     const response = await this.checked(await this.request(this.url(credentials, filePath(path)), {
@@ -206,4 +234,15 @@ class NextcloudWebDAV {
   }
 }
 
-module.exports = { NextcloudWebDAV, NextcloudError, filePath, serverUrl, boundedBody, MAX_FILE_BYTES, MAX_TEXT_BYTES };
+module.exports = {
+  NextcloudWebDAV,
+  NextcloudError,
+  filePath,
+  isReadOnlyPath,
+  assertWritablePath,
+  serverUrl,
+  boundedBody,
+  MAX_FILE_BYTES,
+  MAX_DOWNLOAD_BYTES,
+  MAX_TEXT_BYTES,
+};

@@ -14,6 +14,8 @@ import {
   excelMimeTypes,
   EToolResources,
   fileConfig as defaultFileConfig,
+  markNextcloudAttachment,
+  NEXTCLOUD_ATTACHMENT_SOURCE,
 } from 'librechat-data-provider';
 import type { TFile, EndpointFileConfig, FileConfig } from 'librechat-data-provider';
 import type { QueryClient } from '@tanstack/react-query';
@@ -270,11 +272,25 @@ export const validateFiles = ({
     return false;
   }
 
+  let mimeTypesToCheck = supportedMimeTypes;
+  if (toolResource === EToolResources.context && !isPermissiveMimeConfig(supportedMimeTypes)) {
+    mimeTypesToCheck = [
+      ...(fileConfig?.text?.supportedMimeTypes || []),
+      ...(fileConfig?.ocr?.supportedMimeTypes || []),
+      ...(fileConfig?.stt?.supportedMimeTypes || []),
+    ];
+  }
+
   for (let i = 0; i < fileList.length; i++) {
     let originalFile = fileList[i];
-    const fileType =
-      inferMimeType(originalFile.name, originalFile.type) ||
-      (isPermissiveMimeConfig(supportedMimeTypes) ? 'application/octet-stream' : '');
+    const isNextcloudAttachment =
+      (originalFile as File & { [NEXTCLOUD_ATTACHMENT_SOURCE]?: true })[NEXTCLOUD_ATTACHMENT_SOURCE] === true;
+    const inferredFileType = inferMimeType(originalFile.name, originalFile.type);
+    const inferredFileTypeIsSupported =
+      inferredFileType != null && checkType(inferredFileType, mimeTypesToCheck);
+    const fileType = isNextcloudAttachment && !inferredFileTypeIsSupported
+      ? 'application/octet-stream'
+      : inferredFileType || (isPermissiveMimeConfig(supportedMimeTypes) ? 'application/octet-stream' : '');
 
     // Check if the file type is still empty after the extension check
     if (!fileType) {
@@ -285,17 +301,8 @@ export const validateFiles = ({
     // Replace empty type with inferred type
     if (originalFile.type !== fileType) {
       const newFile = new File([originalFile], originalFile.name, { type: fileType });
-      originalFile = newFile;
-      fileList[i] = newFile;
-    }
-
-    let mimeTypesToCheck = supportedMimeTypes;
-    if (toolResource === EToolResources.context && !isPermissiveMimeConfig(supportedMimeTypes)) {
-      mimeTypesToCheck = [
-        ...(fileConfig?.text?.supportedMimeTypes || []),
-        ...(fileConfig?.ocr?.supportedMimeTypes || []),
-        ...(fileConfig?.stt?.supportedMimeTypes || []),
-      ];
+      originalFile = isNextcloudAttachment ? markNextcloudAttachment(newFile) : newFile;
+      fileList[i] = originalFile;
     }
 
     if (!checkType(originalFile.type, mimeTypesToCheck)) {

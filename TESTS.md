@@ -186,6 +186,10 @@ están en `scratchpad/run-all-tests.cjs` y `scratchpad/summarize-all-tests.cjs`.
 - `AuthService.spec.js`: casos adicionales para creación y renovación de la
   sesión persistente conservando el mecanismo existente de JWT de acceso.
 
+La cobertura existente no prueba la detección de carpetas DAV por barra final,
+el límite de descarga ampliado, el fallback MIME genérico ni el bloqueo de
+escrituras en `/backups`.
+
 Ejecución del 24 de octubre de 2026 sobre el checkout de trabajo, sin identificar
 revisión Git porque no se han ejecutado comandos Git: Windows, Node 24.22.1,
 npm 11.19.1. `npm run build:packages` pasó. La selección siguiente pasó con

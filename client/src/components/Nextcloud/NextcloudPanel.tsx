@@ -36,8 +36,9 @@ function WriteProposal({ proposal, onDecision }: WriteProposalProps) {
       {proposal.before != null && <details><summary>Contenido actual</summary><pre className="max-h-48 overflow-auto whitespace-pre-wrap text-xs">{proposal.before}</pre></details>}
       {proposal.after != null && <details open><summary>Contenido propuesto</summary><pre className="max-h-48 overflow-auto whitespace-pre-wrap text-xs">{proposal.after}</pre></details>}
       {proposal.after == null && <p className="text-sm">Archivo del chat: {proposal.sourceName}. No hay una vista previa de sus cambios.</p>}
+      {proposal.readOnly && <p className="text-sm text-text-secondary">Esta ruta pertenece a /backups y es de solo lectura.</p>}
       <div className="flex gap-2">
-        <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void decide(true)}>Aprobar escritura</button>
+        {!proposal.readOnly && <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void decide(true)}>Aprobar escritura</button>}
         <button className="btn btn-neutral" type="button" disabled={busy} onClick={() => void decide(false)}>Rechazar</button>
       </div>
     </section>
@@ -60,13 +61,17 @@ function NextcloudFiles({ entries, busy, onDirectory, onAttach }: NextcloudFiles
             type="button"
             className="flex w-full items-center gap-2 rounded p-2 text-left hover:bg-surface-hover"
             disabled={busy}
-            onClick={() => entry.directory ? onDirectory(entry.path) : void onAttach(entry)}
+            onClick={() => {
+              if (entry.directory) onDirectory(entry.path);
+              else void onAttach(entry);
+            }}
+            aria-label={entry.directory ? `Abrir carpeta ${entry.name}` : `Adjuntar ${entry.name}`}
           >
             {entry.directory
               ? <Folder className="size-4 shrink-0" />
               : <FileText className="size-4 shrink-0" />}
             <span className="break-all">{entry.name}</span>
-            {!entry.directory && <span className="ml-auto text-xs">Adjuntar</span>}
+            <span className="ml-auto text-xs">{entry.directory ? 'Abrir carpeta' : 'Adjuntar'}</span>
           </button>
         </li>
       ))}
@@ -136,8 +141,8 @@ export default function NextcloudPanel({ conversationId, onAttach, disabled }: N
   const attach = async (entry: NextcloudEntry) => {
     setBusy(true);
     setError('');
-    try { await onAttach([await nextcloud.download(entry)]); setNotice(`Archivo enviado para adjuntar: ${entry.path}`); }
-    catch { setError('No se pudo adjuntar el archivo. Comprueba los permisos y el límite de tamaño.'); }
+    try { await onAttach([await nextcloud.download(entry)]); }
+    catch { setError('No se pudo adjuntar el archivo. Comprueba los permisos y los límites de tamaño y formato del modelo.'); }
     finally { setBusy(false); }
   };
   const decide = async (id: string, approve: boolean) => {
@@ -208,7 +213,7 @@ export default function NextcloudPanel({ conversationId, onAttach, disabled }: N
                 {files.isError && <p role="alert">No se pudo abrir esta carpeta.</p>}
                 {files.data?.files.length === 0 && <p>Carpeta vacía.</p>}
                 <NextcloudFiles entries={files.data?.files ?? []} busy={busy} onDirectory={setPath} onAttach={attach} />
-                <p className="text-xs text-text-secondary">Puedes pedir en el chat que guarde una copia o proponga cambios en un original. Cada escritura aparecerá aquí para tu aprobación.</p>
+                <p className="text-xs text-text-secondary">Puedes pedir en el chat que guarde una copia o proponga cambios en un original. Cada escritura aparecerá aquí para tu aprobación. /backups y su contenido son de solo lectura.</p>
               </>
             ) : <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void connect()}>Vincular mi cuenta de Nextcloud</button>}
             {loginUrl && <a className="block underline" href={loginUrl} target="_blank" rel="noopener noreferrer">Autorizar el acceso en Nextcloud</a>}

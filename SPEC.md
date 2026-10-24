@@ -115,11 +115,17 @@ El flujo anónimo está ligado a un nonce HttpOnly del navegador y al tenant.
 La verificación adicional de Roko se mantiene al emitir su sesión.
 
 `nextcloud_files` ofrece lectura y propuestas de escritura a los chats de
-agentes. El panel permite navegar, adjuntar copias y aprobar escrituras. Una
-propuesta guarda el contenido cifrado y la revisión de la cuenta, caduca y se
-consume atómicamente una sola vez. Las copias no sobrescriben y los reemplazos
-exigen un ETag fuerte. El modelo no puede aprobar mediante sus herramientas.
-No hay sincronización automática entre copias del chat, Nextcloud y filestore.
+agentes. El panel reconoce colecciones DAV para navegar y adjunta archivos
+individuales, incluidos tipos no reconocidos que se etiquetan como binarios
+genéricos. La descarga desde Nextcloud admite hasta 100 MiB, sujeta además a
+los límites de tamaño y tipo del endpoint/modelo. `/backups` y sus descendientes
+permiten leer y adjuntar, pero rechazan escrituras tanto al proponer como al
+ejecutar una propuesta. Las escrituras restantes se limitan a 8 MiB para caber
+en el documento cifrado de MongoDB. Una propuesta guarda la revisión de la
+cuenta, caduca y se consume atómicamente una sola vez. Las copias no sobrescriben
+y los reemplazos exigen un ETag fuerte. El modelo no puede aprobar mediante sus
+herramientas. No hay sincronización automática entre copias del chat, Nextcloud
+y filestore.
 
 `PERSISTENT_SESSIONS=true`, activado en el override Docker, conserva sesiones
 locales/Nextcloud sin caducidad práctica por inactividad (fecha del año 9999),
