@@ -29,13 +29,17 @@ jest.mock('@librechat/data-schemas', () => ({
   },
 }));
 
+const mockAbortOwnedGeneration = jest.fn();
+
 jest.mock('@librechat/api', () => ({
   countTokens: jest.fn().mockResolvedValue(100),
   isEnabled: jest.fn().mockReturnValue(false),
   sendEvent: jest.fn(),
   GenerationJobManager: {
+    getJob: jest.fn(),
     abortJob: jest.fn(),
   },
+  abortOwnedGeneration: (...args) => mockAbortOwnedGeneration(...args),
   recordCollectedUsage: mockRecordCollectedUsage,
   sanitizeMessageForTransmit: jest.fn((msg) => msg),
 }));
@@ -73,7 +77,9 @@ jest.mock('./abortRun', () => ({
   abortRun: jest.fn(),
 }));
 
-const { spendCollectedUsage } = require('./abortMiddleware');
+const { GenerationJobManager } = require('@librechat/api');
+const db = require('~/models');
+const { spendCollectedUsage, handleAbort } = require('./abortMiddleware');
 
 describe('abortMiddleware - spendCollectedUsage', () => {
   beforeEach(() => {
@@ -235,5 +241,30 @@ describe('abortMiddleware - spendCollectedUsage', () => {
       expect(resolved).toBe(true);
       expect(collectedUsage.length).toBe(0);
     });
+  });
+});
+
+describe('abortMiddleware - stop ownership', () => {
+  const notFound = { success: false, jobData: null, content: [], text: '', collectedUsage: [] };
+  const buildReq = (user) => ({ body: { abortKey: 'convo-123:msg', endpoint: 'agents' }, user });
+  const buildRes = () => {
+    const res = { headersSent: false, send: jest.fn(), json: jest.fn(), end: jest.fn() };
+    res.status = jest.fn(() => res);
+    return res;
+  };
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('stops through the ownership check, never the raw job abort', async () => {
+    mockAbortOwnedGeneration.mockResolvedValue(notFound);
+    const user = { id: 'user-123', tenantId: 'tenant-a' };
+    const res = buildRes();
+
+    await handleAbort()(buildReq(user), res);
+
+    expect(mockAbortOwnedGeneration).toHaveBeenCalledWith('convo-123', user, GenerationJobManager);
+    expect(GenerationJobManager.abortJob).not.toHaveBeenCalled();
+    expect(db.saveMessage).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(204);
   });
 });

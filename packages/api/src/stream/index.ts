@@ -16,6 +16,8 @@ export type {
 export { createStreamServices } from './createStreamServices';
 export type { StreamServicesConfig, StreamServices } from './createStreamServices';
 export { filterPersistableAbortContent, hasPersistableAbortContent } from './abortContent';
+export { abortOwnedGeneration } from './ownedGeneration';
+export type { OwnedGenerationControl } from './ownedGeneration';
 
 // Implementations (for advanced use cases)
 export { InMemoryJobStore } from './implementations/InMemoryJobStore';
