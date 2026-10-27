@@ -11,4 +11,4 @@ LANGFUSE_TRACING_ENABLED=true node --test scripts/otel-export.test.cjs scripts/i
 (cd packages/api && ../../node_modules/.bin/jest --runInBand --coverage=false src/utils/rokoBridge.spec.ts src/telemetry/sdk.spec.ts \
   src/skills/__tests__/deletionRequests.test.ts)
 (cd api && ../node_modules/.bin/jest --runInBand --coverage=false server/utils/__tests__/runMiddlewareChain.spec.js \
-  app/clients/tools/structured/specs/SkillLibrary.spec.js server/routes/__tests__/skills-library.spec.js)
+  app/clients/tools/structured/specs/SkillLibrary.spec.js)

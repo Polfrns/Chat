@@ -23,7 +23,7 @@ La imagen de producción depende de esa etapa y de la compilación del frontend.
 | `packages/api/src/skills/__tests__/deletionRequests.test.ts` | Una solicitud de borrado de skill solo la ve y decide su usuario; la decisión no cambia y sin respuesta no hay decisión |
 | `api/server/utils/__tests__/runMiddlewareChain.spec.js` | Los guards de ruta se ejecutan en orden, uno que responde detiene la cadena y los errores se propagan |
 | `api/app/clients/tools/structured/specs/SkillLibrary.spec.js` | `skill_library` solo borra tras aprobación explícita (rechazo o timeout conservan), no abre popup para skills inaccesibles y edita con control de versión |
-| `api/server/routes/__tests__/skills-library.spec.js` | Con Mongo y permisos reales: rutas REST de skills tras el refactor, el chat crea/edita, el borrado solo ocurre tras aprobar el popup, otro usuario no ve ni puede pedir borrar skills ajenas ni decidir solicitudes ajenas |
+| `api/server/routes/__tests__/skills-library.spec.js` (fuera de CI: necesita `mongodb-memory-server`, sin binarios para la imagen Alpine) | Con Mongo y permisos reales: rutas REST de skills tras el refactor, el chat crea/edita, el borrado solo ocurre tras aprobar el popup, otro usuario no ve ni puede pedir borrar skills ajenas ni decidir solicitudes ajenas |
 | `SkillDeletionRequests.spec.tsx` | El popup muestra la skill y envía la decisión explícita del usuario |
 | `useSubmitMessage.spec.ts` | Un envío bloqueado se propaga a quien llama (dictado) para que conserve el texto |
 
