@@ -36,7 +36,7 @@ jest.mock('../Part', () => ({
   }) => (
     <div data-testid={part.type} data-hide-attachments={String(!!hideAttachments)}
       data-inline={String(!!inActivityGroup)}>
-      {part.type === ContentTypes.TEXT && typeof part.text === 'string' ? part.text : part.type}
+      {part.type === 'text' && typeof part.text === 'string' ? part.text : part.type}
     </div>
   ),
 }));

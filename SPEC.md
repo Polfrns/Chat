@@ -135,10 +135,14 @@ Configuración, límites y rutas de uso: [NEXTCLOUD.md](NEXTCLOUD.md).
 
 ## Modelos y Bridge
 
-Los endpoints personalizados usan seis alias: `gpt-codex`, `gpt-codex-fast`,
-`gpt-codex-deep`, `claude-max`, `claude-max-fast`, `claude-max-deep`. Comparten
-una matriz de capacidades para parámetros y normalización; los valores efectivos
-se incluyen en el contexto firmado. Véase [CLI-BRIDGE.md](CLI-BRIDGE.md).
+El endpoint personalizado Claude Max usa los alias `claude-max`, `claude-max-fast`
+y `claude-max-deep`. El endpoint ChatGPT Codex está retirado de la configuración;
+la matriz de capacidades conserva los alias `gpt-codex*` para que las
+conversaciones antiguas se normalicen igual. Los valores efectivos se incluyen en
+el contexto firmado. Véase [CLI-BRIDGE.md](CLI-BRIDGE.md).
+
+Google (Gemini API) es un endpoint nativo de LibreChat. Requiere `google` en
+`ENDPOINTS` y `GOOGLE_KEY`; las model specs usan solo modelos del nivel gratuito.
 
 El adaptador solo firma solicitudes a la URL fija configurada y rechaza
 redirecciones. Firma usuario, tenant, conversación, modelo, opciones y tiempo.
@@ -153,20 +157,29 @@ integración distinta del endpoint personalizado Claude Max que usa Bridge.
 ### Memorias y herramientas del chat
 
 `runtime-config.yaml` habilita memorias personales con actualización automática
-mediante el proveedor `ChatGPT Codex`, modelo `gpt-codex-fast`. La ejecución real
-requiere que el Bridge admita las llamadas de herramientas del agente de memoria.
-Se mantienen los controles de personalización y la gestión manual de memorias.
+mediante el proveedor `Claude Max`, modelo `claude-max-fast`. Las instrucciones
+del agente aplican en el mismo turno lo que el usuario pida recordar, cambiar u
+olvidar. La ejecución usa el relay de herramientas del Bridge. Se mantienen los
+controles de personalización y la gestión manual de memorias.
+
+El chat recibe la herramienta `skill_library` (listar, leer, crear, editar y
+eliminar skills) cuando la interfaz de skills permite crear. Cada operación
+ejecuta la misma cadena de middlewares que la API REST de skills
+(`api/server/services/Skills/crud.js`): permisos de rol, ACL por skill y
+validación son idénticos a la UI. Eliminar bloquea la herramienta hasta que el
+usuario aprueba un popup (`SkillDeletionRequests`); rechazar, cerrar o no
+responder en 120 s conserva la skill.
 
 Los menús habilitan búsqueda web, búsqueda de archivos, ejecución de código,
 artifacts, skills y gestión de MCP. Los parámetros readonly conservan su control
 visible en gris, deshabilitado y sin un setter efectivo.
 
 El botón Web Search y el parámetro de endpoints personalizados consultan el
-mismo estado: `conversation.web_search` para Codex Bridge y
+mismo estado: `conversation.web_search` para los modelos del Bridge y
 `ephemeralAgent.web_search` para otros proveedores personalizados, como LM Studio.
-Claude Bridge conserva el control deshabilitado según su matriz de capacidades.
-La búsqueda mediante herramienta mantiene la comprobación de credenciales de
-LibreChat; Codex no necesita las credenciales de Serper/Jina para su búsqueda nativa.
+Claude Bridge usa la búsqueda nativa de Claude (WebSearch y WebFetch), sin
+credenciales de Serper/Jina; WebFetch solo alcanza direcciones públicas. La
+búsqueda mediante herramienta mantiene la comprobación de credenciales de LibreChat.
 
 Compose proporciona un valor por defecto para `LMSTUDIO_BASE_URL` que conserva
 la dirección anterior. `LIBRECHAT_CODE_BASEURL` permite conectar el sandbox

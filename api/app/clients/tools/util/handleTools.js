@@ -18,6 +18,7 @@ const {
   Permissions,
   EToolResources,
   PermissionTypes,
+  SKILL_LIBRARY_TOOL_NAME,
 } = require('librechat-data-provider');
 const {
   availableTools,
@@ -243,6 +244,8 @@ const loadTools = async ({
     },
     deliver_filestore_file: async () => createDeliverFilestoreFileTool({ req: options.req }),
     nextcloud_files: async () => require('../structured/Nextcloud').createNextcloudTool({ req: options.req }),
+    [SKILL_LIBRARY_TOOL_NAME]: async () =>
+      require('../structured/SkillLibrary').createSkillLibraryTool({ req: options.req }),
   };
 
   const requestedTools = {};

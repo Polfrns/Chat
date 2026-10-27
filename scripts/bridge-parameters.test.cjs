@@ -43,7 +43,8 @@ test('changing from Codex to Claude removes stale controls without mutating save
     text: { verbosity: 'low' }, cli_options: { web_search: true }, model: 'claude-max',
   };
   const before = JSON.stringify(saved);
-  assert.deepEqual(normalizeBridgeParameters('claude-max', saved), { model: 'claude-max', cli_options: {} });
+  assert.deepEqual(normalizeBridgeParameters('claude-max', saved),
+    { model: 'claude-max', cli_options: { web_search: true } });
   assert.equal(JSON.stringify(saved), before);
   assert.equal(normalizeBridgeParameters('ordinary-api', saved), saved);
   for (const malformed of [null, [], 'high']) {
@@ -79,7 +80,7 @@ test('signed options match the provider and outgoing JSON is compatible with old
     modelKwargs: { reasoning_summary: 'detailed', verbosity: 'low', cli_options: { web_search: true } } };
   applyRokoBridgeContext({ llmConfig: config, user: { id: 'u' }, conversationId: 'c', env });
   const context = JSON.parse(Buffer.from(config.configuration.defaultHeaders['X-Roko-Context'], 'base64url'));
-  assert.deepEqual(context.options, { reasoning_effort: 'high' });
+  assert.deepEqual(context.options, { reasoning_effort: 'high', web_search: true });
   assert.deepEqual(original, { baseURL, defaultHeaders: { 'X-Existing': 'kept' } });
   const actualFetch = global.fetch;
   const calls = [];
@@ -119,7 +120,8 @@ test('model-aware settings separate Default from Auto and preserve valid configu
   assert.equal(codex[3].readonly, true);
   const claude = applyModelAwareDefaults(settings, 'custom', 'claude-max');
   assert.equal(claude[2].default, '');
-  for (const index of [0, 1, 3, 4]) assert.equal(claude[index].readonly, true);
+  for (const index of [0, 1, 3]) assert.equal(claude[index].readonly, true);
+  assert.equal(claude[4].readonly, undefined);
 });
 
 test('explicit summary none disables summary display while Auto and the preset remain distinct', async () => {
@@ -164,8 +166,8 @@ test('the real LLM constructor normalizes both protocols before sending to eithe
         assert.equal(kwargs.verbosity, undefined);
         assert.equal(kwargs.reasoning_summary, undefined);
         assert.equal(kwargs.reasoning?.summary, undefined);
-        assert.equal(kwargs.cli_options?.web_search, undefined);
       }
+      assert.equal(kwargs.cli_options?.web_search ?? kwargs.web_search ?? llmConfig.web_search, true);
     }
   }
   const direct = getConfig({ apiKey: 'test', endpoint: 'openAI', streaming: true,

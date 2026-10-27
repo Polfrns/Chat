@@ -26,6 +26,14 @@ jest.mock('~/hooks/AuthContext', () => ({
   useAuthContext: jest.fn(),
 }));
 
+jest.mock('~/hooks', () => ({
+  useLocalize: () => (key: string) => key,
+}));
+
+jest.mock('~/data-provider', () => ({
+  useCreateSessionMutation: () => ({ mutateAsync: jest.fn(async () => ({ _id: 'session-1' })) }),
+}));
+
 jest.mock('~/hooks/Messages/useLatestMessage', () => ({
   useLatestMessage: jest.fn(),
 }));
@@ -35,6 +43,7 @@ jest.mock('~/store', () => ({
   default: {
     autoSendPrompts: 'autoSendPrompts',
     activePromptByIndex: jest.fn(() => 'activePromptByIndex'),
+    conversationByIndex: jest.fn(() => 'conversationByIndex'),
   },
 }));
 
@@ -69,14 +78,14 @@ describe('useSubmitMessage', () => {
     });
   });
 
-  it('propagates blocked submits so direct callers can preserve their text', () => {
+  it('propagates blocked submits so direct callers can preserve their text', async () => {
     ask.mockReturnValue(false);
 
     const { result } = renderHook(() => useSubmitMessage());
 
     let submitted: false | void = undefined;
-    act(() => {
-      submitted = result.current.submitMessage({ text: 'dictated follow-up' });
+    await act(async () => {
+      submitted = await result.current.submitMessage({ text: 'dictated follow-up' });
     });
 
     expect(submitted).toBe(false);

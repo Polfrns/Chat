@@ -20,6 +20,12 @@ La imagen de producción depende de esa etapa y de la compilación del frontend.
 | `BridgeToolReasoning.test.tsx` | Presentación de estados, resultados, cancelación, reintentos y tiempo disponible |
 | `packages/api/src/utils/rokoBridge.spec.ts` | Adaptación del contexto y comportamiento del cliente Bridge |
 | `packages/api/src/telemetry/sdk.spec.ts` | Inicialización y opciones de privacidad de la telemetría |
+| `packages/api/src/skills/__tests__/deletionRequests.test.ts` | Una solicitud de borrado de skill solo la ve y decide su usuario; la decisión no cambia y sin respuesta no hay decisión |
+| `api/server/utils/__tests__/runMiddlewareChain.spec.js` | Los guards de ruta se ejecutan en orden, uno que responde detiene la cadena y los errores se propagan |
+| `api/app/clients/tools/structured/specs/SkillLibrary.spec.js` | `skill_library` solo borra tras aprobación explícita (rechazo o timeout conservan), no abre popup para skills inaccesibles y edita con control de versión |
+| `api/server/routes/__tests__/skills-library.spec.js` | Con Mongo y permisos reales: rutas REST de skills tras el refactor, el chat crea/edita, el borrado solo ocurre tras aprobar el popup, otro usuario no ve ni puede pedir borrar skills ajenas ni decidir solicitudes ajenas |
+| `SkillDeletionRequests.spec.tsx` | El popup muestra la skill y envía la decisión explícita del usuario |
+| `useSubmitMessage.spec.ts` | Un envío bloqueado se propaga a quien llama (dictado) para que conserve el texto |
 
 Los dos tests de exportación activan tracing sobre receptores de prueba; las
 otras pruebas Node lo desactivan. No requieren las credenciales de Langfuse de
@@ -36,7 +42,7 @@ Ejecutar el script en un checkout sin dependencias no equivale a ejecutar la CI.
 
 ## Actividad y tiempo general
 
-`activityParts.test.ts` comprueba la separación entre actividad y respuesta:
+`responseParts.test.ts` comprueba la separación entre actividad y respuesta:
 comentario, THINK y herramientas se agrupan; texto final, errores, handoffs y
 adjuntos permanecen visibles. `ResponseActivity.test.tsx` comprueba apertura,
 actualizaciones y plegado al finalizar. `ContentParts.integration.test.ts`
@@ -212,12 +218,12 @@ para Windows/Node 24.22.1 ni Visual C++ instalado). Se completó mediante
 Esta preparación basta para los paquetes y simulaciones citados; no acredita
 el funcionamiento del servicio SQLite heredado ni de otros scripts de instalación.
 
-`npm run typecheck --workspace=@librechat/frontend` terminó con siete errores:
-firma asíncrona de envío en `ChatForm.tsx` y `useSubmitMessage.spec.ts`, tipo del
-fixture SUMMARY en `activityParts.test.ts`, imports sin default de `ActivityParts`
-en `ContentParts.integration.test.tsx`, `ContentParts.tsx` y `ParallelContent.tsx`,
-y un booleano opcional en `Parts/Reasoning.tsx`. Ningún diagnóstico señala los
-módulos nuevos de Nextcloud. No se modificaron esos archivos ajenos al cambio.
+`npm run typecheck --workspace=@librechat/frontend` terminaba con siete errores,
+corregidos el 27 de octubre de 2026. Los imports sin default de `ActivityParts`
+venían de `activityParts.ts`, que en sistemas de archivos sin distinción de
+mayúsculas resolvía antes que `ActivityParts.tsx`; ahora se llama
+`responseParts.ts`. `AudioRecorder` esperaba el resultado síncrono de un envío
+asíncrono y borraba el texto dictado aunque el envío se bloqueara; ahora lo espera.
 
 En esa primera ejecución Docker CLI estaba instalado, pero el motor aún no
 estaba arrancado. La ejecución amplia posterior sí utilizó contenedores de

@@ -1,4 +1,8 @@
 import { WebSearchToolDefinition, CalculatorToolDefinition } from '@librechat/agents';
+import {
+  SKILL_LIBRARY_TOOL_NAME,
+  SKILL_LIBRARY_TOOL_DESCRIPTION,
+} from 'librechat-data-provider';
 import { geminiToolkit } from '~/tools/toolkits/gemini';
 import { oaiToolkit } from '~/tools/toolkits/oai';
 
@@ -458,6 +462,38 @@ export const toolDefinitions: Record<string, ToolRegistryDefinition> = {
         mode: { type: 'string', enum: ['create', 'replace'] },
         expected_etag: { type: 'string', description: 'ETag from reading the original; required for replace' },
         proposal_id: { type: 'string' },
+      },
+      required: ['operation'],
+    },
+    toolType: 'builtin',
+  },
+  [SKILL_LIBRARY_TOOL_NAME]: {
+    name: SKILL_LIBRARY_TOOL_NAME,
+    description: SKILL_LIBRARY_TOOL_DESCRIPTION,
+    schema: {
+      type: 'object',
+      properties: {
+        operation: { type: 'string', enum: ['list', 'read', 'create', 'update', 'delete'] },
+        skill_id: {
+          type: 'string',
+          description: 'Skill id from list; required for read, update and delete',
+        },
+        search: { type: 'string', description: 'Filter for list' },
+        name: { type: 'string' },
+        description: {
+          type: 'string',
+          description: 'What the skill does and when it should be used',
+        },
+        body: { type: 'string', description: 'Complete Markdown instructions of the skill' },
+        always_apply: {
+          type: 'boolean',
+          description: 'Apply the skill in every chat without being invoked',
+        },
+        expected_version: {
+          type: 'integer',
+          minimum: 1,
+          description: 'Version from read; guards against overwriting newer edits',
+        },
       },
       required: ['operation'],
     },

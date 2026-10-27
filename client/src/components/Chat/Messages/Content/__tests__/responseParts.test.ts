@@ -1,7 +1,7 @@
 import { Constants, ContentTypes } from 'librechat-data-provider';
 import type { TMessageContentParts } from 'librechat-data-provider';
 import type { PartWithIndex } from '../ParallelContent';
-import { partitionResponseParts } from '../activityParts';
+import { partitionResponseParts } from '../responseParts';
 
 const text = (value: string): TMessageContentParts => ({ type: ContentTypes.TEXT, text: value });
 const tool = (name = 'list_files_mcp_drive'): TMessageContentParts => ({
@@ -37,7 +37,8 @@ describe('response activity partition', () => {
       tool(),
       { type: ContentTypes.ERROR, error: 'Request failed' } as TMessageContentParts,
       tool(`${Constants.LC_TRANSFER_TO_}another_agent`),
-      { type: ContentTypes.SUMMARY, content: 'Context summary' } as TMessageContentParts,
+      // Older summary shape (string content) still has to stay visible.
+      { type: ContentTypes.SUMMARY, content: 'Context summary' } as unknown as TMessageContentParts,
     ]);
     const result = partitionResponseParts(parts);
     expect(result.activity).toEqual([parts[0]]);

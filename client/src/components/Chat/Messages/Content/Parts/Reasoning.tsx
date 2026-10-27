@@ -95,7 +95,7 @@ const Reasoning = memo(({ reasoning, isLast, inline = false }: ReasoningProps) =
   if (inline) {
     return (
       <div className="my-2 text-sm text-text-secondary">
-        <Markdown content={reasoningText} isLatestMessage={effectiveIsSubmitting} />
+        <Markdown content={reasoningText} isLatestMessage={effectiveIsSubmitting === true} />
       </div>
     );
   }

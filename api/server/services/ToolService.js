@@ -50,6 +50,7 @@ const {
   actionDomainSeparator,
   defaultAgentCapabilities,
   validateAndParseOpenAPISpec,
+  SKILL_LIBRARY_TOOL_NAME,
 } = require('librechat-data-provider');
 const {
   createActionTool,
@@ -517,6 +518,7 @@ const nativeTools = new Set([
   'upload_chat_file',
   'deliver_filestore_file',
   'nextcloud_files',
+  SKILL_LIBRARY_TOOL_NAME,
 ]);
 
 /** Checks if a tool name is a known built-in tool */

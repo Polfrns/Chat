@@ -30,6 +30,7 @@ import {
   FilestoreRequestsListener,
   FilestoreCreationRequestDialog,
 } from '~/components/Sessions';
+import { SkillDeletionRequests } from '~/components/Skills';
 import { cn } from '~/utils';
 import store from '~/store';
 
@@ -141,6 +142,7 @@ function ChatView({ index = 0, project }: { index?: number; project?: TChatProje
               <FilestoreRequestsListener />
               <FilestoreAccessRequests />
               <FilestoreCreationRequestDialog />
+              <SkillDeletionRequests />
             </div>
           </Presentation>
         </AddedChatContext.Provider>

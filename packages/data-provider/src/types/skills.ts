@@ -22,6 +22,14 @@ export const SKILL_BODY_MAX_LENGTH = 100_000;
  */
 export const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
+/** Roko chat tool that edits the skill library; shared by the tool and its registry entry. */
+export const SKILL_LIBRARY_TOOL_NAME = 'skill_library';
+export const SKILL_LIBRARY_TOOL_DESCRIPTION =
+  "Manage the user's skill library (reusable instructions Roko applies in chats). Use it only when the user asks to create, change, list or remove skills. " +
+  `list/read show skills; create needs name (lowercase letters, digits and hyphens, max ${SKILL_NAME_MAX_LENGTH}), description (max ${SKILL_DESCRIPTION_MAX_LENGTH}; say when the skill applies) and body (Markdown instructions); ` +
+  'update changes only the fields you pass; delete always asks the user to confirm in a Roko popup and only removes the skill if they approve. ' +
+  'Never claim a deletion happened unless the result says deleted.';
+
 /**
  * Source of a skill — where its canonical definition came from.
  * `inline` means the skill was authored directly in LibreChat.

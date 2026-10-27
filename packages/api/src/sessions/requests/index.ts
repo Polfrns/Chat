@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { ioredisClient } from '../../cache/redisClients';
-import { createRequestNotifier } from './notifier';
+import { createRequestNotifier, waitForNotifiedValue } from './notifier';
 import { createRequestStore } from './store';
 
 /**
@@ -39,8 +39,6 @@ export interface FilestoreCreationRequestView {
 
 /** Slightly above the hooks' approval timeout so entries outlive a pending wait. */
 const TTL_SECONDS = 180;
-/** Backend safety re-check in case a pub/sub message is ever dropped. */
-const FALLBACK_POLL_MS = 5000;
 
 export interface FilestoreAccessRequestService {
   addRequest: (sessionId: string, payload: FilestoreAccessRequestPayload) => Promise<void>;
@@ -107,37 +105,11 @@ const creationStore = createRequestStore<
   ttlSeconds: TTL_SECONDS,
 });
 
-async function waitForDecision<R>(
+const waitForDecision = <R>(
   sessionId: string,
   read: () => Promise<R | null>,
   timeoutMs: number,
-): Promise<R | null> {
-  const immediate = await read();
-  if (immediate) {
-    return immediate;
-  }
-  return new Promise<R | null>((resolve) => {
-    let settled = false;
-    const finish = (value: R | null): void => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      unsubscribe();
-      clearInterval(poll);
-      clearTimeout(timer);
-      resolve(value);
-    };
-    const check = (): void => {
-      read()
-        .then((value) => value && finish(value))
-        .catch(() => undefined);
-    };
-    const unsubscribe = notifier.subscribe(sessionId, check);
-    const poll = setInterval(check, FALLBACK_POLL_MS);
-    const timer = setTimeout(() => finish(null), timeoutMs);
-  });
-}
+): Promise<R | null> => waitForNotifiedValue(notifier, sessionId, read, timeoutMs);
 
 export const filestoreAccessRequests: FilestoreAccessRequestService = {
   async addRequest(sessionId: string, payload: FilestoreAccessRequestPayload): Promise<void> {

@@ -2,7 +2,7 @@ import { memo, useCallback, useRef } from 'react';
 import { MicOff } from 'lucide-react';
 import { useToastContext, TooltipAnchor, ListeningIcon, Spinner } from '@librechat/client';
 import { useLocalize, useSpeechToText, useGetAudioSettings } from '~/hooks';
-import { globalAudioId, type TAskFunction } from '~/common';
+import { globalAudioId } from '~/common';
 import { useChatFormContext } from '~/Providers';
 import { cn } from '~/utils';
 
@@ -15,7 +15,8 @@ export default memo(function AudioRecorder({
   isSubmitting,
 }: {
   disabled: boolean;
-  ask: TAskFunction;
+  /** Resolves to false when the message was not sent, so the dictated text is kept. */
+  ask: (data: { text: string }) => false | void | Promise<false | void>;
   methods: ReturnType<typeof useChatFormContext>;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
   isSubmitting: boolean;
@@ -30,7 +31,7 @@ export default memo(function AudioRecorder({
   isSubmittingRef.current = isSubmitting;
 
   const onTranscriptionComplete = useCallback(
-    (text: string) => {
+    async (text: string) => {
       if (isSubmittingRef.current) {
         showToast({
           message: localize('com_ui_speech_while_submitting'),
@@ -49,7 +50,7 @@ export default memo(function AudioRecorder({
           isExternalSTT(speechToTextEndpoint) && existingTextRef.current
             ? `${existingTextRef.current} ${text}`
             : text;
-        const submitted = ask({ text: finalText });
+        const submitted = await ask({ text: finalText });
         if (submitted === false) {
           return;
         }

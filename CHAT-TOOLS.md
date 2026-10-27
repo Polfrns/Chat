@@ -18,17 +18,28 @@ su servicio correspondiente; LM Studio recibe sus definiciones y resultados.
 
 ## Memorias
 
-El agente configurado usa `ChatGPT Codex` / `gpt-codex-fast`, con las mismas
-credenciales del Bridge ya existentes. El Bridge debe poder devolver las
-llamadas de herramientas para que LibreChat actualice la memoria. Comprueba una
+El agente configurado usa `Claude Max` / `claude-max-fast`, con las mismas
+credenciales del Bridge ya existentes. Cuando el usuario pide recordar, cambiar
+u olvidar algo, el agente lo aplica en el mismo turno. Comprueba una
 actualización desde un chat y su aparición en la gestión de memorias.
 Los controles de personalización del usuario siguen vigentes.
 
+## Skills desde el chat
+
+La herramienta `skill_library` permite pedir al chat que liste, lea, cree o
+edite skills. Usa los mismos permisos y validaciones que la pantalla de Skills.
+Para eliminar una skill aparece un popup de confirmación: solo se borra si el
+usuario pulsa «Eliminar skill»; rechazar, cerrar o esperar 120 s la conserva.
+
 ## Búsqueda web
 
-Codex Bridge utiliza su parámetro nativo `web_search`. El botón y el panel de
-parámetros comparten ese valor. Claude Bridge lo muestra deshabilitado conforme
-a sus capacidades actuales.
+Claude Bridge utiliza su parámetro nativo `web_search`, que activa WebSearch y
+WebFetch de Claude. El botón y el panel de parámetros comparten ese valor.
+WebFetch rechaza direcciones privadas, locales e internas.
+
+Gemini dispone de búsqueda con Google en su panel de parámetros. El botón de
+búsqueda web de la barra usa para Gemini la herramienta de LibreChat, que
+necesita las credenciales de Serper/Jina descritas abajo.
 
 LM Studio utiliza la herramienta de LibreChat. Completa `SERPER_API_KEY` y
 `JINA_API_KEY` en `.env`, o introduce las credenciales desde la configuración de

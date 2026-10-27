@@ -17,9 +17,14 @@ export interface RequestNotifier {
   subscribe: (sessionId: string, handler: () => void) => () => void;
 }
 
-const CHANNEL = 'roko:session-requests';
+const SESSION_CHANNEL = 'roko:session-requests';
+/** Backend safety re-check in case a pub/sub message is ever dropped. */
+const FALLBACK_POLL_MS = 5000;
 
-export function createRequestNotifier(redis: Redis | Cluster | null): RequestNotifier {
+export function createRequestNotifier(
+  redis: Redis | Cluster | null,
+  channel: string = SESSION_CHANNEL,
+): RequestNotifier {
   const local = new EventEmitter();
   /** One listener per active SSE stream / blocked hook — no fixed ceiling. */
   local.setMaxListeners(0);
@@ -37,14 +42,51 @@ export function createRequestNotifier(redis: Redis | Cluster | null): RequestNot
    *  commands. Redis delivers each publish to every subscriber including our own,
    *  so the publishing instance reacts via this same path (no extra local emit). */
   const sub = redis.duplicate();
-  sub.subscribe(CHANNEL).catch((err) => logger.error('[roko] notifier subscribe failed', err));
+  sub.subscribe(channel).catch((err) => logger.error('[roko] notifier subscribe failed', err));
   sub.on('message', (_channel: string, sessionId: string) => local.emit(sessionId));
 
   const publish = (sessionId: string): void => {
     redis
-      .publish(CHANNEL, sessionId)
+      .publish(channel, sessionId)
       .catch((err) => logger.error('[roko] notifier publish failed', err));
   };
 
   return { publish, subscribe };
+}
+
+/**
+ * Resolves with the first non-null `read()` result, re-reading whenever `key` is
+ * notified (plus a slow fallback poll), or with null once `timeoutMs` elapses.
+ */
+export async function waitForNotifiedValue<R>(
+  notifier: RequestNotifier,
+  key: string,
+  read: () => Promise<R | null>,
+  timeoutMs: number,
+): Promise<R | null> {
+  const immediate = await read();
+  if (immediate) {
+    return immediate;
+  }
+  return new Promise<R | null>((resolve) => {
+    let settled = false;
+    const finish = (value: R | null): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      unsubscribe();
+      clearInterval(poll);
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const check = (): void => {
+      read()
+        .then((value) => value && finish(value))
+        .catch(() => undefined);
+    };
+    const unsubscribe = notifier.subscribe(key, check);
+    const poll = setInterval(check, FALLBACK_POLL_MS);
+    const timer = setTimeout(() => finish(null), timeoutMs);
+  });
 }

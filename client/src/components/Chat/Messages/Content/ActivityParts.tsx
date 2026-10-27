@@ -3,7 +3,7 @@ import { ContentTypes } from 'librechat-data-provider';
 import type { ReactNode } from 'react';
 import type { TAttachment, TMessageContentParts } from 'librechat-data-provider';
 import type { PartWithIndex } from './ParallelContent';
-import { partitionResponseParts } from './activityParts';
+import { partitionResponseParts } from './responseParts';
 import ResponseActivity from './ResponseActivity';
 import { AttachmentGroup } from './Parts';
 import { useResponseGenerationElapsed } from './ResponseGenerationTimer';

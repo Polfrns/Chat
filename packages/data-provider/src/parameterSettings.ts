@@ -1155,14 +1155,15 @@ export function applyModelAwareDefaults(
 ): SettingsConfiguration {
   const bridge = getBridgeCapabilities(model);
   if (bridge) {
-    const codex = bridge.provider === 'codex';
     const local = new Set([
       'model', 'modelLabel', 'chatGptLabel', 'promptPrefix', 'fileTokenLimit',
       'useResponsesApi', 'resendFiles', 'disableStreaming', 'maxContextTokens',
     ]);
     const native = new Set([
       'reasoning_effort',
-      ...(codex ? ['verbosity', 'reasoning_summary', 'web_search'] : []),
+      ...(bridge.supportsVerbosity ? ['verbosity'] : []),
+      ...(bridge.supportsSummary ? ['reasoning_summary'] : []),
+      ...(bridge.supportsWebSearch ? ['web_search'] : []),
     ]);
     return settings.map((setting) => {
       if (!local.has(setting.key) && !native.has(setting.key)) {
