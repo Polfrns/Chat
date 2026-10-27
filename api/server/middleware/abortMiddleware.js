@@ -5,6 +5,7 @@ const {
   sendEvent,
   countTokens,
   GenerationJobManager,
+  abortOwnedGeneration,
   recordCollectedUsage,
   sanitizeMessageForTransmit,
   buildAbortedResponseMetadata,
@@ -79,8 +80,8 @@ async function abortMessage(req, res) {
   const conversationId = abortKey?.split(':')?.[0] ?? req.user.id;
   const userId = req.user.id;
 
-  // Use GenerationJobManager to abort the job (streamId === conversationId)
-  const abortResult = await GenerationJobManager.abortJob(conversationId);
+  // streamId === conversationId; only the job's owner may stop it and read its output
+  const abortResult = await abortOwnedGeneration(conversationId, req.user, GenerationJobManager);
 
   if (!abortResult.success) {
     if (!res.headersSent) {
