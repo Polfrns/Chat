@@ -11,7 +11,6 @@ import {
   useResumeOnLoad,
   useAdaptiveSSE,
   useChatHelpers,
-  useEnsureChatSession,
   useLocalize,
 } from '~/hooks';
 import { ChatContext, AddedChatContext, ChatFormProvider, useFileMapContext } from '~/Providers';
@@ -24,12 +23,6 @@ import ChatForm from './Input/ChatForm';
 import Landing from './Landing';
 import Header from './Header';
 import Footer from './Footer';
-import {
-  SessionSidebar,
-  FilestoreAccessRequests,
-  FilestoreRequestsListener,
-  FilestoreCreationRequestDialog,
-} from '~/components/Sessions';
 import { SkillDeletionRequests } from '~/components/Skills';
 import { cn } from '~/utils';
 import store from '~/store';
@@ -74,8 +67,6 @@ function ChatView({ index = 0, project }: { index?: number; project?: TChatProje
 
   const chatHelpers = useChatHelpers(index, conversationId);
   const addedChatHelpers = useAddedResponse();
-
-  useEnsureChatSession(index);
 
   useAdaptiveSSE(rootSubmission, chatHelpers, false, index);
 
@@ -138,10 +129,6 @@ function ChatView({ index = 0, project }: { index?: number; project?: TChatProje
                   {isLandingPage && <Footer />}
                 </>
               </div>
-              <SessionSidebar />
-              <FilestoreRequestsListener />
-              <FilestoreAccessRequests />
-              <FilestoreCreationRequestDialog />
               <SkillDeletionRequests />
             </div>
           </Presentation>

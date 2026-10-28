@@ -1,3 +1,4 @@
 export * from './client';
 export * from './context';
-export * from './mcp';
+export * from './workspace';
+export * from './workspaceContext';

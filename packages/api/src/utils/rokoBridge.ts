@@ -78,7 +78,8 @@ export function applyRokoBridgeContext({
   // Copy nested maps: agent configs can be reused by another request or a title run.
   config.configuration = {
     ...config.configuration,
-    fetch: async (input, init) => {
+    // Cast: Bun's `typeof fetch` adds a `preconnect` member a plain wrapper does not have.
+    fetch: (async (input, init) => {
       const { trustedHeaders } = require('../../../../config/observability/context.cjs');
       const headers = Object.fromEntries(new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined)).entries());
       const url = input instanceof Request ? input.url : String(input);
@@ -98,7 +99,7 @@ export function applyRokoBridgeContext({
         delete headers['content-length'];
       }
       return fetch(input, {...init, ...(body === undefined ? {} : { body }), headers:trustedHeaders(url, headers), redirect:'error'});
-    },
+    }) as typeof fetch,
     defaultHeaders: {
       ...Object.fromEntries(Object.entries(config.configuration.defaultHeaders ?? {})
         .filter(([name]) => !['x-roko-context', 'x-roko-signature','traceparent','tracestate','baggage','x-observability-context','x-observability-signature'].includes(name.toLowerCase()))),

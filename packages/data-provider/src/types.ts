@@ -225,6 +225,8 @@ export type TUser = {
   backupCodes?: TBackupCode[];
   personalization?: {
     memories?: boolean;
+    /** Roko workspace MCP; absent means enabled. */
+    workspace?: boolean;
   };
   createdAt: string;
   updatedAt: string;
@@ -327,97 +329,6 @@ export type TAssignConversationToProjectResponse = {
   previousProjectId: string | null;
   projectId: string | null;
 };
-
-/* ===== Roko: Filestores & Sessions ===== */
-
-export type TFilestore = {
-  uid: string;
-  displayName: string;
-  description?: string;
-  kind?: 'local' | 'graph';
-  ref?: string;
-  shared: boolean;
-  readOnly: boolean;
-  ephemeral?: boolean;
-  owner: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-export type TFilestoreFile = {
-  path: string;
-  bytes: number;
-  mtimeMs: number;
-  /** 'dir' for (possibly empty) folders, 'file' otherwise. Absent ⇒ file. */
-  type?: 'file' | 'dir';
-};
-
-export type TCreateFilestoreRequest = {
-  displayName: string;
-  description?: string;
-  shared?: boolean;
-  readOnly?: boolean;
-};
-
-export type TUpdateFilestoreRequest = Partial<
-  Pick<TFilestore, 'displayName' | 'description' | 'readOnly'>
->;
-
-export type TFilestoreListResponse = { filestores: TFilestore[] };
-export type TFilestoreFilesResponse = { files: TFilestoreFile[] };
-export type TFilestoreFileUploadResponse = { path: string; bytes: number };
-export type TFilestoreFileMoveRequest = { src: string; dst: string };
-export type TFilestoreFileMoveResponse = { moved: boolean; src: string; dst: string };
-
-export type TSession = {
-  _id: string;
-  name: string;
-  owner: string;
-  filestoreUids: string[];
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-export type TCreateSessionRequest = {
-  name: string;
-  filestoreUids?: string[];
-};
-
-export type TUpdateSessionRequest = Partial<Pick<TSession, 'name' | 'filestoreUids'>>;
-
-export type TSessionListResponse = { sessions: TSession[] };
-export type TSessionFilestoresResponse = { filestores: TFilestore[] };
-export type TSessionChatsResponse = { chats: TConversation[] };
-export type TDeleteCountResponse = { deletedCount: number };
-
-/** A pending filestore-access request raised by the agent's PreToolUse hook when
- * the model touches a store not attached to the session, awaiting user approval. */
-export type TFilestoreAccessRequest = {
-  filestoreUid: string;
-  displayName: string;
-  description?: string;
-  shared: boolean;
-  reason?: string;
-  requestedAt: number;
-};
-export type TFilestoreAccessRequestsResponse = { requests: TFilestoreAccessRequest[] };
-export type TFilestoreAccessDecision = 'approve' | 'deny';
-
-/** A pending `create_filestore` proposal raised by the agent's hook; the user
- * confirms (optionally editing) or declines before the store is created. */
-export type TFilestoreCreationProposal = {
-  displayName: string;
-  description: string;
-  shared: boolean;
-  readOnly: boolean;
-};
-export type TFilestoreCreationRequest = {
-  requestId: string;
-  proposed: TFilestoreCreationProposal;
-  requestedAt: number;
-};
-export type TFilestoreCreationRequestsResponse = { requests: TFilestoreCreationRequest[] };
-export type TFilestoreCreationDecision = 'confirm' | 'decline';
 
 export type TDeleteConversationRequest = {
   conversationId?: string;

@@ -345,6 +345,24 @@ describe('normalizeUsageUnits', () => {
 });
 
 describe('formatCost', () => {
+  /** formatCost formats in the runtime's default locale (`undefined`). Pin that
+   *  default to en-US so expectations don't depend on the machine's locale. */
+  const RealNumberFormat = Intl.NumberFormat;
+  beforeAll(() => {
+    const Pinned = function (
+      locales?: string | string[],
+      options?: Intl.NumberFormatOptions,
+    ): Intl.NumberFormat {
+      return new RealNumberFormat(locales ?? 'en-US', options);
+    } as unknown as typeof Intl.NumberFormat;
+    Object.assign(Pinned, RealNumberFormat);
+    Pinned.supportedLocalesOf = RealNumberFormat.supportedLocalesOf;
+    Intl.NumberFormat = Pinned;
+  });
+  afterAll(() => {
+    Intl.NumberFormat = RealNumberFormat;
+  });
+
   it('formats across magnitude bands (USD default, unchanged)', () => {
     expect(formatCost(0)).toBe('$0.00');
     expect(formatCost(0.004)).toBe('<$0.01');

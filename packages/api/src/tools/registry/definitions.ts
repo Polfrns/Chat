@@ -43,6 +43,14 @@ export interface ToolRegistryDefinition {
 }
 
 /** Google Search tool JSON schema */
+/** Roko: native chat <-> workspace transfer tools (the workspace itself is an MCP server). */
+export const ROKO_ATTACH_CHAT_FILE = 'attach_chat_file';
+export const ROKO_DELIVER_WORKSPACE_FILE = 'deliver_workspace_file';
+export const ROKO_WORKSPACE_TOOLS: readonly string[] = [
+  ROKO_ATTACH_CHAT_FILE,
+  ROKO_DELIVER_WORKSPACE_FILE,
+];
+
 export const googleSearchSchema: ExtendedJsonSchema = {
   type: 'object',
   properties: {
@@ -499,10 +507,10 @@ export const toolDefinitions: Record<string, ToolRegistryDefinition> = {
     },
     toolType: 'builtin',
   },
-  upload_chat_file: {
-    name: 'upload_chat_file',
+  [ROKO_ATTACH_CHAT_FILE]: {
+    name: ROKO_ATTACH_CHAT_FILE,
     description:
-      'Upload a file the user attached in this chat (drag-and-drop or paperclip) into a file store, using its file_id. Only use this when storing the file is clearly relevant to the task, and pick the file store whose purpose matches the file — never upload speculatively or to an unrelated store. Destinations are never overwritten; a conflicting path fails. If the target store is not attached to this session the user is asked first.',
+      "Copy a file the user attached in this chat into this conversation's workspace inputs/ folder, using its file_id, so the workspace tools (read_file, prepare_file, execute, ...) can use it. inputs/ is read-only for you; the returned path tells you where the file landed. Only attach files you need for the task.",
     schema: {
       type: 'object',
       properties: {
@@ -510,37 +518,24 @@ export const toolDefinitions: Record<string, ToolRegistryDefinition> = {
           type: 'string',
           description: 'The file_id of a file the user attached in this chat',
         },
-        filestore_uid: {
-          type: 'string',
-          description: 'The file store to upload into',
-        },
-        path: {
-          type: 'string',
-          description:
-            'Store-relative destination path (e.g. reports/summary.pdf); defaults to the original filename at the store root',
-        },
       },
-      required: ['file_id', 'filestore_uid'],
+      required: ['file_id'],
     },
     toolType: 'builtin',
   },
-  deliver_filestore_file: {
-    name: 'deliver_filestore_file',
+  [ROKO_DELIVER_WORKSPACE_FILE]: {
+    name: ROKO_DELIVER_WORKSPACE_FILE,
     description:
-      'Hand a file from a file store to the user: it appears in the chat as a downloadable attachment. Use this when the user asks for a file or when giving them the produced file is the point of the task. If the store is not attached to this session the user is asked first. Files over 100 MiB cannot be transferred.',
+      'Hand a finished file from the workspace outputs/ folder to the user as a downloadable chat attachment. Use it when the produced file is the point of the task. The file is validated first (not empty, real format matching its extension, at most 15 MiB, at most 10 deliveries per conversation).',
     schema: {
       type: 'object',
       properties: {
-        filestore_uid: {
-          type: 'string',
-          description: 'The file store to fetch from',
-        },
         path: {
           type: 'string',
-          description: 'Store-relative path of the file to deliver',
+          description: 'Workspace-relative path under outputs/, e.g. outputs/report.pdf',
         },
       },
-      required: ['filestore_uid', 'path'],
+      required: ['path'],
     },
     toolType: 'builtin',
     responseFormat: 'content_and_artifact',

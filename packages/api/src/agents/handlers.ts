@@ -381,9 +381,11 @@ function detectToolInputSchemaKind(schema: unknown): ToolInputSchemaKind {
     kind.string = true;
   }
 
+  /** `innerType` (optional/nullable/default), `schema` (Zod 3 effects), `in` (Zod 4 pipe/transform) */
   const innerSchema =
     (zodDef as { innerType?: unknown; schema?: unknown }).innerType ??
-    (zodDef as { schema?: unknown }).schema;
+    (zodDef as { schema?: unknown }).schema ??
+    (zodDef as { in?: unknown }).in;
   if (innerSchema) {
     mergeSchemaKind(kind, detectToolInputSchemaKind(innerSchema));
   }

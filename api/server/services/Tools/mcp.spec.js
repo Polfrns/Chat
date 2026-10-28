@@ -1,4 +1,5 @@
 const { Constants } = require('librechat-data-provider');
+const { currentRokoWorkspaceIdentity } = require('@librechat/api');
 
 const mockGetConnection = jest.fn();
 const mockDiscoverServerTools = jest.fn();
@@ -182,5 +183,27 @@ describe('reinitMCPServer — customUserVars gating (issue #10969)', () => {
     });
 
     expect(mockGetConnection).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets workspace identity while initializing and listing workspace tools', async () => {
+    let observedIdentity;
+    mockGetConnection.mockImplementation(async () => {
+      observedIdentity = currentRokoWorkspaceIdentity();
+      return { fetchTools: jest.fn().mockResolvedValue([]) };
+    });
+
+    await reinitMCPServer({
+      user: { id: 'workspace-user', tenantId: 'tenant-a' },
+      serverName: Constants.roko_mcp_server,
+      serverConfig: { type: 'streamable-http', url: 'http://workspace/mcp' },
+      requestBody: { conversationId: 'conversation-123' },
+    });
+
+    expect(observedIdentity).toEqual({
+      tenantId: 'tenant-a',
+      userId: 'workspace-user',
+      conversationId: 'conversation-123',
+    });
+    expect(currentRokoWorkspaceIdentity()).toBeUndefined();
   });
 });

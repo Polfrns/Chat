@@ -53,6 +53,7 @@ jest.mock('~/utils', () => ({
   getFileType: () => ({ paths: [], color: '', title: 'Artifact' }),
   logger: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
   isArtifactRoute: () => false,
+  isPreviewableImage: jest.requireActual('~/utils/files').isPreviewableImage,
 }));
 
 const baseAttachment = (overrides: Partial<TAttachment> = {}): TAttachment =>

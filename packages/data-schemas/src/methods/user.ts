@@ -76,6 +76,7 @@ export function createUserMethods(mongoose: typeof import('mongoose')): {
       termsAccepted?: boolean;
       personalization?: {
         memories?: boolean;
+        workspace?: boolean;
       };
       favorites?: import('librechat-data-provider').TUserFavorite[];
       skillStates?: Record<string, boolean>;
@@ -106,6 +107,7 @@ export function createUserMethods(mongoose: typeof import('mongoose')): {
     action: 'install' | 'uninstall',
   ) => Promise<IUser | null>;
   toggleUserMemories: (userId: string, memoriesEnabled: boolean) => Promise<IUser | null>;
+  setUserWorkspaceEnabled: (userId: string, enabled: boolean) => Promise<IUser | null>;
 } {
   /**
    * Normalizes email fields in search criteria to lowercase and trimmed.
@@ -338,6 +340,15 @@ export function createUserMethods(mongoose: typeof import('mongoose')): {
     }).lean<IUser>();
   }
 
+  /** Roko: per-user global switch for the execution-workspace MCP server. */
+  async function setUserWorkspaceEnabled(userId: string, enabled: boolean): Promise<IUser | null> {
+    return await mongoose.models.User.findByIdAndUpdate(
+      userId,
+      { $set: { 'personalization.workspace': enabled } },
+      { new: true, runValidators: true },
+    ).lean<IUser>();
+  }
+
   /**
    * Search for users by pattern matching on name, email, or username (case-insensitive)
    * @param searchPattern - The pattern to search for
@@ -395,6 +406,7 @@ export function createUserMethods(mongoose: typeof import('mongoose')): {
       termsAccepted?: boolean;
       personalization?: {
         memories?: boolean;
+        workspace?: boolean;
       };
       favorites?: import('librechat-data-provider').TUserFavorite[];
       skillStates?: Record<string, boolean>;
@@ -517,6 +529,7 @@ export function createUserMethods(mongoose: typeof import('mongoose')): {
     deleteUserById,
     updateUserPlugins,
     toggleUserMemories,
+    setUserWorkspaceEnabled,
   };
 }
 

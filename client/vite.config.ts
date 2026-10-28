@@ -42,6 +42,7 @@ const QUERY_DEVTOOLS_CHUNK_MODULES = [
   'node_modules/copy-anything',
   'node_modules/is-what',
 ];
+const PWA_ICON_PATTERN = /^(favicon.*|icon-.*|apple-touch-icon.*|maskable-icon)\.png$/;
 
 export default defineConfig(({ command }) => ({
   base: '',
@@ -83,6 +84,24 @@ export default defineConfig(({ command }) => ({
           fileName: 'sw-heal.js',
           source: fs.readFileSync(path.resolve(__dirname, 'sw/heal.js'), 'utf8'),
         });
+      },
+    },
+    {
+      /** publicDir is off for builds, so emit the PWA icons before Workbox globs dist/. */
+      name: 'emit-pwa-icons',
+      apply: 'build',
+      generateBundle() {
+        const assetsDir = path.resolve(__dirname, 'public/assets');
+        for (const file of fs.readdirSync(assetsDir)) {
+          if (!PWA_ICON_PATTERN.test(file)) {
+            continue;
+          }
+          this.emitFile({
+            type: 'asset',
+            fileName: `assets/${file}`,
+            source: fs.readFileSync(path.join(assetsDir, file)),
+          });
+        }
       },
     },
     VitePWA({
@@ -390,10 +409,15 @@ export default defineConfig(({ command }) => ({
         if (warning.message.includes('Error when using sourcemap')) {
           return;
         }
+        // vm-browserify's runInThisContext needs direct eval by design.
+        if (warning.code === 'EVAL' && warning.id?.includes('vm-browserify')) {
+          return;
+        }
         warn(warning);
       },
     },
-    chunkSizeWarningLimit: 1500,
+    // mermaid (~3.1 MB) and heic-converter (~2.2 MB) are lazy-loaded vendor chunks.
+    chunkSizeWarningLimit: 3500,
   },
   resolve: {
     alias: {

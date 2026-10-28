@@ -13,9 +13,9 @@ const createOpenAIImageTools = require('./structured/OpenAIImageTools');
 const TavilySearchResults = require('./structured/TavilySearchResults');
 const createGeminiImageTool = require('./structured/GeminiImageGen');
 const {
-  createUploadChatFileTool,
-  createDeliverFilestoreFileTool,
-} = require('./structured/FilestoreTransfer');
+  createAttachChatFileTool,
+  createDeliverWorkspaceFileTool,
+} = require('./structured/WorkspaceTransfer');
 
 module.exports = {
   ...manifest,
@@ -31,6 +31,6 @@ module.exports = {
   TavilySearchResults,
   createOpenAIImageTools,
   createGeminiImageTool,
-  createUploadChatFileTool,
-  createDeliverFilestoreFileTool,
+  createAttachChatFileTool,
+  createDeliverWorkspaceFileTool,
 };

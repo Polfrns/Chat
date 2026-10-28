@@ -6,7 +6,7 @@ export interface ChatFileRef {
 
 /**
  * Context blurb listing the current message's attachments so the model can
- * reference them by `file_id` when calling `upload_chat_file`.
+ * reference them by `file_id` when calling `attach_chat_file`.
  */
 export function buildChatFileContext(files: ChatFileRef[] | undefined): string {
   const entries = (files ?? []).filter((file) => Boolean(file?.file_id));
@@ -19,7 +19,7 @@ export function buildChatFileContext(files: ChatFileRef[] | undefined): string {
     return `\t- file_id: ${file.file_id}${name}${type}`;
   });
   return [
-    'Files attached to the current message (pass their file_id to `upload_chat_file` to store one in a file store):',
+    'Files attached to the current message (pass a file_id to `attach_chat_file` to copy it into the workspace inputs/ folder):',
     ...lines,
   ].join('\n');
 }

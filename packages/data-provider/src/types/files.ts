@@ -30,7 +30,9 @@ export enum FileContext {
   image_generation = 'image_generation',
   assistants_output = 'assistants_output',
   message_attachment = 'message_attachment',
+  /** @deprecated Attachments delivered by the removed filestore service; read-only history. */
   filestore = 'filestore',
+  workspace = 'workspace',
   skill_file = 'skill_file',
   filename = 'filename',
   updatedAt = 'updatedAt',

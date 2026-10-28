@@ -22,6 +22,7 @@ jest.mock('~/utils', () => ({
     log: jest.fn(),
   },
   getCachedPreview: jest.fn(() => undefined),
+  isPreviewableImage: jest.requireActual('~/utils/files').isPreviewableImage,
 }));
 
 jest.mock('../Image', () => {

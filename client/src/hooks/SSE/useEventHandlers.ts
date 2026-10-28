@@ -472,13 +472,6 @@ export default function useEventHandlers({
           queryClient.invalidateQueries([QueryKeys.projects]);
           queryClient.invalidateQueries([QueryKeys.project, update.chatProjectId]);
         }
-        if (update.sessionId) {
-          queryClient.invalidateQueries([QueryKeys.sessions]);
-          queryClient.invalidateQueries([QueryKeys.sessionChats, update.sessionId]);
-          /** A run may have attached a filestore via the create/approve hooks. */
-          queryClient.invalidateQueries([QueryKeys.sessionFilestores, update.sessionId]);
-          queryClient.invalidateQueries([QueryKeys.filestores]);
-        }
       } else if (setConversation) {
         setConversation((prevState) => {
           update = tConvoUpdateSchema.parse({
@@ -559,12 +552,6 @@ export default function useEventHandlers({
           if (update.chatProjectId) {
             queryClient.invalidateQueries([QueryKeys.projects]);
             queryClient.invalidateQueries([QueryKeys.project, update.chatProjectId]);
-          }
-          if (update.sessionId) {
-            queryClient.invalidateQueries([QueryKeys.sessions]);
-            queryClient.invalidateQueries([QueryKeys.sessionChats, update.sessionId]);
-            queryClient.invalidateQueries([QueryKeys.sessionFilestores, update.sessionId]);
-            queryClient.invalidateQueries([QueryKeys.filestores]);
           }
         }
       } else if (setConversation) {
@@ -851,12 +838,6 @@ export default function useEventHandlers({
           if (conversation.chatProjectId) {
             queryClient.invalidateQueries([QueryKeys.projects]);
             queryClient.invalidateQueries([QueryKeys.project, conversation.chatProjectId]);
-          }
-          if (conversation.sessionId) {
-            queryClient.invalidateQueries([QueryKeys.sessions]);
-            queryClient.invalidateQueries([QueryKeys.sessionChats, conversation.sessionId]);
-            queryClient.invalidateQueries([QueryKeys.sessionFilestores, conversation.sessionId]);
-            queryClient.invalidateQueries([QueryKeys.filestores]);
           }
 
           if (location.pathname === `/c/${Constants.NEW_CONVO}`) {

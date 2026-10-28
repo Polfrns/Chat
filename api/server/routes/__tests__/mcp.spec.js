@@ -112,6 +112,7 @@ jest.mock('~/models', () => ({
   deleteTokens: jest.fn(),
   findPluginAuthsByKeys: jest.fn(),
   getRoleByName: jest.fn(),
+  setUserWorkspaceEnabled: jest.fn(),
 }));
 
 jest.mock('~/server/services/Config', () => ({
@@ -165,6 +166,7 @@ describe('MCP Routes', () => {
   let mongoServer;
   let mcpRouter;
   let currentUser;
+  const { setUserWorkspaceEnabled } = require('~/models');
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
@@ -252,6 +254,29 @@ describe('MCP Routes', () => {
     mockRegistryInstance.addServer.mockReset();
     mockRegistryInstance.updateServer.mockReset();
     mockRegistryInstance.removeServer.mockReset();
+  });
+
+  describe('PATCH /workspace-preferences', () => {
+    it('stores a user-global opt-out and returns the saved preference', async () => {
+      setUserWorkspaceEnabled.mockResolvedValue({ personalization: { workspace: false } });
+
+      const response = await request(app)
+        .patch('/api/mcp/workspace-preferences')
+        .send({ enabled: false });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ updated: true, preferences: { enabled: false } });
+      expect(setUserWorkspaceEnabled).toHaveBeenCalledWith('test-user-id', false);
+    });
+
+    it('rejects values other than booleans', async () => {
+      const response = await request(app)
+        .patch('/api/mcp/workspace-preferences')
+        .send({ enabled: 'false' });
+
+      expect(response.status).toBe(400);
+      expect(setUserWorkspaceEnabled).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /:serverName/oauth/initiate', () => {

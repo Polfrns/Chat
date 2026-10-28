@@ -514,9 +514,9 @@ const nativeTools = new Set([
   Tools.execute_code,
   Tools.file_search,
   Tools.web_search,
-  /** Roko: chat<->filestore transfer tools, injected for session chats. */
-  'upload_chat_file',
-  'deliver_filestore_file',
+  /** Roko: explicit workspace transfer tools. */
+  'attach_chat_file',
+  'deliver_workspace_file',
   'nextcloud_files',
   SKILL_LIBRARY_TOOL_NAME,
 ]);
@@ -1050,12 +1050,11 @@ async function loadToolDefinitionsWrapper({ req, res, agent, streamId = null, to
     }
   }
 
-  /** Roko: surface the current message's attachments so the model can pass
-   *  their file_id to upload_chat_file. */
-  if (filteredTools.includes('upload_chat_file')) {
+  /** Roko: surface the current message's attachments for explicit selection. */
+  if (filteredTools.includes('attach_chat_file')) {
     const chatFileContext = buildChatFileContext(req.body?.files);
     if (chatFileContext) {
-      dynamicToolContextMap.upload_chat_file = chatFileContext;
+      dynamicToolContextMap.attach_chat_file = chatFileContext;
     }
   }
 

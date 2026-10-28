@@ -43,9 +43,11 @@ function register<S extends z.ZodRawShape>(
   handler: (who: Identity, args: z.infer<z.ZodObject<S>>) => Promise<unknown> | unknown,
   getIdentity: () => Identity,
 ): void {
-  server.tool(name, description, shape, async (args: z.infer<z.ZodObject<S>>) => {
+  // The SDK's callback type is a conditional on the shape, which TS cannot resolve
+  // for a generic `S`; widen here and narrow back for the typed handler.
+  server.tool(name, description, shape as z.ZodRawShape, async (args) => {
     try {
-      return ok(await handler(getIdentity(), args));
+      return ok(await handler(getIdentity(), args as z.infer<z.ZodObject<S>>));
     } catch (error) {
       return fail(error instanceof Error ? error.message : String(error));
     }
@@ -190,7 +192,9 @@ export function createMcpRouter(service: FilestoreService, config: Config): expr
       const holder = { current: identity };
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
-        onsessioninitialized: (sid) => sessions.set(sid, { transport, identity: holder }),
+        onsessioninitialized: (sid) => {
+          sessions.set(sid, { transport, identity: holder });
+        },
       });
       transport.onclose = () => {
         if (transport.sessionId) {

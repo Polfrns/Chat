@@ -108,6 +108,35 @@ endpoints:
       titleConvo: true
       modelDisplayLabel: "Claude Max"
 
+    - name: "ChatGPT Codex"
+      apiKey: "${CLAUDE_BRIDGE_KEY}"
+      baseURL: "http://cli-bridge:4000/v1"
+      models:
+        default:
+          - "gpt-codex"
+          - "gpt-codex-fast"
+          - "gpt-codex-deep"
+        fetch: false
+      dropParams: [temperature, top_p, frequency_penalty, presence_penalty, max_tokens, max_completion_tokens, max_output_tokens, stop, seed, logit_bias, logprobs, top_logprobs]
+      titleConvo: true
+      modelDisplayLabel: "ChatGPT Codex"
+      tokenConfig:
+        gpt-codex:
+          prompt: 0
+          completion: 0
+          context: 1050000
+
+    - name: "OmniRoute"
+      apiKey: "${OMNIROUTE_API_KEY}"
+      baseURL: "http://omniroute:20128/v1"
+      models:
+        default:
+          - "auto"
+        fetch: true
+      titleConvo: true
+      titleModel: "current_model"
+      modelDisplayLabel: "OmniRoute"
+
 fileConfig:
   endpoints:
     "LM Studio":
@@ -121,15 +150,27 @@ fileConfig:
         - "application/octet-stream"
         - "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     "Claude Max":
-      fileLimit: 10
-      fileSizeLimit: 14
-      totalSizeLimit: 14
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
+      supportedMimeTypes: [".*"]
+
+    "ChatGPT Codex":
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
+      supportedMimeTypes: [".*"]
+
+    "OmniRoute":
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
       supportedMimeTypes: [".*"]
 
     "google":
-      fileLimit: 10
-      fileSizeLimit: 20
-      totalSizeLimit: 50
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
       supportedMimeTypes:
         - "image/.*"
         - "text/.*"
@@ -138,33 +179,50 @@ fileConfig:
         - "video/.*"
 
     "agents":
-      fileLimit: 10
-      fileSizeLimit: 25
-      totalSizeLimit: 100
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
       supportedMimeTypes: [".*"]
 
   serverFileSizeLimit: 100
   avatarSizeLimit: 2
 
-# Enable the editing workspace server below only after it exists.
-# Permit its exact private host:port in mcpSettings.allowedAddresses if needed.
-# mcpSettings:
-#   allowedAddresses:
-#     - 'host.docker.internal:8080'
 mcpServers: {}
-  # editing-workspace:
-  #   type: streamable-http
-  #   url: ${WORKSPACE_MCP_URL}
-  #   headers:
-  #     Authorization: "Bearer ${WORKSPACE_MCP_TOKEN}"
-  #   startup: false
-  #   chatMenu: true
-  #   timeout: 60000
 
 modelSpecs:
   list:
+    - name: "codex-personalizado"
+      label: "Codex"
+      group: "ChatGPT Codex"
+      preset:
+        endpoint: "ChatGPT Codex"
+        model: "gpt-codex"
+        maxContextTokens: 1050000
+        reasoning_effort: "medium"
+        resendFiles: true
+
+    - name: "codex-fast"
+      label: "Codex Fast"
+      group: "ChatGPT Codex"
+      preset:
+        endpoint: "ChatGPT Codex"
+        model: "gpt-codex-fast"
+        maxContextTokens: 1050000
+        reasoning_effort: "low"
+        resendFiles: true
+
+    - name: "codex-deep"
+      label: "Codex Deep"
+      group: "ChatGPT Codex"
+      preset:
+        endpoint: "ChatGPT Codex"
+        model: "gpt-codex-deep"
+        maxContextTokens: 1050000
+        reasoning_effort: "high"
+        resendFiles: true
+
     - name: "claude-max-personalizado"
-      label: "Claude"
+      label: "Claude (Sonnet)"
       group: "Claude Max"
       preset:
         endpoint: "Claude Max"
@@ -174,7 +232,7 @@ modelSpecs:
         resendFiles: true
 
     - name: "claude-fast"
-      label: "Claude Fast (Sonnet)"
+      label: "Claude Fast (Haiku)"
       group: "Claude Max"
       preset:
         endpoint: "Claude Max"

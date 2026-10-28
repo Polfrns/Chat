@@ -1,9 +1,9 @@
-# Nextcloud independiente del filestore
+# Nextcloud independiente del workspace
 
 Roko conecta directamente con la API de Nextcloud. Las carpetas de OMV visibles
 en la cuenta Nextcloud se utilizan a través de esa cuenta. No se montan discos
-del host ni se utiliza la API key de leedeo-filestore. La ampliación futura de
-filestore como workspace aislado queda fuera de esta integración.
+del host ni se utiliza la clave compartida de roko-workspace. La gestión de
+archivos de Nextcloud permanece independiente.
 
 ## Configuración
 

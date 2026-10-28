@@ -142,3 +142,21 @@ export const useDeleteMCPServerMutation = (options?: {
     },
   });
 };
+
+export const useUpdateWorkspacePreferencesMutation = (options?: {
+  onSuccess?: (data: { updated: boolean; preferences: { enabled: boolean } }) => void;
+  onError?: (error: Error) => void;
+}): UseMutationResult<
+  { updated: boolean; preferences: { enabled: boolean } },
+  Error,
+  { enabled: boolean }
+> => {
+  const queryClient = useQueryClient();
+  return useMutation((preferences: { enabled: boolean }) => dataService.updateWorkspacePreferences(preferences), {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries([QueryKeys.user]);
+      options?.onSuccess?.(data);
+    },
+    onError: (error) => options?.onError?.(error),
+  });
+};

@@ -36,8 +36,8 @@ const {
   TavilySearchResults,
   createGeminiImageTool,
   createOpenAIImageTools,
-  createUploadChatFileTool,
-  createDeliverFilestoreFileTool,
+  createAttachChatFileTool,
+  createDeliverWorkspaceFileTool,
 } = require('../');
 const {
   createMCPTool,
@@ -234,15 +234,15 @@ const loadTools = async ({
         fileStrategy,
       });
     },
-    /** Roko: chat<->filestore transfer tools, injected for session chats. */
-    upload_chat_file: async (_toolContextMap, dynamicToolContextMap) => {
+    /** Roko: explicit transfer of selected message attachments to workspace. */
+    attach_chat_file: async (_toolContextMap, dynamicToolContextMap) => {
       const chatFileContext = buildChatFileContext(options.req?.body?.files);
       if (chatFileContext) {
-        dynamicToolContextMap.upload_chat_file = chatFileContext;
+        dynamicToolContextMap.attach_chat_file = chatFileContext;
       }
-      return createUploadChatFileTool({ req: options.req });
+      return createAttachChatFileTool({ req: options.req });
     },
-    deliver_filestore_file: async () => createDeliverFilestoreFileTool({ req: options.req }),
+    deliver_workspace_file: async () => createDeliverWorkspaceFileTool({ req: options.req }),
     nextcloud_files: async () => require('../structured/Nextcloud').createNextcloudTool({ req: options.req }),
     [SKILL_LIBRARY_TOOL_NAME]: async () =>
       require('../structured/SkillLibrary').createSkillLibraryTool({ req: options.req }),

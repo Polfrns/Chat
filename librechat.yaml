@@ -7,24 +7,6 @@ version: 1.3.12
 # Cache settings: Set to true to enable caching
 cache: true
 
-# Roko: the single FileStore-aware drive broker. Every FileStore's drive
-# (local path / SharePoint-OneDrive) is reached through these tools; the
-# request-time augmentation injects the active project's fileStoreIds so the
-# model calls them with valid ids. Needs MONGO_URI in .env; restart the backend
-# after changing this block.
-# mcpServers:
-#   leedeo-filestore:
-#     type: stdio
-#     command: node
-#     args:
-#       - /home/tidann/repos/LibreChat/mcp/drive-broker/server.mjs
-#     # Literal values (not ${VAR}): LibreChat skips env-placeholder expansion for
-#     # DB-recovered/stub MCP configs, so a literal avoids "Invalid scheme" on Mongo.
-#     env:
-#       MONGO_URI: mongodb://127.0.0.1:27017/LibreChat
-#       ROKO_FILESTORE_ROOT: /home/tidann/repos/LibreChat/uploads/filestores
-#     timeout: 60000
-
 # File storage configuration
 # Single strategy for all file types (legacy format, still supported)
 # fileStrategy: "s3"

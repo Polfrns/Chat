@@ -60,6 +60,7 @@ const initializeMCPs = require('./initializeMCPs');
 describe('initializeMCPs', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    delete process.env.ROKO_WORKSPACE_URL;
 
     // Default: successful initialization
     mockCreateMCPServersRegistry.mockReturnValue(undefined);
@@ -81,7 +82,7 @@ describe('initializeMCPs', () => {
       expect(mockCreateMCPServersRegistry).toHaveBeenCalledWith(
         expect.anything(), // mongoose
         ['localhost'],
-        undefined,
+        [],
       );
     });
 
@@ -97,7 +98,7 @@ describe('initializeMCPs', () => {
       expect(mockCreateMCPServersRegistry).toHaveBeenCalledWith(
         expect.anything(),
         allowedDomains,
-        undefined,
+        [],
       );
     });
 
@@ -109,11 +110,7 @@ describe('initializeMCPs', () => {
 
       await initializeMCPs();
 
-      expect(mockCreateMCPServersRegistry).toHaveBeenCalledWith(
-        expect.anything(),
-        undefined,
-        undefined,
-      );
+      expect(mockCreateMCPServersRegistry).toHaveBeenCalledWith(expect.anything(), undefined, []);
     });
 
     it('should throw and log error if MCPServersRegistry initialization fails', async () => {
@@ -128,6 +125,45 @@ describe('initializeMCPs', () => {
         '[MCP] Failed to initialize MCPServersRegistry:',
         registryError,
       );
+    });
+  });
+
+  describe('Roko workspace SSRF exemption', () => {
+    it('allows only the configured Docker service host and port', async () => {
+      process.env.ROKO_WORKSPACE_URL = 'http://roko-workspace:8080';
+      mockGetAppConfig.mockResolvedValue({
+        mcpConfig: null,
+        mcpSettings: { allowedAddresses: ['other:9000'] },
+      });
+
+      await initializeMCPs();
+
+      expect(mockCreateMCPServersRegistry).toHaveBeenCalledWith(expect.anything(), undefined, [
+        'other:9000',
+        'roko-workspace:8080',
+      ]);
+    });
+
+    it('pairs loopback host aliases for local development', async () => {
+      process.env.ROKO_WORKSPACE_URL = 'http://localhost:8080';
+      mockGetAppConfig.mockResolvedValue({ mcpConfig: null });
+
+      await initializeMCPs();
+
+      expect(mockCreateMCPServersRegistry).toHaveBeenCalledWith(expect.anything(), undefined, [
+        'localhost:8080',
+        '127.0.0.1:8080',
+      ]);
+    });
+
+    it('does not grant the old standalone filestore host an exemption', async () => {
+      process.env.ROKO_SERVER_URL = 'http://legacy-filestore:3100';
+      mockGetAppConfig.mockResolvedValue({ mcpConfig: null });
+
+      await initializeMCPs();
+
+      expect(mockCreateMCPServersRegistry).toHaveBeenCalledWith(expect.anything(), undefined, []);
+      delete process.env.ROKO_SERVER_URL;
     });
   });
 

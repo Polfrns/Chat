@@ -41,7 +41,6 @@ export {
   registerPage,
   apiBaseUrl,
   buildLoginRedirectUrl,
-  filestoreRequestsStream,
 } from './api-endpoints';
 export { default as request } from './request';
 export { dataService };

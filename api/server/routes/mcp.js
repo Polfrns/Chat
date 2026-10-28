@@ -52,6 +52,23 @@ const db = require('~/models');
 
 const router = Router();
 
+router.patch('/workspace-preferences', requireJwtAuth, async (req, res) => {
+  const { enabled } = req.body ?? {};
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ error: 'enabled must be a boolean' });
+  }
+  try {
+    const user = await db.setUserWorkspaceEnabled(req.user.id, enabled);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.status(200).json({ updated: true, preferences: { enabled: user.personalization?.workspace !== false } });
+  } catch (error) {
+    logger.error('[MCP] Failed to update workspace preference', error);
+    return res.status(500).json({ error: 'Failed to update workspace preference' });
+  }
+});
+
 const OAUTH_CSRF_COOKIE_PATH = '/api/mcp';
 
 const getOAuthFlowId = (userId, serverName) =>

@@ -1,6 +1,7 @@
 services:
   api:
     image: roko-librechat:local
+    ports: !reset []
     build:
       context: .
       dockerfile: Dockerfile
@@ -15,7 +16,7 @@ services:
       # Keep unset until a compatible sandbox service is available.
       LIBRECHAT_CODE_BASEURL: ${LIBRECHAT_CODE_BASEURL:-}
       CLAUDE_BRIDGE_KEY: ${CLAUDE_BRIDGE_KEY}
-      ROKO_BRIDGE_BASE_URL: ${ROKO_BRIDGE_BASE_URL:-http://host.docker.internal:4000/v1}
+      ROKO_BRIDGE_BASE_URL: ${ROKO_BRIDGE_BASE_URL:-http://cli-bridge:4000/v1}
       BRIDGE_DEBUG_ATTACHMENTS: ${BRIDGE_DEBUG_ATTACHMENTS:-0}
       # Langfuse settings must reach the LibreChat API process, not only Compose.
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-}
@@ -32,6 +33,8 @@ services:
       OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-always_on}
       ROKO_BRIDGE_ACTIVITY_ENABLED: ${ROKO_BRIDGE_ACTIVITY_ENABLED:-true}
       ROKO_BRIDGE_REQUEST_TIMEOUT_MS: ${ROKO_BRIDGE_REQUEST_TIMEOUT_MS:-620000}
+      ROKO_WORKSPACE_URL: ${ROKO_WORKSPACE_URL:-http://roko-workspace:8080}
+      ROKO_WORKSPACE_KEY: ${ROKO_WORKSPACE_KEY:-}
     volumes:
       - type: bind
         source: ./.env
@@ -42,9 +45,34 @@ services:
         target: /app/runtime-config.yaml
         read_only: true
     networks:
-      - default
-      - cli_bridge
+      default: {}
+      cli_bridge: {}
+      roko_workspace: {}
+      roko_proxy:
+        aliases:
+          - roko-api
+  omniroute:
+    image: ${OMNIROUTE_IMAGE:-diegosouzapw/omniroute:latest}
+    restart: unless-stopped
+    # Loopback only: the host's Claude Code reaches it here, Roko via the compose network.
+    ports:
+      - "127.0.0.1:${OMNIROUTE_PORT:-20128}:20128"
+    environment:
+      DATA_DIR: /data
+      # Without it /v1/* is open to anything that can reach the port.
+      REQUIRE_API_KEY: "true"
+      INITIAL_PASSWORD: ${OMNIROUTE_INITIAL_PASSWORD:?set OMNIROUTE_INITIAL_PASSWORD in .env}
+    volumes:
+      - omniroute_data:/data
+volumes:
+  omniroute_data:
 networks:
   cli_bridge:
     external: true
     name: roko-cli-bridge
+  roko_workspace:
+    external: true
+    name: roko-workspace
+  roko_proxy:
+    external: true
+    name: roko_proxy

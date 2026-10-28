@@ -858,7 +858,7 @@ export async function createRun({
    * Switch to the `RunConfig` pick once the dependency is bumped.
    */
   subagentUsageSink?: (event: SubagentUsageEvent) => void;
-  /** Roko: per-run hook registry (PreToolUse/PostToolUse filestore policy). */
+  /** Optional agent hooks supplied by callers. */
   hooks?: RunConfig['hooks'];
 } & Pick<
   RunConfig,

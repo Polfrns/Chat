@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { Calculator } = require('@librechat/agents');
 const { logger } = require('@librechat/data-schemas');
+const { z } = require('zod');
 const { zodToJsonSchema } = require('zod-to-json-schema');
 const { Tool } = require('@librechat/agents/langchain/tools');
 const { Tools, ImageVisionTool } = require('librechat-data-provider');
@@ -109,6 +110,7 @@ function loadAndFormatTools({ directory, adminFilter = [], adminIncluded = [] })
 
 /**
  * Checks if a schema is a Zod schema by looking for the _def property
+ * (present on both Zod 3 and Zod 4 schemas)
  * @param {unknown} schema - The schema to check
  * @returns {boolean} True if it's a Zod schema
  */
@@ -117,9 +119,44 @@ function isZodSchema(schema) {
 }
 
 /**
+ * Converts a Zod schema to a draft-07 JSON schema. Zod 4 schemas (`_zod` internals)
+ * use Zod's native `toJSONSchema` on the input shape, so fields with defaults stay
+ * optional for the model; `zod-to-json-schema` cannot read Zod 4 schemas and is only
+ * used for legacy Zod 3 schemas still shipped by some dependencies (e.g. `Calculator`).
+ * @param {import('zod').ZodType} schema - The Zod schema to convert
+ * @returns {Record<string, unknown>} The JSON schema
+ */
+function zodSchemaToJsonSchema(schema) {
+  if ('_zod' in schema) {
+    return closeObjects(
+      z.toJSONSchema(schema, { target: 'draft-7', io: 'input', unrepresentable: 'any' }),
+    );
+  }
+  return zodToJsonSchema(schema);
+}
+
+/**
+ * `zod-to-json-schema` marked every object `additionalProperties: false`; input-mode
+ * `toJSONSchema` leaves non-strict objects open, so restore the previous output.
+ * @param {unknown} node - JSON schema node, mutated in place
+ * @returns {unknown} The same node
+ */
+function closeObjects(node) {
+  if (Array.isArray(node)) {
+    node.forEach(closeObjects);
+  } else if (node && typeof node === 'object') {
+    if (node.type === 'object' && node.properties && !('additionalProperties' in node)) {
+      node.additionalProperties = false;
+    }
+    Object.values(node).forEach(closeObjects);
+  }
+  return node;
+}
+
+/**
  * Formats a `StructuredTool` instance into a format that is compatible
- * with OpenAI's ChatCompletionFunctions. It uses the `zodToJsonSchema`
- * function to convert the schema of the `StructuredTool` into a JSON
+ * with OpenAI's ChatCompletionFunctions. It uses `zodSchemaToJsonSchema`
+ * to convert the schema of the `StructuredTool` into a JSON
  * schema, which is then used as the parameters for the OpenAI function.
  * If the schema is already a JSON schema, it is used directly.
  *
@@ -127,7 +164,7 @@ function isZodSchema(schema) {
  * @returns {FunctionTool} The OpenAI Assistant Tool.
  */
 function formatToOpenAIAssistantTool(tool) {
-  const parameters = isZodSchema(tool.schema) ? zodToJsonSchema(tool.schema) : tool.schema;
+  const parameters = isZodSchema(tool.schema) ? zodSchemaToJsonSchema(tool.schema) : tool.schema;
   return {
     type: Tools.function,
     [Tools.function]: {

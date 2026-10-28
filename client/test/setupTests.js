@@ -5,6 +5,8 @@
 // react-testing-library renders your components to document.body,
 // this adds jest-dom's custom assertions
 // https://github.com/testing-library/jest-dom#table-of-contents
+// Must run before any module that imports react-router (v7 needs TextEncoder/Request in jsdom)
+import './reactRouter.polyfill';
 import '@testing-library/jest-dom';
 
 // jest-dom adds custom jest matchers for asserting on DOM nodes.

@@ -2,8 +2,8 @@
 
 Este chart despliega el servicio RAG y, si se habilita, PostgreSQL con pgvector.
 Puede usarse junto al [chart LibreChat](../librechat/readme.md); el Compose y la
-integración de filestore son rutas distintas. RAG no es un requisito para usar
-las herramientas del MCP leedeo-filestore.
+integración de workspace son rutas distintas. RAG no es un requisito para usar
+roko-workspace.
 
 Consulta [values.yaml](values.yaml) y [Chart.yaml](Chart.yaml) para dependencias,
 imagen y versión. Los valores actuales exponen:
@@ -26,4 +26,4 @@ helm template roko-rag helm/librechat-rag-api -f rag-values.yaml
 
 Estos comandos son instrucciones, no comprobaciones ejecutadas en esta revisión.
 Configura la URL de RAG en la aplicación si vas a utilizarlo. No presupongas que
-habilitar el subchart configura automáticamente Bridge o el filestore externo.
+habilitar el subchart configura automáticamente Bridge ni roko-workspace.

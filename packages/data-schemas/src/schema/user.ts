@@ -133,6 +133,10 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
           type: Boolean,
           default: true,
         },
+        workspace: {
+          type: Boolean,
+          default: true,
+        },
       },
       default: {},
     },

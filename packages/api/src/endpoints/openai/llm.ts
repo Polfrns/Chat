@@ -655,7 +655,7 @@ export function getOpenAILLMConfig({
 
   // CLI Bridge reports safe tool progress as reasoning_content deltas. Make
   // sure model instances created outside the Agents path preserve those deltas.
-  if (isRokoBridgeModel(modelOptions.model)) {
+  if (isRokoBridgeModel(modelOptions.model ?? undefined)) {
     llmConfig.includeReasoningContent = process.env.ROKO_BRIDGE_ACTIVITY_ENABLED !== 'false';
   }
 

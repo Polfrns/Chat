@@ -1,8 +1,8 @@
 # Roko
 
-Roko es una adaptación de LibreChat con sesiones que agrupan conversaciones y
-filestores, acceso a Claude y Codex mediante un Bridge independiente, actividad
-progresiva y descarga y previsualización de archivos generados.
+Roko es una adaptación de LibreChat con acceso a Claude y Codex mediante un
+Bridge independiente, un workspace MCP por conversación para los demás modelos,
+actividad progresiva y descarga y previsualización de archivos generados.
 
 Esta documentación describe el código y la configuración del repositorio revisados
 el **20 de octubre de 2026**. El paquete raíz conserva la versión de base
@@ -13,15 +13,18 @@ ni acreditan qué imagen está desplegada en producción.
 
 | Componente | Ubicación y responsabilidad |
 | --- | --- |
-| Interfaz | `client/`: React, sesiones, parámetros, actividad y archivos |
+| Interfaz | `client/`: React, parámetros, actividad y archivos |
 | Servidor | `api/`: Express, autenticación, conversaciones y rutas de archivos |
 | Paquetes compartidos | `packages/`: API TypeScript, tipos, esquemas MongoDB y UI |
 | Bridge | Repositorio externo: adapta los SDK de CLI de Claude y Codex |
-| leedeo-filestore | Servicio externo: almacenamiento y herramientas MCP |
+| roko-workspace | Servicio externo: MCP y transferencia acotada de archivos por conversación |
 | Infraestructura | Compose para desarrollo/despliegue y workflow GitHub Actions |
 
-El `packages/roko-server` incluido es un servicio local heredado; no es el
-leedeo-filestore externo configurado en `runtime-config.yaml`.
+`ROKO_WORKSPACE_URL` debe apuntar al nombre del servicio Docker interno,
+normalmente `http://roko-workspace:8080`; Roko usa `/mcp` para MCP y las rutas
+REST `/v1/workspace/...` para transferencias. No publiques el puerto del servicio
+en el host. La activación es global por usuario y se controla desde
+Configuración → Personalización; los modelos Bridge quedan excluidos.
 
 ## Desarrollo
 

@@ -15,14 +15,14 @@ flowchart LR
   UI[Cliente React] --> API[API Roko]
   API --> DB[(MongoDB)]
   API --> Bridge[Bridge externo: Claude / Codex]
-  API --> FS[leedeo-filestore: REST / MCP]
+  API --> FS[roko-workspace: REST / MCP]
   API -. telemetría filtrada .-> LF[Langfuse]
   Bridge -. contexto firmado .-> LF
 ```
 
 El Compose base también define Meilisearch, vectordb y rag_api. Redis se configura
 aparte cuando se necesita coordinación entre instancias. El pipeline de este
-repositorio despliega el servicio `api`; Bridge y filestore se operan por separado.
+repositorio despliega el servicio `api`; Bridge y roko-workspace se operan por separado.
 
 ## Identidad y registro
 
@@ -38,69 +38,45 @@ duplicados de instalaciones anteriores.
 Fuentes: [esquema de usuario](packages/data-schemas/src/schema/user.ts) y
 [AuthService](api/server/services/AuthService.js).
 
-## Sesiones y almacenamiento
+## Workspace MCP y transferencia de archivos
 
-Una sesión Roko agrupa varias conversaciones. `Conversation.sessionId` referencia
-`ChatSession`, distinto de las sesiones de autenticación. Sus campos son:
+Roko conecta el MCP estático `roko-workspace` para modelos que no tienen el
+workspace integrado en Bridge. La preferencia `personalization.workspace` es
+global por usuario, queda habilitada cuando no está definida y permite optar
+por deshabilitarlo. Los alias `claude-max*` y `gpt-codex*` se excluyen. Si no
+se configuran `ROKO_WORKSPACE_URL` y `ROKO_WORKSPACE_KEY`, no se conecta.
 
-| Campo | Invariante |
-| --- | --- |
-| `name` | Obligatorio, trim, máximo 150 caracteres |
-| `owner` | Identidad del propietario |
-| `filestoreUids` | Lista ordenada de identificadores opacos de filestore |
-| `tenantId` | Ámbito de tenant cuando corresponde |
-| `createdAt`, `updatedAt` | Timestamps de MongoDB |
+La URL base por defecto es `http://roko-workspace:8080` y resuelve al servicio
+en la red Docker interna compartida por el API de Roko y `roko-workspace`;
+Bridge no necesita acceso a esa red y el puerto del servicio no se publica en el
+host. MCP usa `/mcp`, Bearer estático, timeout de 180 s e instrucciones estáticas.
+No hace llamadas REST al generar instrucciones.
 
-El índice `{owner, updatedAt}` sirve al listado. La asignación de conversaciones,
-el acceso a sesiones y las decisiones de permisos se validan en el servidor.
-Las rutas de sesión requieren autenticación JWT de Roko.
+La conexión MCP se puede compartir entre conversaciones del mismo usuario. El
+transporte agrega en cada petición HTTP la identidad obtenida del
+`AsyncLocalStorage` de esa invocación; no la guarda en la configuración cacheada
+ni usa `setRequestHeaders` por llamada. Cada firma incluye tenant, usuario,
+conversación, timestamp actual, versión 1, audiencia `roko-workspace` y los
+seudónimos de telemetría disponibles. Las cabeceras falsas `x-roko-*` se eliminan
+y solo se firman destinos que coinciden con el origen y prefijo configurados. Si
+falta contexto no se inventa una conversación: la petición queda sin firma. El
+servicio es stateless y no requiere `mcp-session-id` ni SSE.
 
-### Integración con leedeo-filestore
+`attach_chat_file(file_id)` transfiere solo un adjunto del mensaje actual a
+`inputs/`; Roko nunca sube todos los adjuntos automáticamente. El cliente REST
+limita las entradas a 100 MiB. `deliver_workspace_file(path)` pide al servicio una
+salida de `outputs/` ya validada (máximo 15 MiB) y Roko guarda el buffer como un
+archivo y artefacto del chat. Las herramientas no aceptan identificadores de
+workspace, por lo que el modelo no puede cambiar de ámbito.
 
-[RokoClient](packages/api/src/roko/client.ts) conecta a `ROKO_SERVER_URL` usando
-`ROKO_API_KEY`, un bearer de servicio. **No emite un JWT de usuario por petición
-para el filestore externo.** La autorización por sesión de Roko se aplica en sus
-rutas y hooks; los permisos del servicio externo corresponden también a la cuenta
-asociada a esa API key.
-
-`runtime-config.yaml` configura el MCP `leedeo-filestore` en `${ROKO_SERVER_URL}/mcp`.
-La API de gestión externa usa `/api/filestores/` y UIDs. El cliente implementa
-listado, creación, consulta, edición, borrado y operaciones de archivos. La
-desregistración interna no se expone como una ruta pública de usuario de Roko.
-
-Los hooks anteriores y posteriores a las herramientas distinguen filestores ya
-adjuntos y accesos que requieren confirmación. La creación puede proponer nombre,
-descripción y opciones al usuario. Las decisiones se distribuyen mediante SSE y
-los almacenes de solicitudes; Redis permite coordinación entre instancias, con
-alternativa en memoria para una sola instancia. Una solicitud pendiente tiene
-caducidad; no equivale a un permiso permanente sobre cualquier filestore.
-
-### Rutas de sesión
-
-La implementación completa y sus parámetros están en
-[sessions.js](api/server/routes/sessions.js).
-
-| Método | Ruta relativa a `/api/sessions` | Operación |
-| --- | --- | --- |
-| GET / POST | `/` | Listar / crear sesiones |
-| PUT | `/chats/:conversationId` | Asignar conversación |
-| GET / PATCH / DELETE | `/:sessionId` | Consultar / renombrar / borrar |
-| GET | `/:sessionId/chats` | Listar conversaciones |
-| GET / POST | `/:sessionId/filestores` | Consultar / adjuntar filestores |
-| DELETE | `/:sessionId/filestores/:filestoreUid` | Desadjuntar |
-| GET | `/:sessionId/filestore-requests/stream` | Eventos SSE |
-| GET | `/:sessionId/filestore-access-requests` | Solicitudes de acceso |
-| POST | `/:sessionId/filestore-access-requests/:filestoreUid/:decision` | Decidir acceso |
-| GET | `/:sessionId/filestore-creation-requests` | Solicitudes de creación |
-| POST | `/:sessionId/filestore-creation-requests/:requestId/:decision` | Confirmar o rechazar creación |
-
-Las rutas `/api/filestores` adaptan la gestión del servicio externo. El servicio
-SQLite/JWT de [packages/roko-server](packages/roko-server/README.md) conserva un
-contrato anterior y no es intercambiable con el filestore externo.
+Al eliminar una conversación Roko solicita borrar su workspace. Los fallos se
+registran sin cancelar el borrado; el TTL del servicio cubre expiraciones por
+otros caminos. Los metadatos históricos de adjuntos con contexto `filestore`
+siguen teniendo lectura para mostrar chats antiguos.
 
 ## Nextcloud e inicio de sesión
 
-La integración de Nextcloud es independiente del filestore. Con `NEXTCLOUD_URL`
+La integración de Nextcloud es independiente del workspace. Con `NEXTCLOUD_URL`
 configurado, Roko utiliza Login Flow v2 y WebDAV bajo la raíz del UID canónico
 del usuario. Las credenciales de aplicación se cifran en MongoDB; ninguna
 credencial compartida sustituye a la cuenta personal. Consultas, vinculaciones
@@ -125,7 +101,7 @@ en el documento cifrado de MongoDB. Una propuesta guarda la revisión de la
 cuenta, caduca y se consume atómicamente una sola vez. Las copias no sobrescriben
 y los reemplazos exigen un ETag fuerte. El modelo no puede aprobar mediante sus
 herramientas. No hay sincronización automática entre copias del chat, Nextcloud
-y filestore.
+y el workspace.
 
 `PERSISTENT_SESSIONS=true`, activado en el override Docker, conserva sesiones
 locales/Nextcloud sin caducidad práctica por inactividad (fecha del año 9999),
@@ -136,9 +112,7 @@ Configuración, límites y rutas de uso: [NEXTCLOUD.md](NEXTCLOUD.md).
 ## Modelos y Bridge
 
 El endpoint personalizado Claude Max usa los alias `claude-max`, `claude-max-fast`
-y `claude-max-deep`. El endpoint ChatGPT Codex está retirado de la configuración;
-la matriz de capacidades conserva los alias `gpt-codex*` para que las
-conversaciones antiguas se normalicen igual. Los valores efectivos se incluyen en
+y `claude-max-deep`. El endpoint ChatGPT Codex (`gpt-codex*`) vuelve a estar configurado sobre el mismo Bridge. Los valores efectivos se incluyen en
 el contexto firmado. Véase [CLI-BRIDGE.md](CLI-BRIDGE.md).
 
 Google (Gemini API) es un endpoint nativo de LibreChat. Requiere `google` en
@@ -184,8 +158,8 @@ búsqueda mediante herramienta mantiene la comprobación de credenciales de Libr
 Compose proporciona un valor por defecto para `LMSTUDIO_BASE_URL` que conserva
 la dirección anterior. `LIBRECHAT_CODE_BASEURL` permite conectar el sandbox
 compatible con la librería de agentes; habilitar la capacidad de código no crea
-ese servicio. El MCP futuro de edición/workspace queda como plantilla comentada,
-sin conexión ni herramientas ficticias. Véase [CHAT-TOOLS.md](CHAT-TOOLS.md).
+ese servicio. El workspace Roko se configura en el backend desde
+`ROKO_WORKSPACE_URL` y no se enumera como MCP seleccionable por conversación.
 
 ## Actividad de la respuesta
 

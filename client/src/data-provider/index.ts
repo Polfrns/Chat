@@ -8,8 +8,6 @@ export * from './Memories';
 export * from './Messages';
 export * from './Misc';
 export * from './Projects';
-export * from './Filestores';
-export * from './Sessions';
 export * from './Tools';
 export * from './connection';
 export * from './Favorites';

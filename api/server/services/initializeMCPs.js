@@ -3,10 +3,13 @@ const { logger } = require('@librechat/data-schemas');
 const { mergeAppTools, getAppConfig } = require('./Config');
 const { createMCPServersRegistry, createMCPManager } = require('~/config');
 
-/** SSRF allow-list entries (`host:port`) for the standalone Roko service, derived
- *  from ROKO_SERVER_URL; loopback names are paired so either spelling resolves. */
+/** SSRF allow-list entries (`host:port`) for the Docker-internal workspace. */
 function rokoAllowedAddresses() {
-  const url = new URL(process.env.ROKO_SERVER_URL || 'http://localhost:3100');
+  const rawUrl = process.env.ROKO_WORKSPACE_URL;
+  if (!rawUrl) {
+    return [];
+  }
+  const url = new URL(rawUrl);
   const port = url.port || (url.protocol === 'https:' ? '443' : '80');
   const addresses = [`${url.hostname}:${port}`];
   if (url.hostname === 'localhost') {
@@ -25,9 +28,7 @@ async function initializeMCPs() {
   const mcpServers = appConfig.mcpConfig;
 
   try {
-    /** Roko: exempt the standalone Roko service's address from the SSRF allow-list
-     *  so its streamable-HTTP MCP connection is reachable. Derived from
-     *  ROKO_SERVER_URL — must match the URL injected in MCP.js. */
+    /** Roko: permit only the configured workspace service host and port. */
     const allowedAddresses = [
       ...(appConfig?.mcpSettings?.allowedAddresses ?? []),
       ...rokoAllowedAddresses(),

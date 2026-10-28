@@ -827,112 +827,6 @@ export function assignConversationToProject(
   return request.put(endpoints.projectConversation(conversationId), { projectId });
 }
 
-/* ===== Roko: Filestores ===== */
-
-export function listFilestores(search?: string): Promise<t.TFilestoreListResponse> {
-  return request.get(endpoints.filestores(search));
-}
-export function createFilestore(payload: t.TCreateFilestoreRequest): Promise<t.TFilestore> {
-  return request.post(endpoints.filestores(), payload);
-}
-export function getFilestoreByUid(id: string): Promise<t.TFilestore> {
-  return request.get(endpoints.filestoreByUid(id));
-}
-export function updateFilestore(
-  id: string,
-  payload: t.TUpdateFilestoreRequest,
-): Promise<t.TFilestore> {
-  return request.patch(endpoints.filestoreByUid(id), payload);
-}
-export function deleteFilestore(id: string): Promise<t.TDeleteCountResponse> {
-  return request.delete(endpoints.filestoreByUid(id));
-}
-export function listFilestoreFiles(id: string): Promise<t.TFilestoreFilesResponse> {
-  return request.get(endpoints.filestoreFiles(id));
-}
-export function uploadFilestoreFile(
-  id: string,
-  data: FormData,
-): Promise<t.TFilestoreFileUploadResponse> {
-  return request.postMultiPart(endpoints.filestoreFileUpload(id), data);
-}
-export function getFilestoreFileDownload(id: string, path: string): Promise<AxiosResponse> {
-  return request.getResponse(endpoints.filestoreFileDownload(id, path), {
-    responseType: 'blob',
-    headers: { Accept: 'application/octet-stream' },
-  });
-}
-export function moveFilestoreFile(
-  id: string,
-  payload: t.TFilestoreFileMoveRequest,
-): Promise<t.TFilestoreFileMoveResponse> {
-  return request.post(endpoints.filestoreFileMove(id), payload);
-}
-
-/* ===== Roko: Sessions ===== */
-
-export function listSessions(search?: string): Promise<t.TSessionListResponse> {
-  return request.get(endpoints.sessions(search));
-}
-export function createSession(payload: t.TCreateSessionRequest): Promise<t.TSession> {
-  return request.post(endpoints.sessions(), payload);
-}
-export function getSessionById(id: string): Promise<t.TSession> {
-  return request.get(endpoints.sessionById(id));
-}
-export function updateSession(id: string, payload: t.TUpdateSessionRequest): Promise<t.TSession> {
-  return request.patch(endpoints.sessionById(id), payload);
-}
-export function deleteSession(id: string): Promise<t.TDeleteCountResponse> {
-  return request.delete(endpoints.sessionById(id));
-}
-export function listSessionChats(id: string): Promise<t.TSessionChatsResponse> {
-  return request.get(endpoints.sessionChats(id));
-}
-export function listSessionFilestores(id: string): Promise<t.TSessionFilestoresResponse> {
-  return request.get(endpoints.sessionFilestores(id));
-}
-export function attachSessionFilestore(id: string, filestoreUid: string): Promise<t.TSession> {
-  return request.post(endpoints.sessionFilestores(id), { filestoreUid });
-}
-export function detachSessionFilestore(id: string, filestoreUid: string): Promise<t.TSession> {
-  return request.delete(endpoints.sessionFilestoreById(id, filestoreUid));
-}
-export function assignChatToSession(
-  conversationId: string,
-  sessionId: string | null,
-): Promise<{ conversationId: string }> {
-  return request.put(endpoints.sessionAssignChat(conversationId), { sessionId });
-}
-export function listFilestoreAccessRequests(
-  id: string,
-): Promise<t.TFilestoreAccessRequestsResponse> {
-  return request.get(endpoints.filestoreAccessRequests(id));
-}
-export function decideFilestoreAccessRequest(
-  id: string,
-  filestoreUid: string,
-  decision: t.TFilestoreAccessDecision,
-): Promise<t.TSession> {
-  return request.post(endpoints.filestoreAccessRequestDecision(id, filestoreUid, decision), {});
-}
-export function listFilestoreCreationRequests(
-  id: string,
-): Promise<t.TFilestoreCreationRequestsResponse> {
-  return request.get(endpoints.filestoreCreationRequests(id));
-}
-export function decideFilestoreCreationRequest(
-  id: string,
-  requestId: string,
-  decision: t.TFilestoreCreationDecision,
-  values?: t.TFilestoreCreationProposal,
-): Promise<{ ok: boolean }> {
-  return request.post(
-    endpoints.filestoreCreationRequestDecision(id, requestId, decision),
-    values ?? {},
-  );
-}
-
 export function genTitle(payload: m.TGenTitleRequest): Promise<m.TGenTitleResponse> {
   return request.get(endpoints.genTitle(payload.conversationId));
 }
@@ -1381,6 +1275,12 @@ export const updateMemoryPreferences = (preferences: {
   memories: boolean;
 }): Promise<{ updated: boolean; preferences: { memories: boolean } }> => {
   return request.patch(endpoints.memoryPreferences(), preferences);
+};
+
+export const updateWorkspacePreferences = (preferences: {
+  enabled: boolean;
+}): Promise<{ updated: boolean; preferences: { enabled: boolean } }> => {
+  return request.patch(endpoints.mcpWorkspacePreferences(), preferences);
 };
 
 export const createMemory = (data: {

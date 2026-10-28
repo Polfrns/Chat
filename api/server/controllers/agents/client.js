@@ -76,7 +76,6 @@ const { encodeAndFormat } = require('~/server/services/Files/images/encode');
 const { createContextHandlers } = require('~/app/clients/prompts');
 const { resolveConfigServers } = require('~/server/services/MCP');
 const { getMCPServerTools } = require('~/server/services/Config');
-const { buildRokoHookRegistry } = require('~/server/services/roko/hooks');
 const BaseClient = require('~/app/clients/BaseClient');
 const { formatMessage } = require('~/app/clients/prompts/formatMessageWithDocuments');
 const { restoreBridgeOutputs } = require('~/app/clients/prompts/restoreBridgeOutputs');
@@ -246,7 +245,6 @@ class AgentClient extends BaseClient {
           spec: this.options.spec,
           iconURL: this.options.iconURL,
           chatProjectId: this.options.chatProjectId,
-          sessionId: this.options.sessionId,
           endpoint: this.options.endpoint,
           agent_id: this.options.agent.id,
           modelLabel: this.options.modelLabel,
@@ -1363,21 +1361,9 @@ class AgentClient extends BaseClient {
           );
         }
 
-        /** Roko: per-session filestore-policy hooks (PreToolUse approval/scoping,
-         *  PostToolUse list annotation + created-store attach). Undefined when the
-         *  conversation has no session, so the run skips hook dispatch. */
-        const rokoSessionId = this.options.sessionId ?? this.options.req?.body?.sessionId ?? null;
-        const rokoHooks = buildRokoHookRegistry({
-          sessionId: rokoSessionId,
-          identity: {
-            subject: String(this.options.req?.user?.id ?? this.user ?? ''),
-          },
-        });
-
         run = await createRun({
           agents,
           messages,
-          hooks: rokoHooks,
           indexTokenCountMap,
           initialSummary,
           initialSessions,

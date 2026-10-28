@@ -1,4 +1,4 @@
-import reactRouter from 'react-router-dom';
+import * as reactRouter from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import type { TStartupConfig } from 'librechat-data-provider';
 import { getByTestId, render, waitFor } from 'test/layout-test-utils';
@@ -113,6 +113,8 @@ const setup = ({
 };
 
 jest.mock('react-router-dom', () => ({
+  // `__esModule` keeps `import * as reactRouter` pointing at this mock so jest.spyOn works.
+  __esModule: true,
   ...jest.requireActual('react-router-dom'),
   useOutletContext: () => ({
     startupConfig: mockStartupConfig,

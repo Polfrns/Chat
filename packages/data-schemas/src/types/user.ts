@@ -50,6 +50,8 @@ export interface IUser extends Document {
   termsAccepted?: boolean;
   personalization?: {
     memories?: boolean;
+    /** Roko workspace MCP; absent means enabled. */
+    workspace?: boolean;
   };
   favorites?: TUserFavorite[];
   /** Per-skill active/inactive overrides. Key = skillId, value = active state. */
@@ -95,6 +97,8 @@ export interface UpdateUserRequest {
   termsAccepted?: boolean;
   personalization?: {
     memories?: boolean;
+    /** Roko workspace MCP; absent means enabled. */
+    workspace?: boolean;
   };
   skillStates?: Record<string, boolean>;
 }

@@ -19,14 +19,10 @@ en un esquema o hacer depender la lógica de una instancia de producción.
 
 ## Modelos de Roko
 
-[ChatSession](src/schema/chatSession.ts) usa `owner`, `name`, `filestoreUids`,
-`tenantId` y timestamps. `Conversation.sessionId` relaciona conversaciones con
-esa sesión; no es la sesión de refresh-token de autenticación.
-
-[User](src/schema/user.ts) normaliza el correo a minúsculas y define unicidad
-compuesta de `email + tenantId`. Cambiar un índice no fusiona datos antiguos.
-Los métodos de sesión deben conservar el ámbito del propietario, además del
-ámbito de tenant aplicable.
+`User` normaliza el correo a minúsculas y define unicidad compuesta de
+`email + tenantId`. Cambiar un índice no fusiona datos antiguos. Las sesiones de
+autenticación siguen separadas de las conversaciones; sus expiraciones y
+revocaciones conservan sus métodos de persistencia.
 
 ## Aislamiento de tenant
 

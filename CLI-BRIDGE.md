@@ -21,7 +21,7 @@ esa verificación. El adaptador rechaza destinos ajenos y redirecciones.
 | Alias normal | Alias rápido | Alias profundo | Esfuerzo inicial normal / rápido / profundo |
 | --- | --- | --- | --- |
 | `claude-max` | `claude-max-fast` | `claude-max-deep` | medium / low / high |
-| `gpt-codex` | `gpt-codex-fast` | `gpt-codex-deep` | medium / low / high (endpoint retirado de Roko) |
+| `gpt-codex` | `gpt-codex-fast` | `gpt-codex-deep` | medium / low / high |
 
 El modelo real lo decide la configuración de Bridge. El esfuerzo explícito tiene
 prioridad sobre el preset; Auto conserva la selección del preset. El proveedor

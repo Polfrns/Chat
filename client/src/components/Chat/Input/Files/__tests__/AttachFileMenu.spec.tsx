@@ -27,6 +27,12 @@ jest.mock('~/components/SharePoint', () => ({
   SharePointPickerDialog: () => null,
 }));
 
+/* NextcloudPanel needs AuthContext; it is out of scope for these menu tests. */
+jest.mock('~/components/Nextcloud/NextcloudPanel', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock('@librechat/client', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const R = require('react');
