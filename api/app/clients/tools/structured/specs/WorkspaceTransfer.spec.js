@@ -17,6 +17,7 @@ const mockCreateFile = jest.fn();
 const { Readable } = require('stream');
 
 jest.mock('@librechat/api', () => ({
+  ...jest.requireActual('@librechat/api'),
   readRokoWorkspaceConfig: () => ({ baseUrl: 'http://roko-workspace:8080', key: 'k'.repeat(32) }),
   RokoWorkspaceClient: jest.fn(() => mockClient),
   rokoWorkspaceIdentity: jest.fn(({ user, conversationId }) =>
@@ -126,5 +127,77 @@ describe('workspace transfer tools', () => {
     expect(result[0]).toContain('saved conversation is required');
     expect(mockClient.downloadOutput).not.toHaveBeenCalled();
     expect(mockCreateFile).not.toHaveBeenCalled();
+  });
+
+  describe('inline preview text', () => {
+    const deliver = (filename, contentType, buffer) => {
+      mockClient.downloadOutput.mockResolvedValue({ buffer, filename, contentType });
+      return createDeliverWorkspaceFileTool({ req: request }).func({
+        path: `outputs/${filename}`,
+      });
+    };
+    const savedRecord = () => mockCreateFile.mock.calls[0][0];
+
+    it('stores a bare MIME and the decoded text for a .txt output', async () => {
+      await deliver('notes.txt', 'text/plain; charset=utf-8', Buffer.from('hola ñ'));
+
+      expect(savedRecord()).toEqual(
+        expect.objectContaining({ type: 'text/plain', text: 'hola ñ', textFormat: 'text' }),
+      );
+    });
+
+    it('stores text for a .json output', async () => {
+      await deliver('data.json', 'application/json', Buffer.from('{"a":1}'));
+
+      expect(savedRecord()).toEqual(
+        expect.objectContaining({ type: 'application/json', text: '{"a":1}', textFormat: 'text' }),
+      );
+    });
+
+    it('truncates text between the cache cap and the extraction cap', async () => {
+      await deliver('big.txt', 'text/plain', Buffer.alloc(600 * 1024, 'a'));
+
+      const { text } = savedRecord();
+      expect(text.endsWith('…[truncated]')).toBe(true);
+      expect(Buffer.byteLength(text)).toBeLessThanOrEqual(512 * 1024);
+    });
+
+    it('leaves text above the extraction cap download-only', async () => {
+      await deliver('huge.txt', 'text/plain', Buffer.alloc(1024 * 1024 + 1, 'a'));
+
+      expect(savedRecord()).toEqual(expect.objectContaining({ text: null, textFormat: null }));
+    });
+
+    it('stores no text for a PNG and keeps its type', async () => {
+      await deliver('chart.png', 'image/png', Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0]));
+
+      expect(savedRecord()).toEqual(
+        expect.objectContaining({ type: 'image/png', text: null, textFormat: null }),
+      );
+    });
+
+    it('stores no text for an unparseable PDF and keeps its type', async () => {
+      await deliver('output.pdf', 'application/pdf', Buffer.from('%PDF-valid'));
+
+      expect(savedRecord()).toEqual(
+        expect.objectContaining({ type: 'application/pdf', text: null, textFormat: null }),
+      );
+    });
+
+    it('leaves office outputs download-only instead of storing unrendered text', async () => {
+      await deliver('table.csv', 'text/csv', Buffer.from('a,b\n1,2'));
+
+      expect(savedRecord()).toEqual(
+        expect.objectContaining({ type: 'text/csv', text: null, textFormat: null }),
+      );
+    });
+
+    it('defaults a missing content type to application/octet-stream', async () => {
+      await deliver('blob', undefined, Buffer.from([0, 1, 2]));
+
+      expect(savedRecord()).toEqual(
+        expect.objectContaining({ type: 'application/octet-stream', text: null }),
+      );
+    });
   });
 });

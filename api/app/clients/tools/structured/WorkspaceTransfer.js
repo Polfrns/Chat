@@ -8,6 +8,10 @@ const {
   readRokoWorkspaceConfig,
   RokoWorkspaceClient,
   rokoWorkspaceIdentity,
+  classifyCodeArtifact,
+  hasOfficeHtmlPath,
+  extractCodeArtifactText,
+  getExtractedTextFormat,
 } = require('@librechat/api');
 const { getStrategyFunctions } = require('~/server/services/Files/strategies');
 const { findFileById, createFile } = require('~/models');
@@ -30,6 +34,21 @@ function conversationIdentity(req) {
     user: req.user,
     conversationId: req.body?.conversationId,
   });
+}
+
+/**
+ * Inline preview text for a delivered output, from the same extractor that
+ * code-execution outputs use so size caps and binary detection live in one
+ * place. Office files stay download-only: their panel buckets need the
+ * deferred HTML render, and plain text there would be downgraded or dropped.
+ */
+async function previewText(buffer, filename, mimeType) {
+  if (hasOfficeHtmlPath(filename, mimeType)) {
+    return { text: null, textFormat: null };
+  }
+  const category = classifyCodeArtifact(filename, mimeType);
+  const text = await extractCodeArtifactText(buffer, filename, mimeType, category);
+  return { text, textFormat: getExtractedTextFormat(filename, mimeType, text) };
 }
 
 function createAttachChatFileTool({ req }) {
@@ -97,6 +116,7 @@ function createDeliverWorkspaceFileTool({ req }) {
         }
         const file_id = v4();
         const filename = path.posix.basename(String(download.filename).replace(/\\/g, '/'));
+        const mimeType = download.contentType?.split(';')[0].trim() || 'application/octet-stream';
         const filepath = await saveBuffer({
           userId: req.user.id,
           buffer: download.buffer,
@@ -113,7 +133,8 @@ function createDeliverWorkspaceFileTool({ req }) {
             filename,
             filepath,
             bytes: download.buffer.length,
-            type: download.contentType,
+            type: mimeType,
+            ...(await previewText(download.buffer, filename, mimeType)),
             context: FileContext.workspace,
             source: appConfig.fileStrategy,
             usage: 0,

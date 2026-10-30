@@ -66,7 +66,10 @@ servicio es stateless y no requiere `mcp-session-id` ni SSE.
 `inputs/`; Roko nunca sube todos los adjuntos automáticamente. El cliente REST
 limita las entradas a 100 MiB. `deliver_workspace_file(path)` pide al servicio una
 salida de `outputs/` ya validada (máximo 15 MiB) y Roko guarda el buffer como un
-archivo y artefacto del chat. Las herramientas no aceptan identificadores de
+archivo y artefacto del chat. El registro guarda el MIME sin parámetros y, salvo
+para ofimática, el `text` de vista previa que produce `extractCodeArtifactText`
+(el mismo extractor y límites que las salidas de code execution); la ofimática
+queda solo para descarga porque su vista previa requiere conversión a HTML. Las herramientas no aceptan identificadores de
 workspace, por lo que el modelo no puede cambiar de ámbito.
 
 Al eliminar una conversación Roko solicita borrar su workspace. Los fallos se

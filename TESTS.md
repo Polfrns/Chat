@@ -23,7 +23,7 @@ La imagen de producción depende de esa etapa y de la compilación del frontend.
 | `api/server/services/MCP.spec.js`, `Tools/mcp.spec.js` | Contexto ALS al descubrir e invocar herramientas sobre MCP compartido |
 | `api/server/services/initializeMCPs.spec.js` | SSRF permite únicamente el origen interno del workspace configurado |
 | `api/server/routes/__tests__/convos.spec.js` | El borrado de conversaciones solicita borrar los workspaces correspondientes |
-| `api/app/clients/tools/structured/specs/WorkspaceTransfer.spec.js` | Transferencia explícita de adjunto y creación del artefacto desde salida validada |
+| `api/app/clients/tools/structured/specs/WorkspaceTransfer.spec.js` | Transferencia explícita de adjunto, creación del artefacto desde salida validada y texto de vista previa |
 | `packages/api/src/telemetry/sdk.spec.ts` | Inicialización y opciones de privacidad de la telemetría |
 | `packages/api/src/skills/__tests__/deletionRequests.test.ts` | Una solicitud de borrado de skill solo la ve y decide su usuario; la decisión no cambia y sin respuesta no hay decisión |
 | `api/server/utils/__tests__/runMiddlewareChain.spec.js` | Los guards de ruta se ejecutan en orden, uno que responde detiene la cadena y los errores se propagan |
@@ -96,7 +96,12 @@ dirigida y no forma parte de la selección de `ci/test.sh`.
 `api/app/clients/tools/structured/specs/WorkspaceTransfer.spec.js` verifica que
 solo se transfiere el adjunto explícitamente seleccionado, que no se aceptan IDs
 fuera del mensaje, y que una salida descargada se persiste y devuelve como
-artefacto. `api/server/routes/__tests__/convos.spec.js` verifica la solicitud de
+artefacto. También fija el registro que alimenta la vista previa del panel: MIME
+sin parámetros (`application/octet-stream` si falta), `text` para `.txt`/`.json`,
+truncado entre 512 KiB y 1 MiB y ausente por encima, sin `text` para PNG, PDF no
+legible ni ofimática (CSV), y el `type` original intacto. El extractor real se usa
+sin simular para que los límites sean los del código compartido.
+`api/server/routes/__tests__/convos.spec.js` verifica la solicitud de
 borrado del workspace junto al borrado de conversaciones. Los adaptadores usan
 servicios simulados; no acreditan conexión a Bridge o roko-workspace real.
 
