@@ -171,9 +171,9 @@ describe('skills routes and skill_library tool', () => {
   });
 
   it('rejects a decision for a request that belongs to someone else', async () => {
-    await request(appFor(stranger))
+    const response = await request(appFor(stranger))
       .post('/api/skills/deletion-requests/not-theirs/decision')
-      .send({ approve: true })
-      .expect(404);
+      .send({ approve: true });
+    expect(response.status).toBe(404);
   });
 });
