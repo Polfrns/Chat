@@ -62,7 +62,9 @@ router.patch('/workspace-preferences', requireJwtAuth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    return res.status(200).json({ updated: true, preferences: { enabled: user.personalization?.workspace !== false } });
+    return res
+      .status(200)
+      .json({ updated: true, preferences: { enabled: user.personalization?.workspace !== false } });
   } catch (error) {
     logger.error('[MCP] Failed to update workspace preference', error);
     return res.status(500).json({ error: 'Failed to update workspace preference' });

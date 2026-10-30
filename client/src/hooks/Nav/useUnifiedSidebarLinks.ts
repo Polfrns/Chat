@@ -1,9 +1,12 @@
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
+import { MessagesSquare } from 'lucide-react';
 import { useUserKeyQuery } from 'librechat-data-provider/react-query';
 import { getConfigDefaults, getEndpointField } from 'librechat-data-provider';
 import type { TEndpointsConfig } from 'librechat-data-provider';
+import type { NavLink } from '~/common';
 import { useGetEndpointsQuery, useGetStartupConfig } from '~/data-provider';
+import ConversationsSection from '~/components/UnifiedSidebar/ConversationsSection';
 import useSideNavLinks from '~/hooks/Nav/useSideNavLinks';
 import store from '~/store';
 
@@ -46,5 +49,17 @@ export default function useUnifiedSidebarLinks() {
     includeHidePanel: false,
   });
 
-  return sideNavLinks;
+  /** Chat history stays the first (default) panel now that Sessions is gone. */
+  const links = useMemo(() => {
+    const conversationLink: NavLink = {
+      title: 'com_ui_chat_history',
+      label: '',
+      icon: MessagesSquare,
+      id: 'conversations',
+      Component: ConversationsSection,
+    };
+    return [conversationLink, ...sideNavLinks];
+  }, [sideNavLinks]);
+
+  return links;
 }

@@ -114,28 +114,30 @@ export default function Personalization({
           </div>
         </>
       )}
-      {hasWorkspaceMcp && <>
-        <div className="border-b border-border-medium pb-3">
-          <div className="text-base font-semibold">{localize('com_roko_workspace_mcp')}</div>
-        </div>
-        <div className="flex items-center justify-between">
-          <div>
-            <div id="workspace-mcp-label" className="flex items-center gap-2">
-              {localize('com_roko_workspace_mcp_enabled')}
-            </div>
-            <div id="workspace-mcp-description" className="mt-1 text-xs text-text-secondary">
-              {localize('com_roko_workspace_mcp_description')}
-            </div>
+      {hasWorkspaceMcp && (
+        <>
+          <div className="border-b border-border-medium pb-3">
+            <div className="text-base font-semibold">{localize('com_roko_workspace_mcp')}</div>
           </div>
-          <Switch
-            checked={workspaceEnabled}
-            onCheckedChange={handleWorkspaceToggle}
-            disabled={updateWorkspacePreferencesMutation.isLoading}
-            aria-labelledby="workspace-mcp-label"
-            aria-describedby="workspace-mcp-description"
-          />
-        </div>
-      </>}
+          <div className="flex items-center justify-between">
+            <div>
+              <div id="workspace-mcp-label" className="flex items-center gap-2">
+                {localize('com_roko_workspace_mcp_enabled')}
+              </div>
+              <div id="workspace-mcp-description" className="mt-1 text-xs text-text-secondary">
+                {localize('com_roko_workspace_mcp_description')}
+              </div>
+            </div>
+            <Switch
+              checked={workspaceEnabled}
+              onCheckedChange={handleWorkspaceToggle}
+              disabled={updateWorkspacePreferencesMutation.isLoading}
+              aria-labelledby="workspace-mcp-label"
+              aria-describedby="workspace-mcp-description"
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

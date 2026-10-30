@@ -23,8 +23,8 @@ const identityB: RokoWorkspaceIdentity = {
   conversationId: 'conversation-b',
 };
 
-function decodeContext(headers: Record<string, string>) {
-  return JSON.parse(Buffer.from(headers['x-roko-context'], 'base64url').toString('utf8'));
+function decodeContext(headers: { 'x-roko-context'?: string }) {
+  return JSON.parse(Buffer.from(headers['x-roko-context'] ?? '', 'base64url').toString('utf8'));
 }
 
 describe('Roko workspace request context', () => {

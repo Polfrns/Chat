@@ -84,9 +84,9 @@ export default function ModelPanel({
     const overriddenParams = endpointsConfig[provider]?.customParams?.paramDefinitions ?? [];
     const overriddenParamsMap = keyBy(overriddenParams, 'key');
     return applyModelAwareDefaults(
-      defaultParams.filter((param) => param != null).map(
-        (param) => (overriddenParamsMap[param.key] as SettingDefinition) ?? param,
-      ),
+      defaultParams
+        .filter((param) => param != null)
+        .map((param) => (overriddenParamsMap[param.key] as SettingDefinition) ?? param),
       overriddenEndpointKey,
       model ?? '',
     );
@@ -244,6 +244,7 @@ export default function ModelPanel({
                   settingKey={key}
                   defaultValue={defaultValue}
                   {...rest}
+                  chatScoped={false}
                   setOption={setOption as t.TSetOption}
                   conversation={modelParameters as Partial<t.TConversation>}
                 />

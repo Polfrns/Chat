@@ -152,11 +152,14 @@ export const useUpdateWorkspacePreferencesMutation = (options?: {
   { enabled: boolean }
 > => {
   const queryClient = useQueryClient();
-  return useMutation((preferences: { enabled: boolean }) => dataService.updateWorkspacePreferences(preferences), {
-    onSuccess: (data) => {
-      queryClient.invalidateQueries([QueryKeys.user]);
-      options?.onSuccess?.(data);
+  return useMutation(
+    (preferences: { enabled: boolean }) => dataService.updateWorkspacePreferences(preferences),
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries([QueryKeys.user]);
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => options?.onError?.(error),
     },
-    onError: (error) => options?.onError?.(error),
-  });
+  );
 };

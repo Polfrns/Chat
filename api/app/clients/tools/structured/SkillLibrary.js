@@ -61,11 +61,18 @@ function createSkillLibraryTool({ req }) {
     },
     async read({ skill_id }) {
       const result = await call('get', { id: skill_id });
-      return result.status === 200 ? { ...summary(result.body), body: result.body.body } : failure(result);
+      return result.status === 200
+        ? { ...summary(result.body), body: result.body.body }
+        : failure(result);
     },
     async create({ name, description, body, always_apply }) {
       const result = await call('create', {
-        body: { name, description, body, ...(always_apply != null ? { alwaysApply: always_apply } : {}) },
+        body: {
+          name,
+          description,
+          body,
+          ...(always_apply != null ? { alwaysApply: always_apply } : {}),
+        },
       });
       return result.status === 201 ? { created: summary(result.body) } : failure(result);
     },
@@ -81,9 +88,15 @@ function createSkillLibraryTool({ req }) {
           ([, value]) => value != null,
         ),
       );
-      const result = await call('update', { id: skill_id, body: { ...changes, expectedVersion: version } });
+      const result = await call('update', {
+        id: skill_id,
+        body: { ...changes, expectedVersion: version },
+      });
       if (result.status === 409 && result.body?.current) {
-        return { error: 'The skill changed since it was read; read it again and retry.', current_version: result.body.current.version };
+        return {
+          error: 'The skill changed since it was read; read it again and retry.',
+          current_version: result.body.current.version,
+        };
       }
       return result.status === 200 ? { updated: summary(result.body) } : failure(result);
     },
@@ -94,7 +107,10 @@ function createSkillLibraryTool({ req }) {
       if (decision !== 'approve') {
         return {
           deleted: false,
-          reason: decision === 'deny' ? 'The user rejected the deletion.' : 'The user did not confirm in time.',
+          reason:
+            decision === 'deny'
+              ? 'The user rejected the deletion.'
+              : 'The user did not confirm in time.',
         };
       }
       const result = await call('remove', { id: skill_id });
@@ -106,7 +122,8 @@ function createSkillLibraryTool({ req }) {
     async ({ operation, ...input }) => {
       if (!req.user?.id) return JSON.stringify({ error: 'Authentication required' });
       const needsId = operation !== 'list' && operation !== 'create';
-      if (needsId && !input.skill_id) return JSON.stringify({ error: `skill_id is required for ${operation}` });
+      if (needsId && !input.skill_id)
+        return JSON.stringify({ error: `skill_id is required for ${operation}` });
       try {
         return JSON.stringify(await operations[operation](input));
       } catch {
@@ -118,13 +135,27 @@ function createSkillLibraryTool({ req }) {
       description: SKILL_LIBRARY_TOOL_DESCRIPTION,
       schema: z.object({
         operation: z.enum(['list', 'read', 'create', 'update', 'delete']),
-        skill_id: z.string().optional().describe('Skill id from list; required for read, update and delete'),
+        skill_id: z
+          .string()
+          .optional()
+          .describe('Skill id from list; required for read, update and delete'),
         search: z.string().optional().describe('Filter for list'),
         name: z.string().optional(),
-        description: z.string().optional().describe('What the skill does and when it should be used'),
+        description: z
+          .string()
+          .optional()
+          .describe('What the skill does and when it should be used'),
         body: z.string().optional().describe('Complete Markdown instructions of the skill'),
-        always_apply: z.boolean().optional().describe('Apply the skill in every chat without being invoked'),
-        expected_version: z.number().int().positive().optional().describe('Version from read; guards against overwriting newer edits'),
+        always_apply: z
+          .boolean()
+          .optional()
+          .describe('Apply the skill in every chat without being invoked'),
+        expected_version: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe('Version from read; guards against overwriting newer edits'),
       }),
     },
   );

@@ -31,7 +31,10 @@ describe('Convos Routes', () => {
     deleteAllSharedLinksWithCleanup,
     deleteConvoSharedLinksWithCleanup,
   } = require('@librechat/api');
-  const { deleteConversationWorkspace, deleteConversationWorkspaces } = require('~/server/services/rokoWorkspace');
+  const {
+    deleteConversationWorkspace,
+    deleteConversationWorkspaces,
+  } = require('~/server/services/rokoWorkspace');
 
   beforeAll(() => {
     convosRouter = require('../convos');
@@ -53,7 +56,9 @@ describe('Convos Routes', () => {
     mongoose.models.Conversation = {
       find: jest.fn(() => ({
         select: jest.fn().mockReturnValue({
-          lean: jest.fn().mockResolvedValue([{ conversationId: 'conv-1' }, { conversationId: 'conv-2' }]),
+          lean: jest
+            .fn()
+            .mockResolvedValue([{ conversationId: 'conv-1' }, { conversationId: 'conv-2' }]),
         }),
       })),
     };

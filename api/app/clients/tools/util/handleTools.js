@@ -243,7 +243,8 @@ const loadTools = async ({
       return createAttachChatFileTool({ req: options.req });
     },
     deliver_workspace_file: async () => createDeliverWorkspaceFileTool({ req: options.req }),
-    nextcloud_files: async () => require('../structured/Nextcloud').createNextcloudTool({ req: options.req }),
+    nextcloud_files: async () =>
+      require('../structured/Nextcloud').createNextcloudTool({ req: options.req }),
     [SKILL_LIBRARY_TOOL_NAME]: async () =>
       require('../structured/SkillLibrary').createSkillLibraryTool({ req: options.req }),
   };

@@ -23,7 +23,10 @@ const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
 const { importConversations } = require('~/server/utils/import');
 const getLogStores = require('~/cache/getLogStores');
 const db = require('~/models');
-const { deleteConversationWorkspace, deleteConversationWorkspaces } = require('~/server/services/rokoWorkspace');
+const {
+  deleteConversationWorkspace,
+  deleteConversationWorkspaces,
+} = require('~/server/services/rokoWorkspace');
 
 const assistantClients = {
   [EModelEndpoint.azureAssistants]: require('~/server/services/Endpoints/azureAssistants'),
@@ -156,7 +159,10 @@ router.delete('/', async (req, res) => {
       await db.deleteToolCalls(req.user.id, filter.conversationId);
       await deleteConvoSharedLinksWithCleanup(req.user.id, filter.conversationId);
     } else {
-      await deleteConversationWorkspaces(req.user, conversations.map((conversation) => conversation.conversationId));
+      await deleteConversationWorkspaces(
+        req.user,
+        conversations.map((conversation) => conversation.conversationId),
+      );
     }
     res.status(201).json(dbResponse);
   } catch (error) {
@@ -171,7 +177,10 @@ router.delete('/all', async (req, res) => {
       .select('conversationId')
       .lean();
     const dbResponse = await db.deleteConvos(req.user.id, {});
-    await deleteConversationWorkspaces(req.user, conversations.map((conversation) => conversation.conversationId));
+    await deleteConversationWorkspaces(
+      req.user,
+      conversations.map((conversation) => conversation.conversationId),
+    );
     await db.deleteToolCalls(req.user.id);
     await deleteAllSharedLinksWithCleanup(req.user.id);
     res.status(201).json(dbResponse);

@@ -70,7 +70,9 @@ export class RokoWorkspaceClient {
     if (
       segments[0] !== 'outputs' ||
       segments.length < 2 ||
-      segments.some((segment) => !segment || segment === '.' || segment === '..' || segment.includes('\\'))
+      segments.some(
+        (segment) => !segment || segment === '.' || segment === '..' || segment.includes('\\'),
+      )
     ) {
       throw new RokoWorkspaceError(
         'Only files under outputs/ can be delivered',
@@ -132,7 +134,11 @@ export class RokoWorkspaceClient {
       data = text ? JSON.parse(text) : null;
     } catch {
       if (response.ok) {
-        throw new RokoWorkspaceError('Workspace service returned invalid JSON', 502, 'bad_response');
+        throw new RokoWorkspaceError(
+          'Workspace service returned invalid JSON',
+          502,
+          'bad_response',
+        );
       }
     }
     if (!response.ok) {

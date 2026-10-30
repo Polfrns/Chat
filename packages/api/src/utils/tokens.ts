@@ -618,10 +618,9 @@ export const modelSchema: ModelSchema = z.object({
   context_length: z.number(),
 });
 
-export const inputSchema: z.ZodObject<{ data: z.ZodArray<ModelSchema> }, z.core.$strip> =
-  z.object({
-    data: z.array(modelSchema),
-  });
+export const inputSchema: z.ZodObject<{ data: z.ZodArray<ModelSchema> }, z.core.$strip> = z.object({
+  data: z.array(modelSchema),
+});
 
 /**
  * Processes a list of model data from an API and organizes it into structured data based on URL and specifics of rates and context.

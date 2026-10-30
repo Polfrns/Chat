@@ -4,10 +4,11 @@ import type { PartWithIndex } from '../ParallelContent';
 import { partitionResponseParts } from '../responseParts';
 
 const text = (value: string): TMessageContentParts => ({ type: ContentTypes.TEXT, text: value });
-const tool = (name = 'list_files_mcp_drive'): TMessageContentParts => ({
-  type: ContentTypes.TOOL_CALL,
-  tool_call: { id: name, name, args: '{}', output: '' },
-}) as TMessageContentParts;
+const tool = (name = 'list_files_mcp_drive'): TMessageContentParts =>
+  ({
+    type: ContentTypes.TOOL_CALL,
+    tool_call: { id: name, name, args: '{}', output: '' },
+  }) as TMessageContentParts;
 const indexed = (parts: TMessageContentParts[]): PartWithIndex[] =>
   parts.map((part, idx) => ({ part, idx }));
 

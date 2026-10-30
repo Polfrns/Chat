@@ -54,7 +54,8 @@ async function authenticate(config: FullConfig, user: User) {
     ...(chromiumChannel ? { channel: chromiumChannel } : {}),
   });
   try {
-    const page = await browser.newPage();
+    // Selectors are English; honour the project locale so non-English hosts can run setup.
+    const page = await browser.newPage({ locale: config.projects[0].use.locale });
     console.log('🤖: 🗝  authenticating user:', user.email);
 
     if (typeof baseURL !== 'string') {

@@ -20,7 +20,11 @@ describe('RokoWorkspaceClient', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ path: 'inputs/a.txt', bytes: 1 })))
       .mockResolvedValueOnce(new Response('output'))
       .mockResolvedValueOnce(new Response(null, { status: 204 }));
-    jest.spyOn(Date, 'now').mockReturnValueOnce(1000).mockReturnValueOnce(2000).mockReturnValueOnce(3000);
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValueOnce(1000)
+      .mockReturnValueOnce(2000)
+      .mockReturnValueOnce(3000);
 
     const client = new RokoWorkspaceClient(config, {});
     await client.uploadInput(identity, 'a.txt', Buffer.from('a'));
@@ -48,7 +52,9 @@ describe('RokoWorkspaceClient', () => {
     const fetch = jest.spyOn(global, 'fetch');
     const client = new RokoWorkspaceClient(config, {});
 
-    await expect(client.downloadOutput(identity, 'outputs/../inputs/private.txt')).rejects.toMatchObject({
+    await expect(
+      client.downloadOutput(identity, 'outputs/../inputs/private.txt'),
+    ).rejects.toMatchObject({
       code: 'invalid_path',
     });
     expect(fetch).not.toHaveBeenCalled();

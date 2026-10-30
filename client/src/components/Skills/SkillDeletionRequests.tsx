@@ -29,7 +29,9 @@ export default function SkillDeletionRequests() {
         <div className="mt-2 rounded border border-border-light px-3 py-2">
           <div className="break-all text-sm font-semibold">{pending.name}</div>
           {pending.description ? (
-            <div className="mt-1 break-words text-xs text-text-secondary">{pending.description}</div>
+            <div className="mt-1 break-words text-xs text-text-secondary">
+              {pending.description}
+            </div>
           ) : null}
         </div>
         <div className="mt-3 flex items-center justify-end gap-2">

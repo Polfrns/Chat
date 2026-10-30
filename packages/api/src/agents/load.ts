@@ -52,7 +52,8 @@ export async function loadEphemeralAgent(
   { req, spec, endpoint, model_parameters: _m }: Omit<LoadAgentParams, 'agent_id'>,
   deps: LoadAgentDeps,
 ): Promise<Agent | null> {
-  const { model: requestedModel, ...model_parameters } = _m ?? ({} as unknown as AgentModelParameters);
+  const { model: requestedModel, ...model_parameters } =
+    _m ?? ({} as unknown as AgentModelParameters);
   const modelSpecs = req.config?.modelSpecs as { list?: TModelSpec[] } | undefined;
   let modelSpec: TModelSpec | null = null;
   if (spec != null && spec !== '') {

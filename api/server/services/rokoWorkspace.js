@@ -1,5 +1,9 @@
 const { logger } = require('@librechat/data-schemas');
-const { readRokoWorkspaceConfig, RokoWorkspaceClient, rokoWorkspaceIdentity } = require('@librechat/api');
+const {
+  readRokoWorkspaceConfig,
+  RokoWorkspaceClient,
+  rokoWorkspaceIdentity,
+} = require('@librechat/api');
 
 async function deleteConversationWorkspace(user, conversationId) {
   const identity = rokoWorkspaceIdentity({ user, conversationId });
@@ -13,7 +17,10 @@ async function deleteConversationWorkspace(user, conversationId) {
     }
     await new RokoWorkspaceClient(config).deleteWorkspace(identity);
   } catch (error) {
-    logger.warn(`[Roko workspace] Failed to delete workspace for conversation ${conversationId}`, error);
+    logger.warn(
+      `[Roko workspace] Failed to delete workspace for conversation ${conversationId}`,
+      error,
+    );
   }
 }
 

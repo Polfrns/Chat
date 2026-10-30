@@ -4,13 +4,11 @@ import { replaceSpecialVars } from 'librechat-data-provider';
 import { useChatContext, useChatFormContext, useAddedChatContext } from '~/Providers';
 import { useLatestMessage } from '~/hooks/Messages/useLatestMessage';
 import { useAuthContext } from '~/hooks/AuthContext';
-import { useLocalize } from '~/hooks';
 import { mainTextareaId } from '~/common';
 import store from '~/store';
 
 export default function useSubmitMessage() {
   const { user } = useAuthContext();
-  const localize = useLocalize();
   const methods = useChatFormContext();
   const { conversation: addedConvo } = useAddedChatContext();
   const { ask, index, getMessages, setMessages } = useChatContext();
@@ -49,14 +47,7 @@ export default function useSubmitMessage() {
       }
       methods.reset();
     },
-    [
-      ask,
-      methods,
-      addedConvo,
-      setMessages,
-      getMessages,
-      latestMessage,
-    ],
+    [ask, methods, addedConvo, setMessages, getMessages, latestMessage],
   );
 
   const submitPrompt = useCallback(

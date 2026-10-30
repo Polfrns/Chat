@@ -121,9 +121,12 @@ describe('skills routes and skill_library tool', () => {
       body: '# Steps',
     });
     const skillId = created.skill_id;
-    await expect(tool.run({ operation: 'update', skill_id: skillId, body: '# Edited' })).resolves
-      .toMatchObject({ updated: { skill_id: skillId } });
-    await expect(tool.run({ operation: 'read', skill_id: skillId })).resolves.toMatchObject({ body: '# Edited' });
+    await expect(
+      tool.run({ operation: 'update', skill_id: skillId, body: '# Edited' }),
+    ).resolves.toMatchObject({ updated: { skill_id: skillId } });
+    await expect(tool.run({ operation: 'read', skill_id: skillId })).resolves.toMatchObject({
+      body: '# Edited',
+    });
 
     const [rejected, popup] = await Promise.all([
       tool.run({ operation: 'delete', skill_id: skillId }),
@@ -131,14 +134,18 @@ describe('skills routes and skill_library tool', () => {
     ]);
     expect(popup).toMatchObject({ skillId, name: 'chat-skill', conversationId: 'convo-1' });
     expect(rejected).toMatchObject({ deleted: false });
-    await expect(tool.run({ operation: 'read', skill_id: skillId })).resolves.toMatchObject({ name: 'chat-skill' });
+    await expect(tool.run({ operation: 'read', skill_id: skillId })).resolves.toMatchObject({
+      name: 'chat-skill',
+    });
 
     const [approved] = await Promise.all([
       tool.run({ operation: 'delete', skill_id: skillId }),
       answerPopup(owner, true),
     ]);
     expect(approved).toEqual({ deleted: true, name: 'chat-skill' });
-    await expect(tool.run({ operation: 'read', skill_id: skillId })).resolves.toHaveProperty('error');
+    await expect(tool.run({ operation: 'read', skill_id: skillId })).resolves.toHaveProperty(
+      'error',
+    );
   });
 
   it("never shows another user's skill or raises a popup for it", async () => {
@@ -149,9 +156,15 @@ describe('skills routes and skill_library tool', () => {
       body: '# Private',
     });
     const intruder = toolFor(stranger);
-    await expect(intruder.run({ operation: 'read', skill_id: created.skill_id })).resolves.toHaveProperty('error');
-    await expect(intruder.run({ operation: 'delete', skill_id: created.skill_id })).resolves.toHaveProperty('error');
-    const { body } = await request(appFor(stranger)).get('/api/skills/deletion-requests').expect(200);
+    await expect(
+      intruder.run({ operation: 'read', skill_id: created.skill_id }),
+    ).resolves.toHaveProperty('error');
+    await expect(
+      intruder.run({ operation: 'delete', skill_id: created.skill_id }),
+    ).resolves.toHaveProperty('error');
+    const { body } = await request(appFor(stranger))
+      .get('/api/skills/deletion-requests')
+      .expect(200);
     expect(body.requests).toEqual([]);
     const { skills } = await intruder.run({ operation: 'list' });
     expect(skills.map((skill) => skill.name)).not.toContain('private-skill');

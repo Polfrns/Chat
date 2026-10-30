@@ -648,7 +648,11 @@ export function getOpenAILLMConfig({
       }) || hasModelKwargs;
   }
 
-  if (llmConfig.model?.startsWith('gpt-codex') && llmConfig.useResponsesApi !== true && reasoningSummary) {
+  if (
+    llmConfig.model?.startsWith('gpt-codex') &&
+    llmConfig.useResponsesApi !== true &&
+    reasoningSummary
+  ) {
     modelKwargs.reasoning_summary = reasoningSummary;
     hasModelKwargs = true;
   }

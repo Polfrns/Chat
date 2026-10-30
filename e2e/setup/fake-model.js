@@ -195,6 +195,11 @@ function collectProviderFileNames(value, names = new Set()) {
     names.add(value.file.filename);
   }
 
+  /** LangChain standard data block: `{ type: 'file', source_type, metadata: { filename } }`. */
+  if (value.type === 'file' && typeof value.metadata?.filename === 'string') {
+    names.add(value.metadata.filename);
+  }
+
   if (value.type === 'document' && typeof value.context === 'string') {
     const match = value.context.match(/File:\s*"([^"]+)"/);
     if (match?.[1]) {

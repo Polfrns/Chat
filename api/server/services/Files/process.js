@@ -569,9 +569,7 @@ const saveBridgeOutputFile = async ({ req, filename, mimeType, buffer }) => {
     }
   }
   const previewable =
-    /^image\/(png|jpeg|gif|webp|avif|bmp)$/.test(mimeType) &&
-    dimensions.width &&
-    dimensions.height;
+    /^image\/(png|jpeg|gif|webp|avif|bmp)$/.test(mimeType) && dimensions.width && dimensions.height;
 
   const source = getFileStrategy(req.config, { context: FileContext.message_attachment });
   const { saveBuffer } = getStrategyFunctions(source);
@@ -590,16 +588,21 @@ const saveBridgeOutputFile = async ({ req, filename, mimeType, buffer }) => {
   const officePreview = !isImage && hasOfficeHtmlPath(safeFilename, mimeType);
   const category = classifyCodeArtifact(safeFilename, mimeType);
   const previewRevision = officePreview ? v4() : undefined;
-  const text = !officePreview && !isImage
-    ? await extractCodeArtifactText(buffer, safeFilename, mimeType, category)
-    : null;
+  const text =
+    !officePreview && !isImage
+      ? await extractCodeArtifactText(buffer, safeFilename, mimeType, category)
+      : null;
   const previewFields = officePreview
     ? { status: 'pending', text: null, textFormat: null, previewRevision, previewError: null }
     : { text, textFormat: getExtractedTextFormat(safeFilename, mimeType, text) ?? null };
   // Preserve a public basename so Markdown references survive storage sanitization.
   const originalFilename = filename.replace(/\\/g, '/').split('/').pop();
-  const originalMetadata = originalFilename && originalFilename.length <= 1024 && !/[\u0000-\u001f]/.test(originalFilename)
-    ? { metadata: { originalFilename } } : {};
+  // eslint-disable-next-line no-control-regex
+  const hasControlChars = /[\u0000-\u001f]/.test(originalFilename ?? '');
+  const originalMetadata =
+    originalFilename && originalFilename.length <= 1024 && !hasControlChars
+      ? { metadata: { originalFilename } }
+      : {};
 
   const saved = await db.createFile(
     {
@@ -614,7 +617,9 @@ const saveBridgeOutputFile = async ({ req, filename, mimeType, buffer }) => {
       type: mimeType,
       ...previewFields,
       ...originalMetadata,
-      ...(dimensions.width && dimensions.height ? { width: dimensions.width, height: dimensions.height } : {}),
+      ...(dimensions.width && dimensions.height
+        ? { width: dimensions.width, height: dimensions.height }
+        : {}),
       ...(await getRetentionExpiry(req)),
       tenantId: req.user.tenantId,
     },
@@ -624,9 +629,15 @@ const saveBridgeOutputFile = async ({ req, filename, mimeType, buffer }) => {
     runPreviewFinalize({
       fileId: file_id,
       previewRevision,
-      finalize: () => finalizePreview({
-        buffer, leafName: safeFilename, mimeType, category, file_id, previewRevision,
-      }),
+      finalize: () =>
+        finalizePreview({
+          buffer,
+          leafName: safeFilename,
+          mimeType,
+          category,
+          file_id,
+          previewRevision,
+        }),
     });
   }
   return saved;
@@ -756,8 +767,8 @@ const processAgentFileUpload = async ({ req, res, metadata }) => {
   const { agent_id, tool_resource, file_id, temp_file_id = null } = metadata;
 
   let messageAttachment = !!metadata.message_file;
-  let bridgeUpload = isRokoBridgeModel(req.body.model);
-  if (!bridgeUpload && agent_id) {
+  let bridgeUpload = messageAttachment && isRokoBridgeModel(req.body.model);
+  if (messageAttachment && !bridgeUpload && agent_id) {
     const agent = await db.getAgent({ id: agent_id });
     bridgeUpload = isRokoBridgeModel(agent?.model_parameters?.model ?? agent?.model);
   }

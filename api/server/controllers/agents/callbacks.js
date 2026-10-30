@@ -442,7 +442,9 @@ function getDefaultHandlers({
         aggregateContent({ event, data: eventData });
         if (bridgeOutput) {
           if (!metadata?.run_id || !metadata?.thread_id) {
-            throw new Error('Bridge output cannot be attached without message and conversation IDs.');
+            throw new Error(
+              'Bridge output cannot be attached without message and conversation IDs.',
+            );
           }
           for (const [index, file] of bridgeOutput.files.entries()) {
             const attachmentPromise = (async () => {

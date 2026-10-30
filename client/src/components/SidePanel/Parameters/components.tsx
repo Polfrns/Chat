@@ -35,7 +35,9 @@ function ChatWebSearchSetting(props: DynamicSettingProps) {
       {...props}
       description={search.bridge ? props.description : 'com_ui_web_search'}
       descriptionCode
-      conversation={props.conversation ? { ...props.conversation, web_search: search.enabled } : null}
+      conversation={
+        props.conversation ? { ...props.conversation, web_search: search.enabled } : null
+      }
       setOption={(key) =>
         key === 'web_search'
           ? (value) => {
@@ -47,13 +49,22 @@ function ChatWebSearchSetting(props: DynamicSettingProps) {
   );
 }
 
-/** Keeps unavailable API controls visible and prevents every editing path. */
-export function DynamicSetting({ component, unsupportedReason, ...props }: DynamicSettingProps) {
+/**
+ * Keeps unavailable API controls visible and prevents every editing path.
+ * `chatScoped` routes `web_search` to the active chat's toggle; the agent builder
+ * turns it off so the switch edits the agent's own model parameters.
+ */
+export function DynamicSetting({
+  component,
+  unsupportedReason,
+  chatScoped = true,
+  ...props
+}: DynamicSettingProps & { chatScoped?: boolean }) {
   const localize = useLocalize();
-  const Component =
-    props.settingKey === 'web_search'
-      ? ChatWebSearchSetting
-      : component ? componentMapping[component] : undefined;
+  let Component = component ? componentMapping[component] : undefined;
+  if (chatScoped && props.settingKey === 'web_search') {
+    Component = ChatWebSearchSetting;
+  }
   if (!Component) return null;
   if (!unsupportedReason && !props.readonly) return <Component {...props} />;
   return (

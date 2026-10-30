@@ -27,7 +27,7 @@ export const SKILL_DELETION_TIMEOUT_MS = 120_000;
 const TTL_SECONDS = 180;
 
 const notifier = createRequestNotifier(ioredisClient, 'roko:skill-deletion-requests');
-const store = createRequestStore<SkillDeletionProposal, SkillDeletionDecision, never>({
+const store = createRequestStore<SkillDeletionProposal, SkillDeletionDecision>({
   kind: 'skill-deletion',
   redis: ioredisClient,
   notifier,
@@ -57,7 +57,11 @@ export const skillDeletionRequests = {
     }));
   },
   /** Returns false when the request does not exist for this user (expired or foreign). */
-  async decide(userId: string, requestId: string, decision: SkillDeletionDecision): Promise<boolean> {
+  async decide(
+    userId: string,
+    requestId: string,
+    decision: SkillDeletionDecision,
+  ): Promise<boolean> {
     const entry = await store.get(userId, requestId);
     if (!entry || entry.status !== 'pending') {
       return false;

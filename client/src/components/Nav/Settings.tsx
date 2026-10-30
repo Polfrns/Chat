@@ -34,7 +34,8 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
   const localize = useLocalize();
   const [activeTab, setActiveTab] = useState(SettingsTabValues.GENERAL);
   const tabRefs = useRef({});
-  const { hasAnyPersonalizationFeature, hasMemoryOptOut, hasWorkspaceMcp } = usePersonalizationAccess();
+  const { hasAnyPersonalizationFeature, hasMemoryOptOut, hasWorkspaceMcp } =
+    usePersonalizationAccess();
   const aboutEnabled = startupConfig?.interface?.buildInfo !== false;
 
   useEffect(() => {

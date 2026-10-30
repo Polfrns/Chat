@@ -26,7 +26,9 @@ describe('skillDeletionRequests', () => {
     const requestId = await skillDeletionRequests.add('owner', proposal);
     expect(await skillDeletionRequests.decide('owner', requestId, 'deny')).toBe(true);
     expect(await skillDeletionRequests.decide('owner', requestId, 'approve')).toBe(false);
-    await expect(skillDeletionRequests.waitForDecision('owner', requestId, 50)).resolves.toBe('deny');
+    await expect(skillDeletionRequests.waitForDecision('owner', requestId, 50)).resolves.toBe(
+      'deny',
+    );
     await skillDeletionRequests.remove('owner', requestId);
   });
 

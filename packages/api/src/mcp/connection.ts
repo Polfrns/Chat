@@ -1400,6 +1400,7 @@ export class MCPConnection extends EventEmitter {
           useSSRFProtection,
           currentAllowedAddresses,
         );
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { trustedHeaders } = require('../../../../config/observability/context.cjs');
         const outboundInit = {
           ...currentInit,

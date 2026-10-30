@@ -16,7 +16,9 @@ const SERVER_VERSION = '0.1.0';
 type ToolResult = { content: { type: 'text'; text: string }[]; isError?: boolean };
 
 const ok = (value: unknown): ToolResult => ({
-  content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }],
+  content: [
+    { type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) },
+  ],
 });
 const fail = (message: string): ToolResult => ({
   content: [{ type: 'text', text: `Error: ${message}` }],
@@ -73,7 +75,10 @@ function buildServer(service: FilestoreService, getIdentity: () => Identity): Mc
     {
       display_name: z.string().describe('Human-readable name'),
       description: z.string().optional().describe('What this store is for'),
-      shared: z.boolean().optional().describe('Visible to everyone in the tenant (default: private to you)'),
+      shared: z
+        .boolean()
+        .optional()
+        .describe('Visible to everyone in the tenant (default: private to you)'),
       read_only: z.boolean().optional().describe('Reject writes once created'),
     },
     async (who, a) =>
@@ -92,7 +97,10 @@ function buildServer(service: FilestoreService, getIdentity: () => Identity): Mc
     server,
     'list_files',
     'Recursively list files and folders in a file store (folders shown with a trailing slash).',
-    { filestore_id: z.string(), subdir: z.string().optional().describe('Optional subdirectory to list') },
+    {
+      filestore_id: z.string(),
+      subdir: z.string().optional().describe('Optional subdirectory to list'),
+    },
     async (who, a) => {
       const files = await service.listFiles(who, a.filestore_id, a.subdir);
       return files.length
@@ -149,7 +157,9 @@ function buildServer(service: FilestoreService, getIdentity: () => Identity): Mc
     { filestore_id: z.string(), query: z.string().describe('Literal substring to search for') },
     async (who, a) => {
       const hits = await service.searchFiles(who, a.filestore_id, a.query);
-      return hits.length ? hits.map((h) => `${h.path}:${h.line}: ${h.snippet}`).join('\n') : 'No matches.';
+      return hits.length
+        ? hits.map((h) => `${h.path}:${h.line}: ${h.snippet}`).join('\n')
+        : 'No matches.';
     },
     getIdentity,
   );

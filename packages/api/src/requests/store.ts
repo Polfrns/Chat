@@ -10,7 +10,7 @@ interface RequestEntry<Payload, Decision> {
   status: RequestStatus<Decision>;
 }
 
-interface RequestStoreOptions<Decision> {
+interface RequestStoreOptions {
   kind: string;
   redis: Redis | Cluster | null;
   notifier: RequestNotifier;
@@ -22,7 +22,7 @@ const requestKey = (kind: string, userId: string, id: string) =>
   `roko:request:${kind}:{${userId}}:${id}`;
 const userIndexKey = (kind: string, userId: string) => `roko:request:${kind}:{${userId}}:ids`;
 
-export function createRequestStore<Payload, Decision, _Unused>(options: RequestStoreOptions<Decision>) {
+export function createRequestStore<Payload, Decision>(options: RequestStoreOptions) {
   const { kind, redis, notifier, ttlSeconds } = options;
 
   async function get(userId: string, id: string): Promise<RequestEntry<Payload, Decision> | null> {
@@ -31,7 +31,10 @@ export function createRequestStore<Payload, Decision, _Unused>(options: RequestS
     if (!value) {
       return null;
     }
-    return (typeof value === 'string' ? JSON.parse(value) : value) as RequestEntry<Payload, Decision>;
+    return (typeof value === 'string' ? JSON.parse(value) : value) as RequestEntry<
+      Payload,
+      Decision
+    >;
   }
 
   async function save(userId: string, entry: RequestEntry<Payload, Decision>): Promise<void> {
@@ -58,7 +61,8 @@ export function createRequestStore<Payload, Decision, _Unused>(options: RequestS
             .map((key) => key.slice(key.lastIndexOf(':') + 1));
       const entries = await Promise.all(ids.map((id) => get(userId, id)));
       return entries.filter(
-        (entry): entry is RequestEntry<Payload, Decision> => entry !== null && entry.status === 'pending',
+        (entry): entry is RequestEntry<Payload, Decision> =>
+          entry !== null && entry.status === 'pending',
       );
     },
     async decide(userId: string, id: string, decision: Decision): Promise<void> {

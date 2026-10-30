@@ -31,9 +31,11 @@ const ActivityParts = memo(function ActivityParts({
   const { activity, answer } = useMemo(() => partitionResponseParts(parts), [parts]);
   const activityAttachments = useMemo(() => {
     const ids = new Set(
-      activity.map(({ part }) =>
-        part.type === ContentTypes.TOOL_CALL ? part[ContentTypes.TOOL_CALL]?.id : undefined,
-      ).filter(Boolean),
+      activity
+        .map(({ part }) =>
+          part.type === ContentTypes.TOOL_CALL ? part[ContentTypes.TOOL_CALL]?.id : undefined,
+        )
+        .filter(Boolean),
     );
     return attachments?.filter((attachment) => ids.has(attachment.toolCallId)) ?? [];
   }, [activity, attachments]);

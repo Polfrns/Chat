@@ -44,7 +44,11 @@ const { createOboTrustChecker } = require('./OboPolicyService');
 const { reinitMCPServer } = require('./Tools/mcp');
 const { getAppConfig } = require('./Config');
 const { getLogStores } = require('~/cache');
-const { readRokoWorkspaceConfig, rokoWorkspaceMcpUrl, isRokoWorkspaceEnabled } = require('@librechat/api');
+const {
+  readRokoWorkspaceConfig,
+  rokoWorkspaceMcpUrl,
+  isRokoWorkspaceEnabled,
+} = require('@librechat/api');
 const { rokoWorkspaceIdentity, runWithRokoWorkspaceContext } = require('@librechat/api');
 
 const MAX_CACHE_SIZE = 1000;

@@ -8,7 +8,9 @@ const {
   deleteSkillFile,
   getRoleByName,
 } = require('~/models');
-const { canAccessSkillResource } = require('~/server/middleware/accessResources/canAccessSkillResource');
+const {
+  canAccessSkillResource,
+} = require('~/server/middleware/accessResources/canAccessSkillResource');
 const {
   findAccessibleResources,
   findPubliclyAccessibleResources,
