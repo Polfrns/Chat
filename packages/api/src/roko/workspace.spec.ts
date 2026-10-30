@@ -32,6 +32,13 @@ describe('Roko workspace MCP selection', () => {
     ).toBe(false);
   });
 
+  it('stays disabled instead of throwing when the key is missing or too short', () => {
+    const missingKey = { ROKO_WORKSPACE_URL: 'http://roko-workspace:8080' } as NodeJS.ProcessEnv;
+    expect(
+      isRokoWorkspaceEnabled({ user: { id: 'user-1' }, model: 'gpt-4o', env: missingKey }),
+    ).toBe(false);
+  });
+
   it('stays disabled until a workspace endpoint is configured', () => {
     expect(isRokoWorkspaceEnabled({ user: { id: 'user-1' }, model: 'gpt-4o', env: {} })).toBe(
       false,

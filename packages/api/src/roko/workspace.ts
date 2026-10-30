@@ -1,3 +1,4 @@
+import { logger } from '@librechat/data-schemas';
 import { Constants } from 'librechat-data-provider';
 import { isRokoBridgeModel } from '~/utils/rokoBridge';
 
@@ -99,5 +100,11 @@ export function isRokoWorkspaceEnabled({
   if (isRokoBridgeModel(model) || user?.personalization?.workspace === false) {
     return false;
   }
-  return readRokoWorkspaceConfig(env) !== null;
+  try {
+    return readRokoWorkspaceConfig(env) !== null;
+  } catch (error) {
+    // A half-configured deployment (URL without a valid key) must not break every chat.
+    logger.error('[Roko workspace] Invalid configuration; workspace disabled:', error);
+    return false;
+  }
 }
