@@ -15,6 +15,7 @@ import {
 } from '~/hooks';
 import { ChatContext, AddedChatContext, ChatFormProvider, useFileMapContext } from '~/Providers';
 import ConversationStarters from './Input/ConversationStarters';
+import { SkillDeletionRequests } from '~/components/Skills';
 import { useGetMessagesByConvoId } from '~/data-provider';
 import ProjectLandingChip from './ProjectLandingChip';
 import MessagesView from './Messages/MessagesView';
@@ -23,7 +24,6 @@ import ChatForm from './Input/ChatForm';
 import Landing from './Landing';
 import Header from './Header';
 import Footer from './Footer';
-import { SkillDeletionRequests } from '~/components/Skills';
 import { cn } from '~/utils';
 import store from '~/store';
 

@@ -1,12 +1,12 @@
 import { memo, useMemo } from 'react';
 import { ContentTypes } from 'librechat-data-provider';
-import type { ReactNode } from 'react';
 import type { TAttachment, TMessageContentParts } from 'librechat-data-provider';
+import type { ReactNode } from 'react';
 import type { PartWithIndex } from './ParallelContent';
+import { useResponseGenerationElapsed } from './ResponseGenerationTimer';
 import { partitionResponseParts } from './responseParts';
 import ResponseActivity from './ResponseActivity';
 import { AttachmentGroup } from './Parts';
-import { useResponseGenerationElapsed } from './ResponseGenerationTimer';
 
 type PartRenderer = (part: TMessageContentParts, idx: number, isLast: boolean) => ReactNode;
 

@@ -1,9 +1,9 @@
 import React from 'react';
 import { ContentTypes } from 'librechat-data-provider';
-import type { TAttachment, TMessageContentParts } from 'librechat-data-provider';
 import { fireEvent, render, screen } from '@testing-library/react';
-import ContentParts from '../ContentParts';
+import type { TAttachment, TMessageContentParts } from 'librechat-data-provider';
 import ActivityParts from '../ActivityParts';
+import ContentParts from '../ContentParts';
 
 jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => key,

@@ -1,5 +1,5 @@
-import { signRokoWorkspaceContext } from './workspaceContext';
 import type { RokoWorkspaceConfig, RokoWorkspaceIdentity } from './workspace';
+import { signRokoWorkspaceContext } from './workspaceContext';
 
 /** A non-2xx response (or transport failure) from the workspace service. */
 export class RokoWorkspaceError extends Error {

@@ -2,8 +2,8 @@ import { memo, useCallback, useRef } from 'react';
 import { MicOff } from 'lucide-react';
 import { useToastContext, TooltipAnchor, ListeningIcon, Spinner } from '@librechat/client';
 import { useLocalize, useSpeechToText, useGetAudioSettings } from '~/hooks';
-import { globalAudioId } from '~/common';
 import { useChatFormContext } from '~/Providers';
+import { globalAudioId } from '~/common';
 import { cn } from '~/utils';
 
 const isExternalSTT = (speechToTextEndpoint: string) => speechToTextEndpoint === 'external';

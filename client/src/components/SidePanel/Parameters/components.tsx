@@ -1,7 +1,5 @@
 import { ComponentTypes } from 'librechat-data-provider';
 import type { DynamicSettingProps } from 'librechat-data-provider';
-import { useLocalize, type TranslationKeys } from '~/hooks';
-import useChatWebSearch from '~/hooks/Chat/useChatWebSearch';
 import {
   DynamicCombobox,
   DynamicDropdown,
@@ -12,6 +10,8 @@ import {
   DynamicInput,
   DynamicTags,
 } from './';
+import useChatWebSearch from '~/hooks/Chat/useChatWebSearch';
+import { useLocalize, type TranslationKeys } from '~/hooks';
 
 export const componentMapping: Record<
   ComponentTypes,

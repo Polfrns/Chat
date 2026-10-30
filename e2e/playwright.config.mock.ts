@@ -100,7 +100,12 @@ export default defineConfig({
     : [['html', { outputFolder: reportPath }], ['list']],
   use: {
     baseURL,
-    video: 'on-first-retry',
+    /**
+     * CI has no Playwright ffmpeg (its download hangs under Node 24.16 with
+     * Playwright < 1.60), and recording without it makes the first retry fail to
+     * open a page. Traces still cover failures there.
+     */
+    video: process.env.CI ? 'off' : 'on-first-retry',
     trace: 'retain-on-failure',
     ignoreHTTPSErrors: true,
     headless: true,

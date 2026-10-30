@@ -1,5 +1,5 @@
-import type { AbortResult } from '../interfaces/IJobStore';
 import type { OwnedGenerationControl } from '../ownedGeneration';
+import type { AbortResult } from '../interfaces/IJobStore';
 import { abortOwnedGeneration } from '../ownedGeneration';
 
 class FakeJobManager {

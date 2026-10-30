@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
-import { ioredisClient } from '../cache/redisClients';
 import { createRequestNotifier, waitForNotifiedValue } from '../requests/notifier';
 import { createRequestStore } from '../requests/store';
+import { ioredisClient } from '../cache/redisClients';
 
 /**
  * Pending user approvals for skill deletions requested by the chat model. Keyed

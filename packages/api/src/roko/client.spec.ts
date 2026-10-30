@@ -1,5 +1,5 @@
-import { RokoWorkspaceClient } from './client';
 import type { RokoWorkspaceIdentity } from './workspace';
+import { RokoWorkspaceClient } from './client';
 
 const key = 'k'.repeat(40);
 const config = { baseUrl: 'http://roko-workspace:8080', key };

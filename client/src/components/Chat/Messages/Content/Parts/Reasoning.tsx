@@ -6,8 +6,8 @@ import { ThinkingContent, ThinkingButton, FloatingThinkingBar } from './Thinking
 import { useLocalize, useExpandCollapse } from '~/hooks';
 import { showThinkingAtom } from '~/store/showThinking';
 import { useMessageContext } from '~/Providers';
-import { cn } from '~/utils';
 import Markdown from '../Markdown';
+import { cn } from '~/utils';
 
 type ReasoningProps = {
   reasoning: string;

@@ -113,13 +113,6 @@ jobs:
           google-chrome --version
           npx playwright install-deps chrome
 
-      # `video: 'on-first-retry'` needs Playwright's ffmpeg; without it the first
-      # retry cannot even open a page, so every flaky test lost one of its retries.
-      - name: Install Playwright ffmpeg (best effort)
-        timeout-minutes: 3
-        continue-on-error: true
-        run: timeout -k 10 60 npx playwright install ffmpeg
-
       - name: Run mock-LLM Tier-1 e2e
         run: npx playwright test --config=e2e/playwright.config.mock.ts
         env:

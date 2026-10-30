@@ -1,11 +1,11 @@
 import { createHmac } from 'node:crypto';
+import type { RokoWorkspaceIdentity } from './workspace';
 import {
   currentRokoWorkspaceIdentity,
   rokoWorkspaceHeaders,
   runWithRokoWorkspaceContext,
   signRokoWorkspaceContext,
 } from './workspaceContext';
-import type { RokoWorkspaceIdentity } from './workspace';
 
 const env = {
   ROKO_WORKSPACE_URL: 'http://roko-workspace:8080/workspace',
