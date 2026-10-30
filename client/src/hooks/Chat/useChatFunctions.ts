@@ -259,7 +259,6 @@ export default function useChatFunctions({
       targetResponseMessageId,
       overrideManualSkills,
       addedConvo,
-      overrideSessionId,
     } = {},
   ) => {
     setShowStopButton(false);
@@ -297,22 +296,7 @@ export default function useChatFunctions({
     }
 
     const ephemeralAgent = getEphemeralAgent(conversationId ?? Constants.NEW_CONVO);
-    /**
-     * Roko: silently add the single `leedeo-filestore` MCP server whenever the active
-     * chat has a session, ADDED to the user's own selection. The backend resolves
-     * it to one connection authed with a session-scoped token; every filestore
-     * tool takes a `filestore_uid` and the server authorizes per session.
-     */
-    let payloadEphemeralAgent = ephemeralAgent;
-    const sessionId = overrideSessionId ?? conversation?.sessionId ?? null;
-    if (sessionId) {
-      payloadEphemeralAgent = {
-        ...(ephemeralAgent ?? {}),
-        mcp: Array.from(
-          new Set([...(ephemeralAgent?.mcp ?? []), Constants.roko_mcp_server as string]),
-        ),
-      };
-    }
+    const payloadEphemeralAgent = ephemeralAgent;
     /**
      * Manual skill selection resolution:
      *  - Explicit `overrideManualSkills` wins (regenerate / save-and-submit
@@ -349,7 +333,6 @@ export default function useChatFunctions({
     const conversationForPayload = {
       ...(conversation ?? {}),
       ...(chatProjectId != null ? { chatProjectId } : {}),
-      ...(sessionId != null ? { sessionId } : {}),
     };
 
     // construct the query message

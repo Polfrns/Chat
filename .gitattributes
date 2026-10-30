@@ -2,8 +2,7 @@
 .husky/* text eol=lf
 *.sh text eol=lf
 
-# Bitbucket shell runner executes these files on Linux.
+# CI shell scripts execute on Linux.
 ci/*.sh text eol=lf
 ci/*.py text eol=lf
-bitbucket-pipelines.yml text eol=lf
 Dockerfile text eol=lf

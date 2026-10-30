@@ -35,16 +35,12 @@ const keys = require('./keys');
 const user = require('./user');
 const mcp = require('./mcp');
 const rum = require('./rum');
-const filestores = require('./filestores');
-const sessions = require('./sessions');
 const nextcloud = require('./nextcloud');
 
 module.exports = {
   nextcloud,
   rum,
   mcp,
-  filestores,
-  sessions,
   auth,
   adminAuth,
   adminConfig,

@@ -3,48 +3,34 @@ const crypto = require('crypto');
 const multer = require('multer');
 const express = require('express');
 const {
-  createSkillsHandlers,
   createImportHandler,
-  generateCheckAccess,
   getStorageMetadata,
+  skillDeletionRequests,
   resolveRequestTenantId,
   restoreTenantContextFromReq,
 } = require('@librechat/api');
-const { isValidObjectIdString, logger } = require('@librechat/data-schemas');
-const {
-  PermissionBits,
-  PermissionTypes,
-  Permissions,
-  FileContext,
-  mergeFileConfig,
-} = require('librechat-data-provider');
+const { logger } = require('@librechat/data-schemas');
+const { PermissionBits, FileContext, mergeFileConfig } = require('librechat-data-provider');
 const {
   createSkill,
   getSkillById,
-  updateSkill,
   deleteSkill,
   upsertSkillFile,
-  deleteSkillFile,
   getSkillFileByPath,
-  getRoleByName,
 } = require('~/models');
 const { requireJwtAuth, canAccessSkillResource } = require('~/server/middleware');
-const {
-  findAccessibleResources,
-  findPubliclyAccessibleResources,
-  hasPublicPermission,
-  grantPermission,
-} = require('~/server/services/PermissionService');
+const { grantPermission } = require('~/server/services/PermissionService');
 const { getStrategyFunctions } = require('~/server/services/Files/strategies');
 const { createFileLimiters } = require('~/server/middleware/limiters/uploadLimiters');
 const { maybeRunGitHubSkillSyncForRequest } = require('~/server/services/Skills/sync');
+const {
+  checkSkillAccess,
+  checkSkillCreate,
+  skillHandlers: handlers,
+  skillCrudChains,
+} = require('~/server/services/Skills/crud');
 const configMiddleware = require('~/server/middleware/config/app');
 const { getFileStrategy } = require('~/server/utils/getFileStrategy');
-const {
-  getSkillDbMethods,
-  withDeploymentSkillIds,
-  getSkillStrategyFunctions,
-} = require('~/server/services/Endpoints/agents/skillDeps');
 
 const router = express.Router();
 
@@ -86,59 +72,13 @@ const singleFileUpload = multer({
 });
 
 // ---------------------------------------------------------------------------
-// Role-based capability gates
-// ---------------------------------------------------------------------------
-const checkSkillAccess = generateCheckAccess({
-  permissionType: PermissionTypes.SKILLS,
-  permissions: [Permissions.USE],
-  getRoleByName,
-});
-const checkSkillCreate = generateCheckAccess({
-  permissionType: PermissionTypes.SKILLS,
-  permissions: [Permissions.USE, Permissions.CREATE],
-  getRoleByName,
-});
-
-// ---------------------------------------------------------------------------
 // Rate limiters (reuse existing file upload limiters)
 // ---------------------------------------------------------------------------
 const { fileUploadIpLimiter, fileUploadUserLimiter } = createFileLimiters();
-const skillDbMethods = getSkillDbMethods();
 
 router.use(requireJwtAuth);
 router.use(configMiddleware);
 router.use(checkSkillAccess);
-
-// ---------------------------------------------------------------------------
-// CRUD handlers
-// ---------------------------------------------------------------------------
-const handlers = createSkillsHandlers({
-  createSkill,
-  getSkillById: skillDbMethods.getSkillById,
-  listSkillsByAccess: skillDbMethods.listSkillsByAccess,
-  updateSkill,
-  deleteSkill,
-  listSkillFiles: skillDbMethods.listSkillFiles,
-  deleteSkillFile,
-  getSkillFileByPath: skillDbMethods.getSkillFileByPath,
-  updateSkillFileContent: skillDbMethods.updateSkillFileContent,
-  getStrategyFunctions: getSkillStrategyFunctions,
-  findAccessibleResources: async (params) =>
-    params.resourceType === 'skill' && params.requiredPermissions === PermissionBits.VIEW
-      ? withDeploymentSkillIds(await findAccessibleResources(params))
-      : findAccessibleResources(params),
-  findPubliclyAccessibleResources: async (params) =>
-    params.resourceType === 'skill' && params.requiredPermissions === PermissionBits.VIEW
-      ? withDeploymentSkillIds(await findPubliclyAccessibleResources(params))
-      : findPubliclyAccessibleResources(params),
-  hasPublicPermission: async (params) =>
-    params.resourceType === 'skill' && params.requiredPermissions === PermissionBits.VIEW
-      ? withDeploymentSkillIds([]).some((id) => id.toString() === params.resourceId.toString()) ||
-        hasPublicPermission(params)
-      : hasPublicPermission(params),
-  grantPermission,
-  isValidObjectIdString,
-});
 
 // ---------------------------------------------------------------------------
 // File storage helper: resolve the active strategy's saveBuffer
@@ -306,28 +246,32 @@ router.post(
   importHandler,
 );
 
-router.get('/', maybeStartRequestSkillSync, handlers.list);
-router.post('/', checkSkillCreate, handlers.create);
+router.get('/', maybeStartRequestSkillSync, ...skillCrudChains.list);
+router.post('/', ...skillCrudChains.create);
 
-router.get(
-  '/:id',
-  canAccessSkillResource({ requiredPermission: PermissionBits.VIEW }),
-  handlers.get,
-);
+// Deletions requested by the chat `skill_library` tool wait here for the user's
+// popup decision. Registered before `/:id` so the path is not read as a skill id.
+router.get('/deletion-requests', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ requests: await skillDeletionRequests.list(req.user.id) });
+});
+router.post('/deletion-requests/:requestId/decision', async (req, res) => {
+  if (typeof req.body?.approve !== 'boolean') {
+    return res.status(400).json({ error: 'An explicit decision is required' });
+  }
+  const decided = await skillDeletionRequests.decide(
+    req.user.id,
+    req.params.requestId,
+    req.body.approve ? 'approve' : 'deny',
+  );
+  return decided
+    ? res.json({ status: req.body.approve ? 'approved' : 'denied' })
+    : res.status(404).json({ error: 'Deletion request not found or expired' });
+});
 
-router.patch(
-  '/:id',
-  checkSkillCreate,
-  canAccessSkillResource({ requiredPermission: PermissionBits.EDIT }),
-  handlers.patch,
-);
-
-router.delete(
-  '/:id',
-  checkSkillCreate,
-  canAccessSkillResource({ requiredPermission: PermissionBits.DELETE }),
-  handlers.delete,
-);
+router.get('/:id', ...skillCrudChains.get);
+router.patch('/:id', ...skillCrudChains.update);
+router.delete('/:id', ...skillCrudChains.remove);
 
 router.get(
   '/:id/files',

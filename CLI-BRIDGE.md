@@ -20,8 +20,8 @@ esa verificación. El adaptador rechaza destinos ajenos y redirecciones.
 
 | Alias normal | Alias rápido | Alias profundo | Esfuerzo inicial normal / rápido / profundo |
 | --- | --- | --- | --- |
-| `gpt-codex` | `gpt-codex-fast` | `gpt-codex-deep` | medium / low / high |
 | `claude-max` | `claude-max-fast` | `claude-max-deep` | medium / low / high |
+| `gpt-codex` | `gpt-codex-fast` | `gpt-codex-deep` | medium / low / high |
 
 El modelo real lo decide la configuración de Bridge. El esfuerzo explícito tiene
 prioridad sobre el preset; Auto conserva la selección del preset. El proveedor
@@ -32,7 +32,7 @@ puede rechazar un nivel aunque el SDK lo acepte para otro modelo o cuenta.
 | Esfuerzo | minimal, low, medium, high, xhigh, max, ultra, persistent | low, medium, high, xhigh, max |
 | Resumen público | default, auto, concise, detailed, none | Sin control Codex |
 | Verbosidad | low, medium, high | Sin control Codex |
-| Búsqueda web nativa | Booleano explícito, también se firma `false` | No habilitada por ese control |
+| Búsqueda web nativa | Booleano explícito, también se firma `false` | WebSearch y WebFetch (solo destinos públicos); también se firma `false` |
 | Temperatura, top-p, penalizaciones, stop, límite de salida API | No expuestos por el SDK integrado | No expuestos por el SDK integrado |
 
 Default y Auto del resumen son opciones distintas. `none` desactiva la inclusión

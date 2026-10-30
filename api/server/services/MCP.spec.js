@@ -40,6 +40,7 @@ jest.mock('@librechat/api', () => {
 
 const { logger } = require('@librechat/data-schemas');
 const { MCPOAuthHandler } = require('@librechat/api');
+const { currentRokoWorkspaceIdentity } = require('@librechat/api');
 const { CacheKeys, Constants, Permissions, PermissionTypes } = require('librechat-data-provider');
 const D = Constants.mcp_delimiter;
 const {
@@ -913,6 +914,95 @@ describe('User parameter passing tests', () => {
   });
 
   describe('createMCPTool', () => {
+    it('uses the invocation conversation identity for concurrent workspace calls', async () => {
+      const mockUser = { id: 'shared-user', tenantId: 'tenant-a', role: 'USER' };
+      const mockRes = { write: jest.fn(), flush: jest.fn() };
+      require('~/models').getRoleByName.mockResolvedValue({
+        permissions: { [PermissionTypes.MCP_SERVERS]: { [Permissions.USE]: true } },
+      });
+      const observed = [];
+      const mockCallTool = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        observed.push(currentRokoWorkspaceIdentity());
+        return ['ok', null];
+      });
+      mockGetMCPManager.mockReturnValue({ callTool: mockCallTool });
+      const mcpTool = await createMCPTool({
+        res: mockRes,
+        user: mockUser,
+        toolKey: `read_file${D}${Constants.roko_mcp_server}`,
+        provider: 'openai',
+        userMCPAuthMap: {},
+        availableTools: {
+          [`read_file${D}${Constants.roko_mcp_server}`]: {
+            function: {
+              description: 'Read a file',
+              parameters: { type: 'object', properties: {} },
+            },
+          },
+        },
+      });
+      const invoke = (conversationId) =>
+        mcpTool.invoke(
+          {},
+          {
+            configurable: { user: mockUser },
+            metadata: { provider: 'openai', thread_id: conversationId, run_id: conversationId },
+            toolCall: {},
+          },
+        );
+
+      await Promise.all([invoke('conversation-a'), invoke('conversation-b')]);
+
+      expect(observed).toEqual(
+        expect.arrayContaining([
+          { tenantId: 'tenant-a', userId: 'shared-user', conversationId: 'conversation-a' },
+          { tenantId: 'tenant-a', userId: 'shared-user', conversationId: 'conversation-b' },
+        ]),
+      );
+    });
+
+    it('does not reuse another conversation when workspace call context is missing', async () => {
+      const mockUser = { id: 'shared-user', tenantId: 'tenant-a', role: 'USER' };
+      const mockRes = { write: jest.fn(), flush: jest.fn() };
+      require('~/models').getRoleByName.mockResolvedValue({
+        permissions: { [PermissionTypes.MCP_SERVERS]: { [Permissions.USE]: true } },
+      });
+      const observed = [];
+      mockGetMCPManager.mockReturnValue({
+        callTool: jest.fn(async () => {
+          observed.push(currentRokoWorkspaceIdentity());
+          return ['ok', null];
+        }),
+      });
+      const mcpTool = await createMCPTool({
+        res: mockRes,
+        user: mockUser,
+        toolKey: `read_file${D}${Constants.roko_mcp_server}`,
+        provider: 'openai',
+        userMCPAuthMap: {},
+        availableTools: {
+          [`read_file${D}${Constants.roko_mcp_server}`]: {
+            function: {
+              description: 'Read a file',
+              parameters: { type: 'object', properties: {} },
+            },
+          },
+        },
+      });
+
+      await mcpTool.invoke(
+        {},
+        {
+          configurable: { user: mockUser },
+          metadata: { provider: 'openai', run_id: 'run' },
+          toolCall: {},
+        },
+      );
+
+      expect(observed).toEqual([undefined]);
+    });
+
     it('should pass user parameter to reinitMCPServer when tool not in cache', async () => {
       const mockUser = { id: 'test-user-456', email: 'test@example.com' };
       const mockRes = { write: jest.fn(), flush: jest.fn() };

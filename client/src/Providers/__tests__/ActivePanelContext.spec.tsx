@@ -2,6 +2,7 @@ import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import {
+  DEFAULT_PANEL,
   ActivePanelProvider,
   resolveActivePanel,
   useActivePanel,
@@ -24,13 +25,13 @@ describe('ActivePanelContext', () => {
     localStorage.clear();
   });
 
-  it('defaults to conversations when no localStorage value exists', () => {
+  it('defaults to DEFAULT_PANEL when no localStorage value exists', () => {
     render(
       <ActivePanelProvider>
         <TestConsumer />
       </ActivePanelProvider>,
     );
-    expect(screen.getByTestId('active')).toHaveTextContent('conversations');
+    expect(screen.getByTestId('active')).toHaveTextContent(DEFAULT_PANEL);
   });
 
   it('reads initial value from localStorage', () => {

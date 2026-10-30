@@ -1,7 +1,7 @@
 import { z, ZodArray, ZodError, ZodIssueCode } from 'zod';
-import { tConversationSchema, googleSettings as google, openAISettings as openAI } from './schemas';
 import type { ZodIssue } from 'zod';
 import type { TConversation, TSetOption, TPreset } from './schemas';
+import { tConversationSchema, googleSettings as google, openAISettings as openAI } from './schemas';
 
 export type GoogleSettings = Partial<typeof google>;
 export type OpenAISettings = Partial<typeof google>;
@@ -198,9 +198,9 @@ export function generateDynamicSchema(settings: SettingsConfiguration) {
 }
 
 const ZodTypeToSettingType: Record<string, string | undefined> = {
-  ZodString: 'string',
-  ZodNumber: 'number',
-  ZodBoolean: 'boolean',
+  string: 'string',
+  number: 'number',
+  boolean: 'boolean',
 };
 
 const minColumns = 1;
@@ -456,7 +456,7 @@ export function validateSettingDefinitions(settings: SettingsConfiguration): voi
           path: ['optionType'],
         });
       } else {
-        const zodType = conversationSchema._def.typeName;
+        const zodType = conversationSchema._def.type;
         const settingTypeEquivalent = ZodTypeToSettingType[zodType] || null;
         if (settingTypeEquivalent !== setting.type) {
           errors.push({

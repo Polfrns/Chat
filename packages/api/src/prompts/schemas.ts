@@ -17,7 +17,7 @@ export const updatePromptGroupSchema: z.ZodObject<
     /** Command shortcut for the prompt group */
     command: z.ZodNullable<z.ZodOptional<z.ZodString>>;
   },
-  'strict'
+  z.core.$strict
 > = z
   .object({
     /** The name of the prompt group */
@@ -56,19 +56,8 @@ export function validatePromptGroupUpdate(data: unknown): TUpdatePromptGroupSche
  * @param data - The raw request body to validate
  * @returns A SafeParseResult with either the validated data or validation errors
  */
-export function safeValidatePromptGroupUpdate(data: unknown): z.SafeParseReturnType<
-  {
-    name?: string | undefined;
-    category?: string | undefined;
-    command?: string | null | undefined;
-    oneliner?: string | undefined;
-  },
-  {
-    name?: string | undefined;
-    category?: string | undefined;
-    command?: string | null | undefined;
-    oneliner?: string | undefined;
-  }
-> {
+export function safeValidatePromptGroupUpdate(
+  data: unknown,
+): z.ZodSafeParseResult<TUpdatePromptGroupSchema> {
   return updatePromptGroupSchema.safeParse(data);
 }

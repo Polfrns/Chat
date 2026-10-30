@@ -54,11 +54,19 @@ jest.mock('~/components/Chat/Input/Files/FilePreview', () => ({
   default: () => <div data-testid="file-preview" />,
 }));
 
+/* `AttachmentPreview` (FileAttachment fallthrough) mounts this dialog, which
+ * reads Recoil + react-query; its behavior is covered by its own test. */
+jest.mock('~/components/Chat/Messages/Content/FilePreviewDialog', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock('~/utils', () => ({
   cn: (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(' '),
   getFileType: () => ({ paths: [], color: '', title: 'Artifact' }),
   logger: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
   isArtifactRoute: () => false,
+  isPreviewableImage: jest.requireActual('~/utils/files').isPreviewableImage,
 }));
 
 const textAttachment = (overrides: Partial<TAttachment> = {}): TAttachment =>

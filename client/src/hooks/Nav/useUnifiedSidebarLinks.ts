@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Layers, Database } from 'lucide-react';
+import { MessagesSquare } from 'lucide-react';
 import { useUserKeyQuery } from 'librechat-data-provider/react-query';
 import { getConfigDefaults, getEndpointField } from 'librechat-data-provider';
 import type { TEndpointsConfig } from 'librechat-data-provider';
 import type { NavLink } from '~/common';
-import { SessionsPanel } from '~/components/Sessions';
-import { FilestoresPanel } from '~/components/Filestores';
+import ConversationsSection from '~/components/UnifiedSidebar/ConversationsSection';
 import { useGetEndpointsQuery, useGetStartupConfig } from '~/data-provider';
 import useSideNavLinks from '~/hooks/Nav/useSideNavLinks';
 import store from '~/store';
@@ -50,23 +49,16 @@ export default function useUnifiedSidebarLinks() {
     includeHidePanel: false,
   });
 
+  /** Chat history stays the first (default) panel now that Sessions is gone. */
   const links = useMemo(() => {
-    const sessionsLink: NavLink = {
-      title: 'com_roko_sessions',
+    const conversationLink: NavLink = {
+      title: 'com_ui_chat_history',
       label: '',
-      icon: Layers,
-      id: 'sessions',
-      Component: SessionsPanel,
+      icon: MessagesSquare,
+      id: 'conversations',
+      Component: ConversationsSection,
     };
-    const filestoresLink: NavLink = {
-      title: 'com_roko_filestores',
-      label: '',
-      icon: Database,
-      id: 'filestores',
-      Component: FilestoresPanel,
-    };
-
-    return [sessionsLink, filestoresLink, ...sideNavLinks];
+    return [conversationLink, ...sideNavLinks];
   }, [sideNavLinks]);
 
   return links;

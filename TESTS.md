@@ -19,7 +19,18 @@ La imagen de producción depende de esa etapa y de la compilación del frontend.
 | `bridgeToolRecords.test.ts` | Reconocer V1, rechazar campos privados no admitidos, conservar orden intercalado y una tarjeta estable por operación |
 | `BridgeToolReasoning.test.tsx` | Presentación de estados, resultados, cancelación, reintentos y tiempo disponible |
 | `packages/api/src/utils/rokoBridge.spec.ts` | Adaptación del contexto y comportamiento del cliente Bridge |
+| `packages/api/src/roko/{client,workspace,workspaceContext}.spec.ts` | Firma fresca, allowlist exacta, sin fallback ALS, identidades concurrentes, activación global y exclusión Bridge |
+| `api/server/services/MCP.spec.js`, `Tools/mcp.spec.js` | Contexto ALS al descubrir e invocar herramientas sobre MCP compartido |
+| `api/server/services/initializeMCPs.spec.js` | SSRF permite únicamente el origen interno del workspace configurado |
+| `api/server/routes/__tests__/convos.spec.js` | El borrado de conversaciones solicita borrar los workspaces correspondientes |
+| `api/app/clients/tools/structured/specs/WorkspaceTransfer.spec.js` | Transferencia explícita de adjunto y creación del artefacto desde salida validada |
 | `packages/api/src/telemetry/sdk.spec.ts` | Inicialización y opciones de privacidad de la telemetría |
+| `packages/api/src/skills/__tests__/deletionRequests.test.ts` | Una solicitud de borrado de skill solo la ve y decide su usuario; la decisión no cambia y sin respuesta no hay decisión |
+| `api/server/utils/__tests__/runMiddlewareChain.spec.js` | Los guards de ruta se ejecutan en orden, uno que responde detiene la cadena y los errores se propagan |
+| `api/app/clients/tools/structured/specs/SkillLibrary.spec.js` | `skill_library` solo borra tras aprobación explícita (rechazo o timeout conservan), no abre popup para skills inaccesibles y edita con control de versión |
+| `api/server/routes/__tests__/skills-library.spec.js` (fuera de CI: necesita `mongodb-memory-server`, sin binarios para la imagen Alpine) | Con Mongo y permisos reales: rutas REST de skills tras el refactor, el chat crea/edita, el borrado solo ocurre tras aprobar el popup, otro usuario no ve ni puede pedir borrar skills ajenas ni decidir solicitudes ajenas |
+| `SkillDeletionRequests.spec.tsx` | El popup muestra la skill y envía la decisión explícita del usuario |
+| `useSubmitMessage.spec.ts` | Un envío bloqueado se propaga a quien llama (dictado) para que conserve el texto |
 
 Los dos tests de exportación activan tracing sobre receptores de prueba; las
 otras pruebas Node lo desactivan. No requieren las credenciales de Langfuse de
@@ -36,7 +47,7 @@ Ejecutar el script en un checkout sin dependencias no equivale a ejecutar la CI.
 
 ## Actividad y tiempo general
 
-`activityParts.test.ts` comprueba la separación entre actividad y respuesta:
+`responseParts.test.ts` comprueba la separación entre actividad y respuesta:
 comentario, THINK y herramientas se agrupan; texto final, errores, handoffs y
 adjuntos permanecen visibles. `ResponseActivity.test.tsx` comprueba apertura,
 actualizaciones y plegado al finalizar. `ContentParts.integration.test.ts`
@@ -68,19 +79,32 @@ Son pruebas de lógica y colaboradores controlados. No certifican la fidelidad d
 todos los documentos, los códecs del navegador ni una ejecución de CLI real.
 No están seleccionadas todas por la CI reducida.
 
-## Sesiones, datos y autenticación
+## Workspace MCP, transferencia y autenticación
 
-Las suites de `packages/api/src/sessions`, del cliente de filestore y de
-`packages/data-schemas` protegen la propiedad de sesiones, asignación, decisiones
-de acceso y contratos de persistencia. Las suites de autenticación del servidor
-son distintas de las de integración Bridge. El índice de correo es compuesto
-`email + tenantId`; verificarlo en MongoDB forma parte de la revisión de una
-instalación existente, no se demuestra solo con un test de React.
+`packages/api/src/roko/workspaceContext.spec.ts` protege firma HMAC fresca,
+timestamp por petición, audiencia/versión, filtro por origen y prefijo, retiro de
+todas las cabeceras `x-roko-*`, ausencia de fallback sin ALS y aislamiento de dos
+conversaciones concurrentes sobre la misma conexión MCP.
 
-El servicio local heredado y el filestore externo no comparten automáticamente
-sus garantías: las pruebas de `packages/roko-server` no prueban el servicio externo.
-Los experimentos [FerretDB](packages/data-schemas/misc/ferretdb/ferretdb-multitenancy-plan.md)
-requieren una instancia separada y no forman parte de CI.
+`packages/api/src/roko/workspace.spec.ts` protege la activación global por
+defecto, opt-out global y exclusión de modelos Bridge. Las suites MCP validan que
+la identidad real entre durante el descubrimiento e invocación de herramientas.
+`api/server/routes/__tests__/mcp.spec.js` también cubre la ruta de preferencia
+global (`PATCH /api/mcp/workspace-preferences`); esta prueba se ejecutó de forma
+dirigida y no forma parte de la selección de `ci/test.sh`.
+
+`api/app/clients/tools/structured/specs/WorkspaceTransfer.spec.js` verifica que
+solo se transfiere el adjunto explícitamente seleccionado, que no se aceptan IDs
+fuera del mensaje, y que una salida descargada se persiste y devuelve como
+artefacto. `api/server/routes/__tests__/convos.spec.js` verifica la solicitud de
+borrado del workspace junto al borrado de conversaciones. Los adaptadores usan
+servicios simulados; no acreditan conexión a Bridge o roko-workspace real.
+
+Las suites de autenticación del servidor son distintas de las de integración
+Bridge. El índice de correo es compuesto `email + tenantId`; verificarlo en
+MongoDB forma parte de la revisión de una instalación existente, no se demuestra
+solo con un test de React. Los metadatos de archivos históricos con contexto
+`filestore` conservan su ruta de lectura y presentación.
 
 ## Suites amplias y E2E
 
@@ -99,7 +123,7 @@ npm run e2e:mock
 
 `test:all` agrupa los cinco comandos de cliente/API/paquetes, no `test:config`,
 las pruebas Node de `scripts/` ni E2E. Los perfiles E2E se explican en
-[e2e/README.md](e2e/README.md). Los tests de Bridge y del filestore externo se
+[e2e/README.md](e2e/README.md). Los tests de Bridge y roko-workspace externos se
 ejecutan en sus respectivos repositorios; los adaptadores simulados no acreditan
 acceso real a las suscripciones ni al servidor de producción.
 
@@ -160,7 +184,7 @@ Preparación y límites:
   verificó y cerró únicamente ese proceso Jest para continuar la ejecución.
 - Los tests S3 que exigen un bucket dedicado y el benchmark Redis explícitamente
   manual no se ejecutaron con recursos externos. No se acredita Nextcloud,
-  Bridge, LM Studio ni filestore externos reales.
+  Bridge, LM Studio ni roko-workspace externos reales.
 - Se retiraron los cuatro contenedores temporales creados y sus volúmenes
   anónimos al terminar. No se corrigieron archivos de producto durante esta
   ejecución.
@@ -212,12 +236,12 @@ para Windows/Node 24.22.1 ni Visual C++ instalado). Se completó mediante
 Esta preparación basta para los paquetes y simulaciones citados; no acredita
 el funcionamiento del servicio SQLite heredado ni de otros scripts de instalación.
 
-`npm run typecheck --workspace=@librechat/frontend` terminó con siete errores:
-firma asíncrona de envío en `ChatForm.tsx` y `useSubmitMessage.spec.ts`, tipo del
-fixture SUMMARY en `activityParts.test.ts`, imports sin default de `ActivityParts`
-en `ContentParts.integration.test.tsx`, `ContentParts.tsx` y `ParallelContent.tsx`,
-y un booleano opcional en `Parts/Reasoning.tsx`. Ningún diagnóstico señala los
-módulos nuevos de Nextcloud. No se modificaron esos archivos ajenos al cambio.
+`npm run typecheck --workspace=@librechat/frontend` terminaba con siete errores,
+corregidos el 27 de octubre de 2026. Los imports sin default de `ActivityParts`
+venían de `activityParts.ts`, que en sistemas de archivos sin distinción de
+mayúsculas resolvía antes que `ActivityParts.tsx`; ahora se llama
+`responseParts.ts`. `AudioRecorder` esperaba el resultado síncrono de un envío
+asíncrono y borraba el texto dictado aunque el envío se bloqueara; ahora lo espera.
 
 En esa primera ejecución Docker CLI estaba instalado, pero el motor aún no
 estaba arrancado. La ejecución amplia posterior sí utilizó contenedores de

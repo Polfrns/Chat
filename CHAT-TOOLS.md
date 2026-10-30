@@ -18,17 +18,28 @@ su servicio correspondiente; LM Studio recibe sus definiciones y resultados.
 
 ## Memorias
 
-El agente configurado usa `ChatGPT Codex` / `gpt-codex-fast`, con las mismas
-credenciales del Bridge ya existentes. El Bridge debe poder devolver las
-llamadas de herramientas para que LibreChat actualice la memoria. Comprueba una
+El agente configurado usa `Claude Max` / `claude-max-fast`, con las mismas
+credenciales del Bridge ya existentes. Cuando el usuario pide recordar, cambiar
+u olvidar algo, el agente lo aplica en el mismo turno. Comprueba una
 actualización desde un chat y su aparición en la gestión de memorias.
 Los controles de personalización del usuario siguen vigentes.
 
+## Skills desde el chat
+
+La herramienta `skill_library` permite pedir al chat que liste, lea, cree o
+edite skills. Usa los mismos permisos y validaciones que la pantalla de Skills.
+Para eliminar una skill aparece un popup de confirmación: solo se borra si el
+usuario pulsa «Eliminar skill»; rechazar, cerrar o esperar 120 s la conserva.
+
 ## Búsqueda web
 
-Codex Bridge utiliza su parámetro nativo `web_search`. El botón y el panel de
-parámetros comparten ese valor. Claude Bridge lo muestra deshabilitado conforme
-a sus capacidades actuales.
+Claude Bridge utiliza su parámetro nativo `web_search`, que activa WebSearch y
+WebFetch de Claude. El botón y el panel de parámetros comparten ese valor.
+WebFetch rechaza direcciones privadas, locales e internas.
+
+Gemini dispone de búsqueda con Google en su panel de parámetros. El botón de
+búsqueda web de la barra usa para Gemini la herramienta de LibreChat, que
+necesita las credenciales de Serper/Jina descritas abajo.
 
 LM Studio utiliza la herramienta de LibreChat. Completa `SERPER_API_KEY` y
 `JINA_API_KEY` en `.env`, o introduce las credenciales desde la configuración de
@@ -50,21 +61,20 @@ en esta preparación. Si el servicio requiere JWT gestionado, configura
 el verificador del servicio. No se requiere una clave por usuario de ejecución
 de código en esta versión.
 
-## Futuro MCP de edición y workspace
+## Workspace MCP
 
-Cuando exista el servidor:
+Roko conecta `roko-workspace` por defecto para modelos que no usan Bridge. El
+usuario puede desactivarlo globalmente desde Configuración → Personalización.
+Claude Max y ChatGPT Codex se excluyen porque Bridge ya ofrece su propio
+workspace. Configura `ROKO_WORKSPACE_URL` como URL base del servicio y
+`ROKO_WORKSPACE_KEY` como secreto compartido. La conexión MCP usa
+`${ROKO_WORKSPACE_URL}/mcp`; las transferencias REST usan
+`${ROKO_WORKSPACE_URL}/v1/workspace/...`. El servicio debe estar en la red Docker
+interna compartida con Roko y Bridge, sin publicar su puerto al host.
 
-1. Completa `WORKSPACE_MCP_URL` y `WORKSPACE_MCP_TOKEN` en `.env`.
-2. Descomenta `mcpServers.editing-workspace` en `runtime-config.yaml`. Si usa
-   otro mecanismo de autenticación, adapta `headers` a su contrato real.
-3. Para una URL privada, habilita `mcpSettings.allowedAddresses` con el host y
-   puerto exactos. El puerto 8080 comentado es únicamente un ejemplo.
-4. Reinicia la API y selecciona el servidor desde el menú MCP del chat o agente.
-
-`startup: false` conecta bajo demanda. El servidor deberá aplicar aislamiento
-por usuario y workspace, autorización de archivos y límites de ejecución.
-No existe todavía un vínculo entre su workspace y los filestores de sesiones
-Roko: ese contrato debe definirse al implementar el MCP.
+Los adjuntos solo se copian al workspace cuando el modelo llama explícitamente
+`attach_chat_file(file_id)`. Los archivos de salida pasan por la validación del
+servicio antes de adjuntarse al chat con `deliver_workspace_file(path)`.
 
 ## Aplicar la configuración
 

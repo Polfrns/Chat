@@ -55,6 +55,7 @@ jest.mock('~/utils', () => ({
   },
   createSafeUser: (user: unknown) => mockCreateSafeUser(user),
   resolveConfigHeaders: (opts: unknown) => mockResolveConfigHeaders(opts as never),
+  applyRokoBridgeContext: jest.fn(),
 }));
 
 const { createSafeUser } = jest.requireMock('~/utils');

@@ -39,12 +39,6 @@ const convoSchema: Schema<IConversation> = new Schema(
       default: null,
       index: true,
     },
-    /** Roko: the Session (ChatSession) this chat belongs to (1→many). */
-    sessionId: {
-      type: String,
-      default: null,
-      index: true,
-    },
     files: {
       type: [String],
     },

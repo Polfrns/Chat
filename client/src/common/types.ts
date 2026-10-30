@@ -367,10 +367,6 @@ export type TOptions = {
   overrideManualSkills?: string[];
   /** Added conversation for multi-convo feature - sent to server as part of submission payload */
   addedConvo?: t.TConversation;
-  /** Roko: the session this message belongs to, resolved synchronously at submit
-   *  time (so even a brand-new chat's first message carries it and gets the
-   *  leedeo-filestore tools). Falls back to the conversation's own sessionId. */
-  overrideSessionId?: string;
 };
 
 export type TAskFunction = (props: TAskProps, options?: TOptions) => false | void;

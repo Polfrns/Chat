@@ -20,13 +20,15 @@ services:
       - MEILI_HOST=http://meilisearch:7700
       - RAG_PORT=${RAG_PORT:-8000}
       - RAG_API_URL=http://rag_api:${RAG_PORT:-8000}
+      - ROKO_WORKSPACE_URL=${ROKO_WORKSPACE_URL:-http://roko-workspace:8080}
+      - ROKO_WORKSPACE_KEY=${ROKO_WORKSPACE_KEY:-}
       - PROXY=${PROXY:-}
       - HTTP_PROXY=${HTTP_PROXY:-}
       - HTTPS_PROXY=${HTTPS_PROXY:-}
-      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,::1},${no_proxy:-},mongodb,chat-mongodb,meilisearch,chat-meilisearch,rag_api,vectordb,host.docker.internal
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,::1},${no_proxy:-},mongodb,chat-mongodb,meilisearch,chat-meilisearch,rag_api,vectordb,host.docker.internal,cli-bridge,roko-workspace
       - http_proxy=${http_proxy:-}
       - https_proxy=${https_proxy:-}
-      - no_proxy=${no_proxy:-localhost,127.0.0.1,::1},${NO_PROXY:-},mongodb,chat-mongodb,meilisearch,chat-meilisearch,rag_api,vectordb,host.docker.internal
+      - no_proxy=${no_proxy:-localhost,127.0.0.1,::1},${NO_PROXY:-},mongodb,chat-mongodb,meilisearch,chat-meilisearch,rag_api,vectordb,host.docker.internal,cli-bridge,roko-workspace
     volumes:
       - type: bind
         source: ./.env

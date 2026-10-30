@@ -39,6 +39,7 @@ jest.mock('@librechat/api', () => {
   const getRetentionExpiry = jest.fn(() => ({}));
   return {
     sanitizeFilename: jest.fn((n) => n),
+    isRokoBridgeModel: jest.fn(() => false),
     parseText: jest.fn().mockResolvedValue({ text: '', bytes: 0 }),
     processAudioFile: jest.fn(),
     getStorageMetadata: jest.fn(() => ({})),
@@ -93,6 +94,7 @@ jest.mock('~/models', () => ({
   updateFileUsage: jest.fn(),
   deleteFiles: jest.fn(),
   findFileById: jest.fn(),
+  getAgent: jest.fn(),
   getConvo: jest.fn(),
   getExpiredFiles: jest.fn(),
   addAgentResourceFile: jest.fn().mockResolvedValue({}),
@@ -196,7 +198,9 @@ const makeMetadata = () => ({
 describe('saveBridgeOutputFile', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    getStrategyFunctions.mockReturnValue({ saveBuffer: jest.fn().mockResolvedValue('/uploads/file') });
+    getStrategyFunctions.mockReturnValue({
+      saveBuffer: jest.fn().mockResolvedValue('/uploads/file'),
+    });
     require('@librechat/api').hasOfficeHtmlPath.mockReturnValue(false);
     require('@librechat/api').extractCodeArtifactText.mockResolvedValue(null);
   });
@@ -239,24 +243,37 @@ describe('saveBridgeOutputFile', () => {
 
 test('Bridge Office files reuse deferred rendering after their downloadable record exists', async () => {
   jest.clearAllMocks();
-  getStrategyFunctions.mockReturnValue({ saveBuffer: jest.fn().mockResolvedValue('/uploads/file') });
+  getStrategyFunctions.mockReturnValue({
+    saveBuffer: jest.fn().mockResolvedValue('/uploads/file'),
+  });
   const api = require('@librechat/api');
   const preview = require('~/server/services/Files/preview');
   api.hasOfficeHtmlPath.mockReturnValueOnce(true);
   await saveBridgeOutputFile({
-    req: makeReq(), filename: 'report.docx',
+    req: makeReq(),
+    filename: 'report.docx',
     mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     buffer: Buffer.from('document'),
   });
-  expect(db.createFile).toHaveBeenLastCalledWith(expect.objectContaining({
-    status: 'pending', text: null, textFormat: null, previewRevision: 'mock-uuid',
-  }), true);
+  expect(db.createFile).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      status: 'pending',
+      text: null,
+      textFormat: null,
+      previewRevision: 'mock-uuid',
+    }),
+    true,
+  );
   const job = preview.runPreviewFinalize.mock.calls.at(-1)[0];
   expect(job.fileId).toBe('mock-uuid');
   job.finalize();
-  expect(preview.finalizePreview).toHaveBeenLastCalledWith(expect.objectContaining({
-    leafName: 'report.docx', file_id: 'mock-uuid', previewRevision: 'mock-uuid',
-  }));
+  expect(preview.finalizePreview).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      leafName: 'report.docx',
+      file_id: 'mock-uuid',
+      previewRevision: 'mock-uuid',
+    }),
+  );
 });
 
 const mockRes = {

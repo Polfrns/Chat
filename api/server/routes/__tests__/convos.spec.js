@@ -1,5 +1,6 @@
 const express = require('express');
 const request = require('supertest');
+const mongoose = require('mongoose');
 
 const MOCKS = '../__test-utils__/convos-route-mocks';
 
@@ -17,6 +18,10 @@ jest.mock('~/server/routes/files/multer', () => require(MOCKS).multerSetup());
 jest.mock('multer', () => require(MOCKS).multerLib());
 jest.mock('~/server/services/Endpoints/azureAssistants', () => require(MOCKS).assistantEndpoint());
 jest.mock('~/server/services/Endpoints/assistants', () => require(MOCKS).assistantEndpoint());
+jest.mock('~/server/services/rokoWorkspace', () => ({
+  deleteConversationWorkspace: jest.fn().mockResolvedValue(undefined),
+  deleteConversationWorkspaces: jest.fn().mockResolvedValue(undefined),
+}));
 
 describe('Convos Routes', () => {
   let app;
@@ -26,6 +31,10 @@ describe('Convos Routes', () => {
     deleteAllSharedLinksWithCleanup,
     deleteConvoSharedLinksWithCleanup,
   } = require('@librechat/api');
+  const {
+    deleteConversationWorkspace,
+    deleteConversationWorkspaces,
+  } = require('~/server/services/rokoWorkspace');
 
   beforeAll(() => {
     convosRouter = require('../convos');
@@ -44,6 +53,15 @@ describe('Convos Routes', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mongoose.models.Conversation = {
+      find: jest.fn(() => ({
+        select: jest.fn().mockReturnValue({
+          lean: jest
+            .fn()
+            .mockResolvedValue([{ conversationId: 'conv-1' }, { conversationId: 'conv-2' }]),
+        }),
+      })),
+    };
   });
 
   describe('DELETE /all', () => {
@@ -76,6 +94,10 @@ describe('Convos Routes', () => {
       /** Verify deleteAllSharedLinksWithCleanup was called with correct userId */
       expect(deleteAllSharedLinksWithCleanup).toHaveBeenCalledWith('test-user-123');
       expect(deleteAllSharedLinksWithCleanup).toHaveBeenCalledTimes(1);
+      expect(deleteConversationWorkspaces).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'test-user-123' }),
+        ['conv-1', 'conv-2'],
+      );
     });
 
     it('should call deleteAllSharedLinksWithCleanup even when no conversations exist', async () => {
@@ -254,6 +276,10 @@ describe('Convos Routes', () => {
       /** Verify deleteConvoSharedLinksWithCleanup was called */
       expect(deleteConvoSharedLinksWithCleanup).toHaveBeenCalledWith(
         'test-user-123',
+        mockConversationId,
+      );
+      expect(deleteConversationWorkspace).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'test-user-123' }),
         mockConversationId,
       );
     });

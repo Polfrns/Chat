@@ -39,8 +39,8 @@ import { getProviderConfig } from '~/endpoints/config/providers';
 import { extractDefaultParams } from '~/endpoints/openai/llm';
 import { resolveHeaders, createSafeUser } from '~/utils/env';
 import { getOpenAIConfig } from '~/endpoints/openai/config';
-import { resolveConfigHeaders } from '~/utils/headers';
 import { applyRokoBridgeContext } from '~/utils/rokoBridge';
+import { resolveConfigHeaders } from '~/utils/headers';
 import { applyTestRunHook } from '~/agents/testHook';
 import { isUserProvided } from '~/utils/common';
 
@@ -858,7 +858,7 @@ export async function createRun({
    * Switch to the `RunConfig` pick once the dependency is bumped.
    */
   subagentUsageSink?: (event: SubagentUsageEvent) => void;
-  /** Roko: per-run hook registry (PreToolUse/PostToolUse filestore policy). */
+  /** Optional agent hooks supplied by callers. */
   hooks?: RunConfig['hooks'];
 } & Pick<
   RunConfig,

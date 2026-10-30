@@ -1155,48 +1155,70 @@ export function applyModelAwareDefaults(
 ): SettingsConfiguration {
   const bridge = getBridgeCapabilities(model);
   if (bridge) {
-    const codex = bridge.provider === 'codex';
     const local = new Set([
-      'model', 'modelLabel', 'chatGptLabel', 'promptPrefix', 'fileTokenLimit',
-      'useResponsesApi', 'resendFiles', 'disableStreaming', 'maxContextTokens',
+      'model',
+      'modelLabel',
+      'chatGptLabel',
+      'promptPrefix',
+      'fileTokenLimit',
+      'useResponsesApi',
+      'resendFiles',
+      'disableStreaming',
+      'maxContextTokens',
     ]);
     const native = new Set([
       'reasoning_effort',
-      ...(codex ? ['verbosity', 'reasoning_summary', 'web_search'] : []),
+      ...(bridge.supportsVerbosity ? ['verbosity'] : []),
+      ...(bridge.supportsSummary ? ['reasoning_summary'] : []),
+      ...(bridge.supportsWebSearch ? ['web_search'] : []),
     ]);
     return settings.map((setting) => {
       if (!local.has(setting.key) && !native.has(setting.key)) {
         return {
           ...setting,
           readonly: true,
-          unsupportedReason: setting.key === 'web_search'
-            ? 'com_endpoint_bridge_search_unavailable'
-            : 'com_endpoint_bridge_parameter_unavailable',
+          unsupportedReason:
+            setting.key === 'web_search'
+              ? 'com_endpoint_bridge_search_unavailable'
+              : 'com_endpoint_bridge_parameter_unavailable',
         };
       }
       if (setting.key === 'reasoning_effort') {
         return {
           ...setting,
-          default: typeof setting.default === 'string' && bridge.efforts.includes(setting.default)
-            ? setting.default : ReasoningEffort.unset,
+          default:
+            typeof setting.default === 'string' && bridge.efforts.includes(setting.default)
+              ? setting.default
+              : ReasoningEffort.unset,
           options: [ReasoningEffort.unset, ...bridge.efforts],
-          enumMappings: { ...setting.enumMappings, max: 'Max', ultra: 'Ultra', persistent: 'Persistent' },
+          enumMappings: {
+            ...setting.enumMappings,
+            max: 'Max',
+            ultra: 'Ultra',
+            persistent: 'Persistent',
+          },
         };
       }
       if (setting.key === 'reasoning_summary') {
         return {
           ...setting,
           default: ['', 'auto', 'concise', 'detailed', 'none'].includes(String(setting.default))
-            ? setting.default : ReasoningSummary.none,
+            ? setting.default
+            : ReasoningSummary.none,
           options: ['', 'auto', 'concise', 'detailed', 'none'],
-          enumMappings: { ...setting.enumMappings, '': 'com_endpoint_bridge_default', none: 'com_ui_none' },
+          enumMappings: {
+            ...setting.enumMappings,
+            '': 'com_endpoint_bridge_default',
+            none: 'com_ui_none',
+          },
         };
       }
       if (setting.key === 'verbosity') {
         return {
           ...setting,
           default: ['', 'low', 'medium', 'high'].includes(String(setting.default))
-            ? setting.default : Verbosity.none,
+            ? setting.default
+            : Verbosity.none,
           options: ['', 'low', 'medium', 'high'],
           enumMappings: { ...setting.enumMappings, '': 'com_endpoint_bridge_default' },
         };

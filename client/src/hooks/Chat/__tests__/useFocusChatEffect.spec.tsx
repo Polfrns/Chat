@@ -59,6 +59,16 @@ describe('useFocusChatEffect', () => {
       expect(mockLog).toHaveBeenCalled();
     });
 
+    test('does not revert a conversation URL that a new stream already replaced', () => {
+      window.history.replaceState({}, '', '/c/real-conversation-id?spec=icon-spec');
+
+      renderHook(() => useFocusChatEffect(mockTextAreaRef as any));
+
+      expect(mockTextAreaRef.current.focus).toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(window.location.pathname).toBe('/c/real-conversation-id');
+    });
+
     test('should not focus textarea when location.state.focusChat is false', () => {
       (useLocation as jest.Mock).mockReturnValue({
         pathname: '/c/new',

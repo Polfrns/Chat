@@ -777,17 +777,23 @@ export function convertJsonSchemaToZod(
 
     let objectSchema = z.object(shape);
 
+    /** Zod 4 keeps `.describe()` metadata on the inner schema only, so re-apply it to the wrapper */
+    const optionalNullable = (value: z.ZodType): z.ZodType => {
+      const wrapped = value.optional().nullable();
+      return value.description != null ? wrapped.describe(value.description) : wrapped;
+    };
+
     if (Array.isArray(schema.required) && schema.required.length > 0) {
       const partial = Object.fromEntries(
         Object.entries(shape).map(([key, value]) => [
           key,
-          schema.required?.includes(key) === true ? value : value.optional().nullable(),
+          schema.required?.includes(key) === true ? value : optionalNullable(value),
         ]),
       );
       objectSchema = z.object(partial);
     } else {
       const partialNullable = Object.fromEntries(
-        Object.entries(shape).map(([key, value]) => [key, value.optional().nullable()]),
+        Object.entries(shape).map(([key, value]) => [key, optionalNullable(value)]),
       );
       objectSchema = z.object(partialNullable);
     }

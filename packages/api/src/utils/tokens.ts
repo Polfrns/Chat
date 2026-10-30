@@ -592,29 +592,24 @@ export function matchModelName(
   return matchedPattern || modelName;
 }
 
-export const modelSchema: z.ZodObject<
+type ModelPricingSchema = z.ZodObject<
+  {
+    prompt: z.ZodString;
+    completion: z.ZodString;
+  },
+  z.core.$strip
+>;
+
+type ModelSchema = z.ZodObject<
   {
     id: z.ZodString;
-    pricing: z.ZodObject<
-      {
-        prompt: z.ZodString;
-        completion: z.ZodString;
-      },
-      'strip',
-      z.ZodTypeAny,
-      {
-        prompt: string;
-        completion: string;
-      },
-      {
-        prompt: string;
-        completion: string;
-      }
-    >;
+    pricing: ModelPricingSchema;
     context_length: z.ZodNumber;
   },
-  'strip'
-> = z.object({
+  z.core.$strip
+>;
+
+export const modelSchema: ModelSchema = z.object({
   id: z.string(),
   pricing: z.object({
     prompt: z.string(),
@@ -623,54 +618,7 @@ export const modelSchema: z.ZodObject<
   context_length: z.number(),
 });
 
-export const inputSchema: z.ZodObject<
-  {
-    data: z.ZodArray<
-      z.ZodObject<
-        {
-          id: z.ZodString;
-          pricing: z.ZodObject<
-            {
-              prompt: z.ZodString;
-              completion: z.ZodString;
-            },
-            'strip',
-            z.ZodTypeAny,
-            {
-              prompt: string;
-              completion: string;
-            },
-            {
-              prompt: string;
-              completion: string;
-            }
-          >;
-          context_length: z.ZodNumber;
-        },
-        'strip',
-        z.ZodTypeAny,
-        {
-          id: string;
-          pricing: {
-            prompt: string;
-            completion: string;
-          };
-          context_length: number;
-        },
-        {
-          id: string;
-          pricing: {
-            prompt: string;
-            completion: string;
-          };
-          context_length: number;
-        }
-      >,
-      'many'
-    >;
-  },
-  'strip'
-> = z.object({
+export const inputSchema: z.ZodObject<{ data: z.ZodArray<ModelSchema> }, z.core.$strip> = z.object({
   data: z.array(modelSchema),
 });
 

@@ -137,50 +137,6 @@ export const projectById = (id: string) => `${projectsRoot}/${encodeURIComponent
 export const projectConversation = (conversationId: string) =>
   `${projectsRoot}/conversations/${encodeURIComponent(conversationId)}`;
 
-/* ===== Roko: Filestores & Sessions ===== */
-
-export const filestoresRoot = `${BASE_URL}/api/filestores`;
-export const filestores = (search?: string) =>
-  `${filestoresRoot}${search ? buildQuery({ search }) : ''}`;
-export const filestoreByUid = (id: string) => `${filestoresRoot}/${encodeURIComponent(id)}`;
-export const filestoreFiles = (id: string) => `${filestoresRoot}/${encodeURIComponent(id)}/files`;
-export const filestoreFileUpload = (id: string) =>
-  `${filestoresRoot}/${encodeURIComponent(id)}/files/upload`;
-export const filestoreFileDownload = (id: string, path: string) =>
-  `${filestoresRoot}/${encodeURIComponent(id)}/files/download?path=${encodeURIComponent(path)}`;
-export const filestoreFileMove = (id: string) =>
-  `${filestoresRoot}/${encodeURIComponent(id)}/files/move`;
-
-export const sessionsRoot = `${BASE_URL}/api/sessions`;
-export const sessions = (search?: string) =>
-  `${sessionsRoot}${search ? buildQuery({ search }) : ''}`;
-export const sessionById = (id: string) => `${sessionsRoot}/${encodeURIComponent(id)}`;
-export const sessionChats = (id: string) => `${sessionsRoot}/${encodeURIComponent(id)}/chats`;
-export const sessionFilestores = (id: string) =>
-  `${sessionsRoot}/${encodeURIComponent(id)}/filestores`;
-export const sessionFilestoreById = (id: string, filestoreUid: string) =>
-  `${sessionsRoot}/${encodeURIComponent(id)}/filestores/${encodeURIComponent(filestoreUid)}`;
-export const sessionAssignChat = (conversationId: string) =>
-  `${sessionsRoot}/chats/${encodeURIComponent(conversationId)}`;
-export const filestoreAccessRequests = (id: string) =>
-  `${sessionsRoot}/${encodeURIComponent(id)}/filestore-access-requests`;
-export const filestoreAccessRequestDecision = (
-  id: string,
-  filestoreUid: string,
-  decision: 'approve' | 'deny',
-) =>
-  `${sessionsRoot}/${encodeURIComponent(id)}/filestore-access-requests/${encodeURIComponent(filestoreUid)}/${decision}`;
-export const filestoreCreationRequests = (id: string) =>
-  `${sessionsRoot}/${encodeURIComponent(id)}/filestore-creation-requests`;
-export const filestoreCreationRequestDecision = (
-  id: string,
-  requestId: string,
-  decision: 'confirm' | 'decline',
-) =>
-  `${sessionsRoot}/${encodeURIComponent(id)}/filestore-creation-requests/${encodeURIComponent(requestId)}/${decision}`;
-export const filestoreRequestsStream = (id: string) =>
-  `${sessionsRoot}/${encodeURIComponent(id)}/filestore-requests/stream`;
-
 export const search = (q: string, cursor?: string | null) =>
   `${BASE_URL}/api/search?q=${q}${cursor ? `&cursor=${cursor}` : ''}`;
 
@@ -253,6 +209,8 @@ export const plugins = () => `${BASE_URL}/api/plugins`;
 
 export const mcpReinitialize = (serverName: string) =>
   `${BASE_URL}/api/mcp/${serverName}/reinitialize`;
+/** Roko: per-user global switch for the execution-workspace MCP server. */
+export const mcpWorkspacePreferences = () => `${BASE_URL}/api/mcp/workspace-preferences`;
 export const mcpConnectionStatus = () => `${BASE_URL}/api/mcp/connection/status`;
 export const mcpServerConnectionStatus = (serverName: string) =>
   `${BASE_URL}/api/mcp/connection/status/${serverName}`;

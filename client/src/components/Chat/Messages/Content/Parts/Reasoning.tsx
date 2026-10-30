@@ -6,8 +6,8 @@ import { ThinkingContent, ThinkingButton, FloatingThinkingBar } from './Thinking
 import { useLocalize, useExpandCollapse } from '~/hooks';
 import { showThinkingAtom } from '~/store/showThinking';
 import { useMessageContext } from '~/Providers';
-import { cn } from '~/utils';
 import Markdown from '../Markdown';
+import { cn } from '~/utils';
 
 type ReasoningProps = {
   reasoning: string;
@@ -95,7 +95,7 @@ const Reasoning = memo(({ reasoning, isLast, inline = false }: ReasoningProps) =
   if (inline) {
     return (
       <div className="my-2 text-sm text-text-secondary">
-        <Markdown content={reasoningText} isLatestMessage={effectiveIsSubmitting} />
+        <Markdown content={reasoningText} isLatestMessage={effectiveIsSubmitting === true} />
       </div>
     );
   }

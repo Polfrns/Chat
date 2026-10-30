@@ -442,7 +442,9 @@ function getDefaultHandlers({
         aggregateContent({ event, data: eventData });
         if (bridgeOutput) {
           if (!metadata?.run_id || !metadata?.thread_id) {
-            throw new Error('Bridge output cannot be attached without message and conversation IDs.');
+            throw new Error(
+              'Bridge output cannot be attached without message and conversation IDs.',
+            );
           }
           for (const [index, file] of bridgeOutput.files.entries()) {
             const attachmentPromise = (async () => {
@@ -772,12 +774,12 @@ function createToolEndCallback({ req, res, artifactPromises, streamId = null }) 
       );
     }
 
-    if (output.artifact.filestoreFile) {
+    if (output.artifact.workspaceFile) {
       artifactPromises.push(
         (async () => {
           /** The tool already persisted the file record; bind it to the message
            *  so the UI renders it as a downloadable attachment. */
-          const attachment = Object.assign({}, output.artifact.filestoreFile, {
+          const attachment = Object.assign({}, output.artifact.workspaceFile, {
             messageId: metadata.run_id,
             toolCallId: output.tool_call_id,
             conversationId: metadata.thread_id,
@@ -788,7 +790,7 @@ function createToolEndCallback({ req, res, artifactPromises, streamId = null }) 
           writeAttachment(res, streamId, attachment);
           return attachment;
         })().catch((error) => {
-          logger.error('Error processing filestore file attachment:', error);
+          logger.error('Error processing workspace file attachment:', error);
           return null;
         }),
       );
@@ -1054,10 +1056,10 @@ function createResponsesToolEndCallback({ req, res, tracker, artifactPromises })
       );
     }
 
-    if (output.artifact.filestoreFile) {
+    if (output.artifact.workspaceFile) {
       artifactPromises.push(
         (async () => {
-          const attachment = Object.assign({}, output.artifact.filestoreFile, {
+          const attachment = Object.assign({}, output.artifact.workspaceFile, {
             toolCallId: output.tool_call_id,
           });
           // For Responses API, always emit attachment during streaming
@@ -1066,7 +1068,7 @@ function createResponsesToolEndCallback({ req, res, tracker, artifactPromises })
           }
           return attachment;
         })().catch((error) => {
-          logger.error('Error processing filestore file attachment:', error);
+          logger.error('Error processing workspace file attachment:', error);
           return null;
         }),
       );

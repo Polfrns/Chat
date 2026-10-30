@@ -20,7 +20,7 @@ const CLAUDE: BridgeCapabilities = {
   efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
   supportsVerbosity: false,
   supportsSummary: false,
-  supportsWebSearch: false,
+  supportsWebSearch: true,
 };
 
 export function getBridgeCapabilities(model?: string | null): BridgeCapabilities | undefined {

@@ -50,12 +50,14 @@ memory:
   maxInputTokens: 12000
   agent:
     enabled: true
-    provider: "ChatGPT Codex"
-    model: "gpt-codex-fast"
+    provider: "Claude Max"
+    model: "claude-max-fast"
     instructions: >-
-      Store durable user preferences and useful work context. Update existing
-      memories instead of duplicating them. Do not store credentials, secrets,
-      transient tool output, or information the user asks you to forget.
+      Store durable user preferences and useful work context. Whenever the user
+      explicitly asks to remember, change, or forget something, apply it in the
+      same turn: update the matching memory instead of duplicating it, and delete
+      memories the user asks you to forget. Do not store credentials, secrets, or
+      transient tool output.
     model_parameters:
       reasoning_effort: "low"
 
@@ -124,6 +126,17 @@ endpoints:
           completion: 0
           context: 1050000
 
+    - name: "OmniRoute"
+      apiKey: "${OMNIROUTE_API_KEY}"
+      baseURL: "http://omniroute:20128/v1"
+      models:
+        default:
+          - "auto"
+        fetch: true
+      titleConvo: true
+      titleModel: "current_model"
+      modelDisplayLabel: "OmniRoute"
+
 fileConfig:
   endpoints:
     "LM Studio":
@@ -137,40 +150,44 @@ fileConfig:
         - "application/octet-stream"
         - "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     "Claude Max":
-      fileLimit: 10
-      fileSizeLimit: 14
-      totalSizeLimit: 14
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
       supportedMimeTypes: [".*"]
 
     "ChatGPT Codex":
-      fileLimit: 10
-      fileSizeLimit: 14
-      totalSizeLimit: 14
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
       supportedMimeTypes: [".*"]
 
+    "OmniRoute":
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
+      supportedMimeTypes: [".*"]
+
+    "google":
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
+      supportedMimeTypes:
+        - "image/.*"
+        - "text/.*"
+        - "application/pdf"
+        - "audio/.*"
+        - "video/.*"
+
     "agents":
-      fileLimit: 10
-      fileSizeLimit: 25
-      totalSizeLimit: 100
+      fileLimit: 20
+      fileSizeLimit: 50
+      totalSizeLimit: 200
       supportedMimeTypes: [".*"]
 
   serverFileSizeLimit: 100
   avatarSizeLimit: 2
 
-# Enable the editing workspace server below only after it exists.
-# Permit its exact private host:port in mcpSettings.allowedAddresses if needed.
-# mcpSettings:
-#   allowedAddresses:
-#     - 'host.docker.internal:8080'
-mcpServers:
-  # editing-workspace:
-  #   type: streamable-http
-  #   url: ${WORKSPACE_MCP_URL}
-  #   headers:
-  #     Authorization: "Bearer ${WORKSPACE_MCP_TOKEN}"
-  #   startup: false
-  #   chatMenu: true
-  #   timeout: 60000
+mcpServers: {}
 
 modelSpecs:
   list:
@@ -205,7 +222,7 @@ modelSpecs:
         resendFiles: true
 
     - name: "claude-max-personalizado"
-      label: "Claude"
+      label: "Claude (Sonnet)"
       group: "Claude Max"
       preset:
         endpoint: "Claude Max"
@@ -215,7 +232,7 @@ modelSpecs:
         resendFiles: true
 
     - name: "claude-fast"
-      label: "Claude Fast (Sonnet)"
+      label: "Claude Fast (Haiku)"
       group: "Claude Max"
       preset:
         endpoint: "Claude Max"
@@ -232,4 +249,30 @@ modelSpecs:
         model: "claude-max-deep"
         maxContextTokens: 1000000
         reasoning_effort: "high"
+        resendFiles: true
+
+    # Requires `google` in ENDPOINTS and GOOGLE_KEY in .env. Only Gemini API
+    # free-tier models; keep them in GOOGLE_MODELS so the endpoint accepts them.
+    - name: "gemini-flash"
+      label: "Gemini Flash"
+      group: "Google"
+      preset:
+        endpoint: "google"
+        model: "gemini-3.8-flash"
+        resendFiles: true
+
+    - name: "gemini-flash-lite"
+      label: "Gemini Flash Lite"
+      group: "Google"
+      preset:
+        endpoint: "google"
+        model: "gemini-3.5-flash-lite"
+        resendFiles: true
+
+    - name: "gemini-pro"
+      label: "Gemini 2.5 Pro (cuota gratuita baja)"
+      group: "Google"
+      preset:
+        endpoint: "google"
+        model: "gemini-2.5-pro"
         resendFiles: true

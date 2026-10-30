@@ -111,6 +111,7 @@ jest.mock('~/utils', () => ({
   validateFiles: jest.fn(() => true),
   cachePreview: jest.fn(),
   getCachedPreview: jest.fn(() => undefined),
+  isPreviewableImage: jest.requireActual('~/utils/files').isPreviewableImage,
 }));
 
 const mockValidateFiles = jest.requireMock('~/utils').validateFiles;
@@ -274,7 +275,9 @@ describe('useFileHandling', () => {
       expect(formData.get('endpoint')).toBe(EModelEndpoint.agents);
       expect(formData.get('message_file')).toBeNull();
       expect(formData.get('version')).toBeNull();
-      expect(formData.get('model')).toBeNull();
+      /** Every upload now carries the generic `model` field (empty here: no
+       *  agent/conversation model); the assistants path would append more. */
+      expect(formData.getAll('model')).toEqual(['']);
       expect(formData.get('assistant_id')).toBeNull();
     });
 

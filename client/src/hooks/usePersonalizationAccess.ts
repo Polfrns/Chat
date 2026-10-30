@@ -7,10 +7,13 @@ export default function usePersonalizationAccess() {
     permission: Permissions.OPT_OUT,
   });
 
-  const hasAnyPersonalizationFeature = hasMemoryOptOut;
+  /** The Roko workspace switch is a user-global MCP preference, not a conversation option. */
+  const hasWorkspaceMcp = true;
+  const hasAnyPersonalizationFeature = hasMemoryOptOut || hasWorkspaceMcp;
 
   return {
     hasMemoryOptOut,
+    hasWorkspaceMcp,
     hasAnyPersonalizationFeature,
   };
 }

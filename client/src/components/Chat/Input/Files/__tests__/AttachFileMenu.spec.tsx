@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
 import { RecoilRoot } from 'recoil';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EModelEndpoint, EToolResources, Providers } from 'librechat-data-provider';
 import AttachFileMenu from '../AttachFileMenu';
@@ -25,6 +25,12 @@ jest.mock('~/data-provider', () => ({
 
 jest.mock('~/components/SharePoint', () => ({
   SharePointPickerDialog: () => null,
+}));
+
+/* NextcloudPanel needs AuthContext; it is out of scope for these menu tests. */
+jest.mock('~/components/Nextcloud/NextcloudPanel', () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock('@librechat/client', () => {

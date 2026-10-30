@@ -37,7 +37,6 @@ const {
   getMCPManager,
 } = require('~/config');
 const db = require('~/models');
-const { rokoClient } = require('~/server/services/roko');
 const { findToken, createToken, updateToken, deleteTokens } = db;
 const { getGraphApiToken } = require('./GraphTokenService');
 const { exchangeOboToken } = require('./OboTokenService');
@@ -45,6 +44,12 @@ const { createOboTrustChecker } = require('./OboPolicyService');
 const { reinitMCPServer } = require('./Tools/mcp');
 const { getAppConfig } = require('./Config');
 const { getLogStores } = require('~/cache');
+const {
+  readRokoWorkspaceConfig,
+  rokoWorkspaceMcpUrl,
+  isRokoWorkspaceEnabled,
+} = require('@librechat/api');
+const { rokoWorkspaceIdentity, runWithRokoWorkspaceContext } = require('@librechat/api');
 
 const MAX_CACHE_SIZE = 1000;
 const lastReconnectAttempts = new Map();
@@ -112,68 +117,38 @@ async function getAppConfigForUser(userId, user) {
   return await getAppConfig({ role: user?.role, tenantId: getTenantId(), userId });
 }
 
-/** Session context injected into the agent's instructions (via `serverInstructions`)
- * so the LLM knows which session the conversation belongs to and what it holds.
- * Filestore metadata comes from the leedeo-filestore service. */
-async function buildRokoInstructions(userId, sessionId) {
-  try {
-    const session = await db.getChatSession(userId, sessionId);
-    if (!session) {
-      return 'This conversation belongs to a Roko session. Use list_filestores to see what you can reach.';
-    }
-    const stores = await rokoClient.accessibleByUids(session.filestoreUids ?? []);
-    const fileList = stores.length
-      ? stores
-          .map(
-            (s) =>
-              `- ${s.displayName} (filestore_uid: ${s.uid})${s.readOnly ? ' [read-only]' : ''}`,
-          )
-          .join('\n')
-      : '(no file stores attached yet)';
-    return [
-      `This conversation belongs to the session "${session.name}".`,
-      '',
-      'File stores currently attached to this session (pass the filestore_uid to the drive tools):',
-      fileList,
-      '',
-      'Use list_filestores (or search_filestores for a name/description query) to see every store you can reach and create_filestore to start a new one (the user confirms and may edit the details). Work with contents via read_file / create_file / str_replace_file / delete_file / list_files / create_folder / move_file / search_files (each takes a filestore_uid) and search_knowledge (semantic search across filestore_uids). list_files, search_files, and search_knowledge accept an optional glob (store-relative POSIX pattern, e.g. reports/**/*.pdf) to narrow their scope. To use a store you can see but is not attached here, just use it — the user will be asked to attach it to this session.',
-      '',
-      'Two chat transfer tools also take a filestore_uid: upload_chat_file stores a file the user attached in this chat (by its file_id) into a store — only do this when it is clearly relevant, and into the store that fits the file; deliver_filestore_file fetches a store file and hands it to the user as a downloadable attachment in the chat.',
-    ].join('\n');
-  } catch (error) {
-    logger.warn('[buildRokoInstructions] failed to build session instructions:', error);
-    return 'This conversation belongs to a Roko session. Use list_filestores to see what you can reach.';
-  }
-}
+const ROKO_WORKSPACE_INSTRUCTIONS = [
+  'Use this conversation-scoped workspace for task files.',
+  'Use attach_chat_file with the file_id of one current-message attachment when you need to copy that file into inputs/. Attachments are never copied automatically.',
+  'Workspace files under outputs/ can be delivered to the user with deliver_workspace_file. The service validates output files before returning them.',
+].join('\n');
 
 /**
- * Roko: silently resolve the single leedeo-filestore MCP server config for the current
- * chat. The frontend appends the `leedeo-filestore` name to `ephemeralAgent.mcp`
- * whenever the active chat has a session; here we point it at the leedeo-filestore
- * service's MCP face, authed with the deployment-wide API key. The service is
- * session-agnostic — per-session scoping is enforced by the agent hooks (see the
- * Roko hooks), not by the bearer. Added to `configServers`
- * so the normal MCP pipeline connects it additively to the user's own selections.
  * @param {import('express').Request} req
  * @returns {Promise<Record<string, object>>}
  */
-async function resolveRokoMcpServer(req) {
-  const userId = req.user?.id;
-  const sessionId = req.body?.sessionId;
-  const requested = Array.isArray(req.body?.ephemeralAgent?.mcp) ? req.body.ephemeralAgent.mcp : [];
-  const serverName = Constants.roko_mcp_server;
-  if (!userId || !sessionId || !requested.includes(serverName)) {
+function resolveRokoMcpServer(req) {
+  if (!req.user?.id) {
+    return {};
+  }
+  let config;
+  try {
+    config = readRokoWorkspaceConfig();
+  } catch (error) {
+    logger.error('[MCP] Invalid Roko workspace configuration:', error);
+    return {};
+  }
+  const model = req.body?.model_parameters?.model ?? req.body?.model;
+  if (!config || !isRokoWorkspaceEnabled({ user: req.user, model })) {
     return {};
   }
   return {
-    [serverName]: {
+    [Constants.roko_mcp_server]: {
       type: 'streamable-http',
-      url: rokoClient.mcpUrl,
-      headers: { Authorization: rokoClient.authorization },
-      /** A drive-tool call may block on the user's approval (the PreToolUse hook),
-       *  so the per-request timeout must comfortably exceed that wait. */
+      url: rokoWorkspaceMcpUrl(config),
+      headers: { Authorization: `Bearer ${config.key}` },
       timeout: 180000,
-      serverInstructions: await buildRokoInstructions(String(userId), String(sessionId)),
+      serverInstructions: ROKO_WORKSPACE_INSTRUCTIONS,
     },
   };
 }
@@ -835,7 +810,7 @@ function createToolInstance({
   const normalizedToolKey = `${toolName}${Constants.mcp_delimiter}${normalizeServerName(serverName)}`;
 
   /** @type {(toolArguments: Object | string, config?: GraphRunnableConfig) => Promise<unknown>} */
-  const _call = async (toolArguments, config) => {
+  const callInContext = async (toolArguments, config) => {
     const effectiveUser = config?.configurable?.user ?? capturedUser;
     const permissionUser = effectiveUser;
     const userId = effectiveUser?.id || config?.configurable?.user_id || capturedUser?.id;
@@ -946,6 +921,22 @@ function createToolInstance({
         derivedSignal.removeEventListener('abort', abortHandler);
       }
     }
+  };
+
+  const _call = async (toolArguments, config) => {
+    const effectiveUser = config?.configurable?.user ?? capturedUser;
+    const requestBody = config?.configurable?.requestBody ?? capturedRequestBody;
+    const identity =
+      serverName === Constants.roko_mcp_server
+        ? rokoWorkspaceIdentity({
+            user: effectiveUser,
+            conversationId:
+              config?.metadata?.thread_id ??
+              config?.metadata?.conversationId ??
+              requestBody?.conversationId,
+          })
+        : undefined;
+    return runWithRokoWorkspaceContext(identity, () => callInContext(toolArguments, config));
   };
 
   const toolInstance = tool(_call, {

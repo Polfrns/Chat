@@ -10,9 +10,9 @@ import type { SettingDefinition } from 'librechat-data-provider';
 import type { OpenAI } from 'openai';
 import type * as t from '~/types';
 import { sanitizeModelName, constructAzureURL } from '~/utils/azure';
-import { isEnabled } from '~/utils/common';
-import { isRokoBridgeModel } from '~/utils/rokoBridge';
 import { normalizeBridgeParameters } from '~/utils/bridgeParameters';
+import { isRokoBridgeModel } from '~/utils/rokoBridge';
+import { isEnabled } from '~/utils/common';
 
 type OpenAILLMConfig = Omit<Partial<t.OAIClientOptions>, 'verbosity'> &
   Omit<Partial<t.OpenAIParameters>, 'verbosity'> &
@@ -648,14 +648,18 @@ export function getOpenAILLMConfig({
       }) || hasModelKwargs;
   }
 
-  if (llmConfig.model?.startsWith('gpt-codex') && llmConfig.useResponsesApi !== true && reasoningSummary) {
+  if (
+    llmConfig.model?.startsWith('gpt-codex') &&
+    llmConfig.useResponsesApi !== true &&
+    reasoningSummary
+  ) {
     modelKwargs.reasoning_summary = reasoningSummary;
     hasModelKwargs = true;
   }
 
   // CLI Bridge reports safe tool progress as reasoning_content deltas. Make
   // sure model instances created outside the Agents path preserve those deltas.
-  if (isRokoBridgeModel(modelOptions.model)) {
+  if (isRokoBridgeModel(modelOptions.model ?? undefined)) {
     llmConfig.includeReasoningContent = process.env.ROKO_BRIDGE_ACTIVITY_ENABLED !== 'false';
   }
 

@@ -8,6 +8,23 @@ const { exchangeOboToken } = require('~/server/services/OboTokenService');
 const { createOboTrustChecker } = require('~/server/services/OboPolicyService');
 const { updateMCPServerTools } = require('~/server/services/Config');
 const { getLogStores } = require('~/cache');
+const { rokoWorkspaceIdentity, runWithRokoWorkspaceContext } = require('@librechat/api');
+
+/**
+ * MCP initialization can issue HTTP requests while listing tools. Keep the
+ * request identity in async context for those requests too; it is never stored
+ * on the shared connection itself.
+ */
+function reinitMCPServer(params) {
+  const identity =
+    params.serverName === Constants.roko_mcp_server
+      ? rokoWorkspaceIdentity({
+          user: params.user,
+          conversationId: params.requestBody?.conversationId,
+        })
+      : undefined;
+  return runWithRokoWorkspaceContext(identity, () => reinitMCPServerInContext(params));
+}
 
 /**
  * Reinitializes an MCP server connection and discovers available tools.
@@ -27,7 +44,7 @@ const { getLogStores } = require('~/cache');
  * @param {import('@librechat/api').RequestScopedMCPConnectionStore} [params.requestScopedConnections]
  * @param {Record<string, Record<string, string>>} [params.userMCPAuthMap]
  */
-async function reinitMCPServer({
+async function reinitMCPServerInContext({
   user,
   signal,
   forceNew,

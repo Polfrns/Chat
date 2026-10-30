@@ -1,10 +1,10 @@
 import { isIP } from 'node:net';
 import { EventEmitter } from 'events';
 import { logger } from '@librechat/data-schemas';
-import { fetch as undiciFetch, Agent, ProxyAgent } from 'undici';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js';
+import { fetch as undiciFetch, Agent, Headers as UndiciHeaders, ProxyAgent } from 'undici';
 import { ResourceListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import {
@@ -21,6 +21,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { MCPOAuthTokens } from './oauth/types';
 import type * as t from './types';
 import { createSSRFSafeUndiciConnect, isSSRFTarget, resolveHostnameSSRF } from '~/auth';
+import { rokoWorkspaceHeaders } from '~/roko/workspaceContext';
 import { runOutsideTracing } from '~/utils/tracing';
 import { isAddressAllowed } from '~/auth/domain';
 import { sanitizeUrlForLogging } from './utils';
@@ -1399,8 +1400,15 @@ export class MCPConnection extends EventEmitter {
           useSSRFProtection,
           currentAllowedAddresses,
         );
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { trustedHeaders } = require('../../../../config/observability/context.cjs');
-        const outboundInit = { ...currentInit, headers: trustedHeaders(currentUrlString, normalizeInitHeaders(currentInit)) };
+        const outboundInit = {
+          ...currentInit,
+          headers: rokoWorkspaceHeaders(
+            currentUrlString,
+            trustedHeaders(currentUrlString, normalizeInitHeaders(currentInit)),
+          ),
+        };
         const response = await undiciFetch(currentUrlString, outboundInit);
         const isMethodPreservingRedirect = response.status === 307 || response.status === 308;
         const responseContext = {
@@ -1410,7 +1418,12 @@ export class MCPConnection extends EventEmitter {
           requestIds: getJSONRPCRequestIds(currentInit?.body),
         };
 
-        if (!isMethodPreservingRedirect || redirects >= MAX_REDIRECTS) {
+        if (isMethodPreservingRedirect && redirects >= MAX_REDIRECTS) {
+          /** Returning the 3xx would let the MCP SDK (>=1.32) keep following same-origin hops. */
+          await response.body?.cancel();
+          throw new Error(`${logPrefix} Too many redirects (max ${MAX_REDIRECTS})`);
+        }
+        if (!isMethodPreservingRedirect) {
           return guardStreamableHTTPResponses
             ? guardMCPStreamableHTTPResponse(response, responseContext)
             : response;
@@ -1632,7 +1645,7 @@ export class MCPConnection extends EventEmitter {
                   this.allowedAddresses,
                 );
                 /** Merge headers: SSE defaults < init headers < user headers (user wins) */
-                const fetchHeaders = new Headers(
+                const fetchHeaders = new UndiciHeaders(
                   Object.assign({}, SSE_REQUEST_HEADERS, resolvedInit?.headers, headers),
                 );
                 return undiciFetch(urlString, {

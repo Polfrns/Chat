@@ -24,6 +24,7 @@ const {
   AgentCapabilities,
   MAX_SUBAGENT_GRAPH_NODES,
   isEphemeralAgentId,
+  SKILL_LIBRARY_TOOL_NAME,
 } = require('librechat-data-provider');
 const {
   createToolEndCallback,
@@ -287,9 +288,14 @@ const initializeClient = async ({ req, res, signal, endpointOption }) => {
   if (!primaryAgent) {
     throw new Error('Agent not found');
   }
-  if (process.env.NEXTCLOUD_URL) {
-    // Add only to the request's chat agent; memory workers keep their own tool scope.
-    primaryAgent.tools = [...new Set([...(primaryAgent.tools || []), 'nextcloud_files'])];
+  // Add only to the request's chat agent; memory workers keep their own tool scope.
+  const rokoTools = [
+    ...(process.env.NEXTCLOUD_URL ? ['nextcloud_files'] : []),
+    // The tool re-checks the user's skill permissions on every call.
+    ...(appConfig?.interfaceConfig?.skills?.create !== false ? [SKILL_LIBRARY_TOOL_NAME] : []),
+  ];
+  if (rokoTools.length) {
+    primaryAgent.tools = [...new Set([...(primaryAgent.tools || []), ...rokoTools])];
   }
 
   const modelsConfig = await getModelsConfig(req);
@@ -949,7 +955,6 @@ const initializeClient = async ({ req, res, signal, endpointOption }) => {
     spec: endpointOption.spec,
     iconURL: endpointOption.iconURL,
     chatProjectId: endpointOption.chatProjectId,
-    sessionId: endpointOption.sessionId,
     attachments: primaryConfig.requestAttachments ?? primaryConfig.attachments,
     agentContextAttachmentsByAgentId,
     endpointType: endpointOption.endpointType,

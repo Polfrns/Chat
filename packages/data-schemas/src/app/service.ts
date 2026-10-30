@@ -121,17 +121,20 @@ export const AppService = async (params?: {
   const availableTools = systemTools;
 
   const mcpServersConfig = config.mcpServers || null;
-  /** Roko: exempt the standalone Roko service's address from the SSRF allow-list
-   * so its streamable-HTTP MCP connection is reachable both at connect time AND
-   * at tool-execution time (which reads this value). Derived from ROKO_SERVER_URL
-   * — must match the URL injected in api MCP.js `resolveRokoMcpServer`. */
-  const rokoUrl = new URL(process.env.ROKO_SERVER_URL || 'http://localhost:3100');
-  const rokoPort = rokoUrl.port || (rokoUrl.protocol === 'https:' ? '443' : '80');
-  const rokoAddresses = [`${rokoUrl.hostname}:${rokoPort}`];
-  if (rokoUrl.hostname === 'localhost') {
-    rokoAddresses.push(`127.0.0.1:${rokoPort}`);
-  } else if (rokoUrl.hostname === '127.0.0.1') {
-    rokoAddresses.push(`localhost:${rokoPort}`);
+  /** Roko: exempt the execution-workspace service from the SSRF allow-list so its
+   * streamable-HTTP MCP connection is reachable both at connect time AND at
+   * tool-execution time (which reads this value). Must match the URL injected in
+   * api MCP.js `resolveRokoMcpServer` (both read ROKO_WORKSPACE_URL). */
+  const rokoAddresses: string[] = [];
+  if (process.env.ROKO_WORKSPACE_URL) {
+    const rokoUrl = new URL(process.env.ROKO_WORKSPACE_URL);
+    const rokoPort = rokoUrl.port || (rokoUrl.protocol === 'https:' ? '443' : '80');
+    rokoAddresses.push(`${rokoUrl.hostname}:${rokoPort}`);
+    if (rokoUrl.hostname === 'localhost') {
+      rokoAddresses.push(`127.0.0.1:${rokoPort}`);
+    } else if (rokoUrl.hostname === '127.0.0.1') {
+      rokoAddresses.push(`localhost:${rokoPort}`);
+    }
   }
   const baseMcpSettings = config.mcpSettings ?? {};
   const mcpSettings = {

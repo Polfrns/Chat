@@ -13,7 +13,10 @@ import type {
   Agent,
 } from 'librechat-data-provider';
 import type { AppConfig } from '@librechat/data-schemas';
+import type { RokoWorkspaceUser } from '~/roko/workspace';
+import { ROKO_WORKSPACE_TOOLS } from '~/tools/registry/definitions';
 import { requiresEphemeralUserConnection } from '~/mcp/utils';
+import { isRokoWorkspaceEnabled } from '~/roko/workspace';
 import { getCustomEndpointConfig } from '~/app/config';
 
 const { mcp_all, mcp_delimiter } = Constants;
@@ -29,10 +32,9 @@ export interface LoadAgentDeps {
 
 export interface LoadAgentParams {
   req: {
-    user?: { id?: string };
+    user?: RokoWorkspaceUser;
     config?: AppConfig;
     body?: {
-      sessionId?: string;
       promptPrefix?: string;
       ephemeralAgent?: TEphemeralAgent;
     };
@@ -50,12 +52,14 @@ export async function loadEphemeralAgent(
   { req, spec, endpoint, model_parameters: _m }: Omit<LoadAgentParams, 'agent_id'>,
   deps: LoadAgentDeps,
 ): Promise<Agent | null> {
-  const { model, ...model_parameters } = _m ?? ({} as unknown as AgentModelParameters);
+  const { model: requestedModel, ...model_parameters } =
+    _m ?? ({} as unknown as AgentModelParameters);
   const modelSpecs = req.config?.modelSpecs as { list?: TModelSpec[] } | undefined;
   let modelSpec: TModelSpec | null = null;
   if (spec != null && spec !== '') {
     modelSpec = modelSpecs?.list?.find((s) => s.name === spec) ?? null;
   }
+  const model = requestedModel ?? modelSpec?.preset?.model;
   const ephemeralAgent: TEphemeralAgent | undefined = req.body?.ephemeralAgent;
   const mcpServers = new Set<string>(ephemeralAgent?.mcp);
   const userId = req.user?.id ?? '';
@@ -74,10 +78,13 @@ export async function loadEphemeralAgent(
   if (ephemeralAgent?.web_search === true || modelSpec?.webSearch === true) {
     tools.push(Tools.web_search);
   }
-  /** Roko: session chats get the chat<->filestore transfer tools; the session
-   *  hooks gate them per store like the MCP drive tools. */
-  if (req.body?.sessionId) {
-    tools.push('upload_chat_file', 'deliver_filestore_file');
+  /** Roko: non-bridge chats get the execution workspace by default (bridge models
+   *  have their own); the server itself is injected per request in `configServers`. */
+  if (isRokoWorkspaceEnabled({ user: req.user, model: model as string | undefined })) {
+    mcpServers.add(Constants.roko_mcp_server);
+    tools.push(...ROKO_WORKSPACE_TOOLS);
+  } else {
+    mcpServers.delete(Constants.roko_mcp_server);
   }
 
   const addedServers = new Set<string>();
@@ -86,7 +93,7 @@ export async function loadEphemeralAgent(
       if (addedServers.has(mcpServer)) {
         continue;
       }
-      /** The leedeo-filestore server is resolved per-request from the session (config lives in
+      /** The workspace server is resolved per request (config lives in
        *  `configServers`, not the registry); defer expansion via `mcp_all`. */
       if (mcpServer === Constants.roko_mcp_server) {
         tools.push(`${mcp_all}${mcp_delimiter}${mcpServer}`);

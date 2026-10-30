@@ -48,9 +48,8 @@ export * from './actions';
 export * from './prompts';
 /* Projects */
 export * from './projects';
-/* Roko: client + sessions (filestores are owned by the standalone Roko service) */
+/* Roko: execution-workspace service (signed identity, REST client) */
 export * from './roko';
-export * from './sessions';
 /* Skills */
 export * from './skills';
 /* Endpoints */

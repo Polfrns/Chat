@@ -153,15 +153,15 @@
     "typescript-eslint": "^8.60.1"
   },
   "overrides": {
-    "@xmldom/xmldom": "^0.8.13",
+    "@xmldom/xmldom": "^0.8.15",
     "elliptic": "^6.6.1",
-    "form-data": "^4.0.4",
+    "form-data": "^4.0.6",
     "langsmith": "^0.6.0",
     "postcss": "^8.5.13",
     "tslib": "^2.8.1",
     "@anthropic-ai/sdk": "^0.92.0",
     "fast-xml-parser": "5.7.2",
-    "serialize-javascript": "7.0.5",
+    "serialize-javascript": "^7.1.4",
     "mdast-util-gfm-autolink-literal": "2.0.0",
     "remark-gfm": {
       "mdast-util-gfm-autolink-literal": "2.0.0"
@@ -169,25 +169,39 @@
     "mdast-util-gfm": {
       "mdast-util-gfm-autolink-literal": "2.0.0"
     },
-    "katex": "^0.16.21",
+    "katex": "^0.19.1",
     "rehype-katex": {
-      "katex": "^0.16.21"
+      "katex": "^0.19.1"
     },
     "remark-math": {
       "micromark-extension-math": {
-        "katex": "^0.16.21"
+        "katex": "^0.19.1"
       }
     },
     "eslint": {
       "ajv": "6.14.0"
     },
     "underscore": "1.13.8",
-    "hono": "^4.12.18",
-    "@hono/node-server": "^1.19.10",
+    "hono": "^4.13.14",
+    "@hono/node-server": "^1.19.17",
     "monaco-editor": {
-      "dompurify": "3.4.0"
+      "dompurify": "^3.4.17"
     },
-    "svgo": "^2.8.2"
+    "svgo": "^2.8.4",
+    "handlebars": "^4.7.10",
+    "proxy-addr": "^2.0.8",
+    "websocket-driver": "^0.7.5",
+    "protobufjs": "^7.6.6",
+    "@grpc/grpc-js": "^1.14.6",
+    "@azure/msal-node": "^7.1.2",
+    "rrweb": {
+      "fflate": "^0.4.9"
+    },
+    "@hyperdx/otel-web-session-recorder": {
+      "fflate": "^0.7.5"
+    },
+    "@opentelemetry/propagator-jaeger": "^2.12.0",
+    "@opentelemetry/core": "^2.12.0"
   },
   "nodemonConfig": {
     "ignore": [
@@ -197,5 +211,15 @@
       "admin/",
       "packages/"
     ]
+  },
+  "allowScripts": {
+    "@scarf/scarf": false,
+    "es5-ext": false,
+    "@google/genai": false,
+    "better-sqlite3": true,
+    "esbuild": true,
+    "protobufjs": true,
+    "unrs-resolver": true,
+    "mongodb-memory-server": true
   }
 }

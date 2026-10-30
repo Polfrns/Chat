@@ -84,7 +84,7 @@ describe('convertJsonSchemaToZod', () => {
 
       // Test with valid data
       const validData = { query: 'test search' };
-      const parsedValid = result?.parse(validData);
+      const parsedValid = result?.parse(validData) as any;
       expect(parsedValid).toBeDefined();
       expect(parsedValid.query).toBe('test search');
       // max_results is optional and may not be in the result when not provided
@@ -132,7 +132,7 @@ describe('convertJsonSchemaToZod', () => {
 
       // Test with optional fields omitted
       const minimalData = { numberField: 2.5 };
-      const parsedMinimal = result?.parse(minimalData);
+      const parsedMinimal = result?.parse(minimalData) as any;
       expect(parsedMinimal).toBeDefined();
       expect(parsedMinimal.numberField).toBe(2.5);
       // Optional fields may be undefined or null when not provided
@@ -1316,7 +1316,7 @@ describe('convertJsonSchemaToZod', () => {
         },
       };
 
-      const result = zodSchema?.parse(testData);
+      const result = zodSchema?.parse(testData) as any;
       expect(result).toEqual(testData);
       expect(result?.filter).toBeDefined();
       expect(result?.filter?.title?._icontains).toBe('Pirate');
@@ -1451,7 +1451,7 @@ describe('convertJsonSchemaToZod', () => {
         },
       };
 
-      const result = zodSchema?.parse(testData);
+      const result = zodSchema?.parse(testData) as any;
       expect(result).toEqual(testData);
       expect(result?.query?.filter?.title?._icontains).toBe('Pirate');
     });
@@ -1531,7 +1531,7 @@ describe('convertJsonSchemaToZod', () => {
       };
 
       // Without resolving refs, the filter field won't work correctly
-      const resultUnresolved = zodSchemaUnresolved?.parse(testData);
+      const resultUnresolved = zodSchemaUnresolved?.parse(testData) as any;
       expect(resultUnresolved?.query?.filter).toEqual({});
 
       // Now resolve refs first
@@ -1552,7 +1552,7 @@ describe('convertJsonSchemaToZod', () => {
       });
 
       // With resolved refs, it should work correctly
-      const resultResolved = zodSchemaResolved?.parse(testData);
+      const resultResolved = zodSchemaResolved?.parse(testData) as any;
       expect(resultResolved).toEqual(testData);
       expect(resultResolved?.query?.filter?.status?._eq).toBe('draft');
     });
@@ -1773,7 +1773,7 @@ describe('convertJsonSchemaToZod', () => {
         },
       };
 
-      const result = zodSchema?.parse(testData);
+      const result = zodSchema?.parse(testData) as any;
       expect(result).toEqual(testData);
       expect(result?.properties?.minutes_id).toBeDefined();
     });
@@ -2000,7 +2000,7 @@ describe('convertJsonSchemaToZod', () => {
       };
 
       // Without ref resolution, the data field should be stripped/empty
-      const result = zodSchema?.parse(testData);
+      const result = zodSchema?.parse(testData) as any;
       expect(result?.data).toEqual({});
     });
 
@@ -2031,7 +2031,7 @@ describe('convertJsonSchemaToZod', () => {
       };
 
       // The random field should be stripped because this isn't a bare object
-      const result = zodSchema?.parse(testData);
+      const result = zodSchema?.parse(testData) as any;
       expect(result?.config).toEqual({});
     });
   });

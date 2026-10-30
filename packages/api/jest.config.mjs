@@ -3,6 +3,13 @@ const esModules = [
   '@langchain/langgraph-checkpoint',
   '@langchain/langgraph-sdk',
   'uuid',
+  // sanitize-html nests ESM-only htmlparser2 and its dom* helpers.
+  'htmlparser2',
+  'domelementtype',
+  'domhandler',
+  'domutils',
+  'dom-serializer',
+  'entities',
 ].join('|');
 
 export default {
@@ -30,7 +37,10 @@ export default {
       },
     ],
   },
-  transformIgnorePatterns: [`/node_modules/(?!(${esModules})/).*/`],
+  // The second lookahead keeps nested copies (node_modules/x/node_modules/<esm>) transformable.
+  transformIgnorePatterns: [
+    `/node_modules/(?!(${esModules})/)(?!.*/node_modules/(${esModules})/).*/`,
+  ],
   moduleNameMapper: {
     '^@src/(.*)$': '<rootDir>/src/$1',
     '~/(.*)': '<rootDir>/src/$1',

@@ -76,7 +76,6 @@ const { encodeAndFormat } = require('~/server/services/Files/images/encode');
 const { createContextHandlers } = require('~/app/clients/prompts');
 const { resolveConfigServers } = require('~/server/services/MCP');
 const { getMCPServerTools } = require('~/server/services/Config');
-const { buildRokoHookRegistry } = require('~/server/services/roko/hooks');
 const BaseClient = require('~/app/clients/BaseClient');
 const { formatMessage } = require('~/app/clients/prompts/formatMessageWithDocuments');
 const { restoreBridgeOutputs } = require('~/app/clients/prompts/restoreBridgeOutputs');
@@ -246,7 +245,6 @@ class AgentClient extends BaseClient {
           spec: this.options.spec,
           iconURL: this.options.iconURL,
           chatProjectId: this.options.chatProjectId,
-          sessionId: this.options.sessionId,
           endpoint: this.options.endpoint,
           agent_id: this.options.agent.id,
           modelLabel: this.options.modelLabel,
@@ -353,7 +351,9 @@ class AgentClient extends BaseClient {
         latestMessage.fileContext = [
           latestMessage.fileContext,
           'The files attached to this latest user message are the most recent edited outputs from this conversation. Continue editing these versions, preserving previous changes unless the user asks to undo them. Earlier file attachments in the transcript are historical versions.',
-        ].filter(Boolean).join('\n\n');
+        ]
+          .filter(Boolean)
+          .join('\n\n');
       }
 
       this.options.attachments = files;
@@ -361,21 +361,25 @@ class AgentClient extends BaseClient {
 
     if (process.env.BRIDGE_DEBUG_ATTACHMENTS === '1') {
       const latestMessage = orderedMessages[orderedMessages.length - 1];
-      logger.info('[LibreChat attachments] ' + JSON.stringify({
-        requestFiles: this.options.req?.body?.files?.length ?? 0,
-        loadedFiles: requestAttachmentCount,
-        restoredOutputs: restoredOutputs?.length ?? 0,
-        documentBlocks: latestMessage?.documents?.length ?? 0,
-        imageBlocks: latestMessage?.image_urls?.length ?? 0,
-        provider: this.options.agent?.provider,
-        endpoint: this.options.endpoint,
-        sources: (this.options.attachments ?? []).map((file) => ({
-          type: file.type,
-          source: file.source,
-          embedded: file.embedded === true,
-          codeEnvironment: file.metadata?.codeEnvRef != null || file.metadata?.fileIdentifier != null,
-        })),
-      }));
+      logger.info(
+        '[LibreChat attachments] ' +
+          JSON.stringify({
+            requestFiles: this.options.req?.body?.files?.length ?? 0,
+            loadedFiles: requestAttachmentCount,
+            restoredOutputs: restoredOutputs?.length ?? 0,
+            documentBlocks: latestMessage?.documents?.length ?? 0,
+            imageBlocks: latestMessage?.image_urls?.length ?? 0,
+            provider: this.options.agent?.provider,
+            endpoint: this.options.endpoint,
+            sources: (this.options.attachments ?? []).map((file) => ({
+              type: file.type,
+              source: file.source,
+              embedded: file.embedded === true,
+              codeEnvironment:
+                file.metadata?.codeEnvRef != null || file.metadata?.fileIdentifier != null,
+            })),
+          }),
+      );
     }
 
     /** Note: Bedrock uses legacy RAG API handling */
@@ -1223,13 +1227,17 @@ class AgentClient extends BaseClient {
         formatOptions,
       );
       if (process.env.BRIDGE_DEBUG_ATTACHMENTS === '1') {
-        const blockTypes = (messages) => messages.flatMap((message) =>
-          Array.isArray(message.content) ? message.content.map((block) => block?.type) : ['text'],
+        const blockTypes = (messages) =>
+          messages.flatMap((message) =>
+            Array.isArray(message.content) ? message.content.map((block) => block?.type) : ['text'],
+          );
+        logger.info(
+          '[LibreChat attachment blocks] ' +
+            JSON.stringify({
+              beforeGraph: blockTypes(payload),
+              afterGraph: blockTypes(initialMessages),
+            }),
         );
-        logger.info('[LibreChat attachment blocks] ' + JSON.stringify({
-          beforeGraph: blockTypes(payload),
-          afterGraph: blockTypes(initialMessages),
-        }));
       }
       if (boundaryTokenAdjustment) {
         logger.debug(
@@ -1363,21 +1371,9 @@ class AgentClient extends BaseClient {
           );
         }
 
-        /** Roko: per-session filestore-policy hooks (PreToolUse approval/scoping,
-         *  PostToolUse list annotation + created-store attach). Undefined when the
-         *  conversation has no session, so the run skips hook dispatch. */
-        const rokoSessionId = this.options.sessionId ?? this.options.req?.body?.sessionId ?? null;
-        const rokoHooks = buildRokoHookRegistry({
-          sessionId: rokoSessionId,
-          identity: {
-            subject: String(this.options.req?.user?.id ?? this.user ?? ''),
-          },
-        });
-
         run = await createRun({
           agents,
           messages,
-          hooks: rokoHooks,
           indexTokenCountMap,
           initialSummary,
           initialSessions,
