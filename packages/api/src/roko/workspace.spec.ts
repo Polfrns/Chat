@@ -1,4 +1,5 @@
-import { isRokoWorkspaceEnabled } from './workspace';
+import { tenantStorage } from '@librechat/data-schemas';
+import { isRokoWorkspaceEnabled, rokoWorkspaceIdentity } from './workspace';
 
 const configured: NodeJS.ProcessEnv = {
   ROKO_WORKSPACE_URL: 'http://roko-workspace:8080',
@@ -43,5 +44,20 @@ describe('Roko workspace MCP selection', () => {
     expect(isRokoWorkspaceEnabled({ user: { id: 'user-1' }, model: 'gpt-4o', env: {} })).toBe(
       false,
     );
+  });
+});
+
+describe('Roko workspace identity', () => {
+  it('prefers the tenant carried by the user', () => {
+    expect(
+      rokoWorkspaceIdentity({ user: { id: 'user-1', tenantId: 'tenant-a' }, conversationId: 'c1' }),
+    ).toEqual({ tenantId: 'tenant-a', userId: 'user-1', conversationId: 'c1' });
+  });
+
+  it('takes the request tenant when the user is a safe projection without tenantId', async () => {
+    const identity = await tenantStorage.run({ tenantId: 'tenant-b' }, async () =>
+      rokoWorkspaceIdentity({ user: { id: 'user-1' }, conversationId: 'c1' }),
+    );
+    expect(identity).toEqual({ tenantId: 'tenant-b', userId: 'user-1', conversationId: 'c1' });
   });
 });

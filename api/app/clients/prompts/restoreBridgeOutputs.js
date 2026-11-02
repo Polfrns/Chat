@@ -5,13 +5,18 @@
  * @param {{ messages: object[], options: object, getFiles: Function }} params
  * @returns {Promise<object[] | null>}
  */
-async function restoreBridgeOutputs({ messages, options, getFiles }) {
+/** Synchronous gate, so non-Bridge turns never wait on the restore before context work. */
+function shouldRestoreBridgeOutputs(options) {
   const model = options.agent?.model_parameters?.model ?? options.agent?.model ?? options.model;
-  if (
-    !['gpt-codex', 'gpt-codex-fast', 'gpt-codex-deep', 'claude-max', 'claude-max-fast', 'claude-max-deep'].includes(model) ||
-    options.resendFiles === false ||
-    options.req?.body?.files?.length > 0
-  ) {
+  return (
+    ['gpt-codex', 'gpt-codex-fast', 'gpt-codex-deep', 'claude-max', 'claude-max-fast', 'claude-max-deep'].includes(model) &&
+    options.resendFiles !== false &&
+    !(options.req?.body?.files?.length > 0)
+  );
+}
+
+async function restoreBridgeOutputs({ messages, options, getFiles }) {
+  if (!shouldRestoreBridgeOutputs(options)) {
     return null;
   }
   const userId = options.req?.user?.id;
@@ -48,4 +53,4 @@ async function restoreBridgeOutputs({ messages, options, getFiles }) {
   return null;
 }
 
-module.exports = { restoreBridgeOutputs };
+module.exports = { restoreBridgeOutputs, shouldRestoreBridgeOutputs };

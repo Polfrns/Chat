@@ -3,18 +3,18 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const base=path.resolve(path.dirname(require.resolve('@librechat/agents')),'../..');
 const version=JSON.parse(fs.readFileSync(path.join(base,'package.json'))).version;
-if(version!=='3.2.35')throw new Error('Review observability exporter patch for @librechat/agents '+version);
+if(version!=='4.0.1')throw new Error('Review observability exporter patch for @librechat/agents '+version);
 for(const [dir,ext] of [['cjs','cjs'],['esm','mjs']]) {
   const privacyPath=JSON.stringify(path.join(root,'config/observability/privacy.cjs'));
   const contextPath=JSON.stringify(path.join(root,'config/observability/context.cjs'));
   function patch(name, transform) {
     const file=path.join(base,'dist',dir,name+'.'+ext);
     const source=fs.readFileSync(file,'utf8');
-    if(source.includes('ROKO_OBSERVABILITY_V072'))return;
-    if(source.includes('ROKO_OBSERVABILITY_V071'))throw new Error('Run npm ci before upgrading the observability package patch');
+    if(source.includes('ROKO_OBSERVABILITY_V088'))return;
+    if(/ROKO_OBSERVABILITY_V07[12]/.test(source))throw new Error('Run npm ci before upgrading the observability package patch');
     const output=transform(source);
     if(output===source)throw new Error('Observability patch target changed: '+file);
-    fs.writeFileSync(file,'// ROKO_OBSERVABILITY_V072\n'+output);
+    fs.writeFileSync(file,'// ROKO_OBSERVABILITY_V088\n'+output);
   }
   patch('langfuseToolOutputTracing',source=>{
     const constructor=dir==='cjs' ? 'new _langfuse_otel.LangfuseSpanProcessor(params)' : 'new LangfuseSpanProcessor(params)';
@@ -36,8 +36,12 @@ for(const [dir,ext] of [['cjs','cjs'],['esm','mjs']]) {
   });
   patch('langfuse',source=>{
     const prefix=dir==='esm' ? `import rokoContext from ${contextPath};\n` : `const rokoContext=require(${contextPath});\n`;
-    source=source.replace('function createLangfuseHandler({ langfuse, userId, sessionId, traceMetadata, tags })','function createLangfuseHandler({ langfuse, userId, sessionId, traceMetadata, tags, tenantId })');
-    source=source.replace(/(sessionId,\n\t\ttraceMetadata,)/,'$1\n\t\t...rokoContext.sessionIdentity(userId,sessionId,process.env,tenantId ?? ""),');
+    // agents 4.x takes many handler options; a silent miss here would drop session pseudonymization.
+    const signature='function createLangfuseHandler({ langfuse, userId, sessionId,';
+    const handlerSession='\t\tuserId: resolveLangfuseTraceUserId(langfuse, userId),\n\t\tsessionId,\n';
+    if(!source.includes(signature) || source.split(handlerSession).length!==2)throw new Error('Langfuse handler identity changed');
+    source=source.replace(signature,'function createLangfuseHandler({ tenantId, langfuse, userId, sessionId,')
+      .replace(handlerSession,handlerSession+'\t\t...rokoContext.sessionIdentity(userId,sessionId,process.env,tenantId ?? ""),\n');
     const expression=dir==='esm' ? 'propagateAttributes' : '(0, _langfuse_tracing.propagateAttributes)';
     const target=`return ${expression}(createPropagateAttributeParams(params), action);`;
     if(!source.includes(target))throw new Error('Langfuse propagation changed');

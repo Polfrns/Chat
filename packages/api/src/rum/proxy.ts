@@ -1,5 +1,8 @@
+import { validateHeaderValue } from 'node:http';
 import { logger } from '@librechat/data-schemas';
 import type { Request, Response } from 'express';
+import type { RumProxyEndpoint, RumProxyResult } from '~/app/metrics';
+import { recordRumProxyRequest } from '~/app/metrics';
 import { isEnabled } from '~/utils';
 
 const DEFAULT_PROXY_PATH = '/api/rum';
@@ -75,6 +78,27 @@ export function resolveRumProxyTarget(path: string): string | undefined {
   return targetUrl.href;
 }
 
+// Keep in sync with api/server/middleware/requireJwtAuth.js; auth drops are recorded there.
+function getRumProxyEndpoint(path: string): RumProxyEndpoint {
+  if (path === '/v1/traces') {
+    return 'traces';
+  }
+  if (path === '/v1/logs') {
+    return 'logs';
+  }
+  return 'unknown';
+}
+
+function getRumCollectorResult(status: number): RumProxyResult {
+  if (status >= 500) {
+    return 'collector_5xx';
+  }
+  if (status >= 400) {
+    return 'collector_4xx';
+  }
+  return 'success';
+}
+
 function getRequestBody(req: Request): Buffer | string | undefined {
   const body = req.body as unknown;
 
@@ -98,25 +122,46 @@ function getHeader(req: Request, name: string): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-function getProxyHeaders(req: Request, body: Buffer | string): Record<string, string> {
+function getProxyHeaders(
+  req: Request,
+  body: Buffer | string,
+  authorization: string | undefined,
+): Record<string, string> {
+  if (authorization) {
+    try {
+      validateHeaderValue('authorization', authorization);
+    } catch {
+      throw new Error('Invalid RUM proxy authorization header');
+    }
+  }
+
   const contentType =
     getHeader(req, 'content-type') || (typeof body === 'string' ? 'application/json' : undefined);
   const accept = getHeader(req, 'accept');
   return {
     ...(contentType ? { 'content-type': contentType } : {}),
     ...(accept ? { accept } : {}),
+    ...(authorization ? { authorization } : {}),
   };
 }
 
-export async function proxyRumRequest(req: Request, res: Response): Promise<void> {
+export async function proxyRumRequest(
+  req: Request,
+  res: Response,
+  upstreamAuthorization?: string,
+): Promise<void> {
+  const authorization = upstreamAuthorization?.trim();
+  const endpoint = getRumProxyEndpoint(req.path);
   const target = resolveRumProxyTarget(req.path);
   if (!target) {
+    recordRumProxyRequest(endpoint, 'not_configured');
     res.status(404).json({ message: 'RUM proxy is not configured' });
     return;
   }
 
   const body = getRequestBody(req);
   if (!body) {
+    recordRumProxyRequest(endpoint, 'bad_request');
     res.status(400).json({ message: 'RUM payload is required' });
     return;
   }
@@ -126,7 +171,8 @@ export async function proxyRumRequest(req: Request, res: Response): Promise<void
   try {
     const response = await fetch(target, {
       method: 'POST',
-      headers: getProxyHeaders(req, body),
+      headers: getProxyHeaders(req, body, authorization),
+      redirect: authorization ? 'error' : 'follow',
       // TS 5.9 made `Buffer` generic (`Buffer<ArrayBufferLike>`), which no longer
       // structurally matches `BodyInit`; Node's fetch accepts a Buffer body at runtime.
       body: body as BodyInit,
@@ -139,8 +185,13 @@ export async function proxyRumRequest(req: Request, res: Response): Promise<void
     }
 
     const responseBody = Buffer.from(await response.arrayBuffer());
+    recordRumProxyRequest(endpoint, getRumCollectorResult(response.status));
     res.status(response.status).send(responseBody);
   } catch (error) {
+    recordRumProxyRequest(
+      endpoint,
+      controller.signal.aborted ? 'collector_timeout' : 'collector_error',
+    );
     logger.warn('[rumProxy] Failed to proxy RUM telemetry', {
       error: error instanceof Error ? error.message : String(error),
       target,

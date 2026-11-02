@@ -8,14 +8,18 @@ import BridgeToolTime from './BridgeToolTime';
 /** Exactly the same ToolCall cards used by MCP, populated with read-only Bridge events.
  *  Never routes these to the tool executor: Codex/Claude already ran them. */
 type BridgeToolReasoningProps = {
+  partKeyIndex?: number;
   reasoning: string;
+  reasoningLabel?: string;
   isLast: boolean;
   isSubmitting: boolean;
   inline?: boolean;
 };
 
 const BridgeToolReasoning = memo(function BridgeToolReasoning({
+  partKeyIndex,
   reasoning,
+  reasoningLabel,
   isLast,
   isSubmitting,
   inline = false,
@@ -28,7 +32,11 @@ const BridgeToolReasoning = memo(function BridgeToolReasoning({
           return (
             <Reasoning
               key={`progress-${index}`}
+              /** Disclosure state is keyed per message by number. Fractional offsets keep
+               *  each Bridge text block distinct without colliding with sibling parts. */
+              partKeyIndex={partKeyIndex == null ? undefined : partKeyIndex + index / 1000}
               reasoning={entry.text}
+              reasoningLabel={reasoningLabel}
               isLast={isLast && index === entries.length - 1}
               inline={inline}
             />

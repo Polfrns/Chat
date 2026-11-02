@@ -1,12 +1,12 @@
 const express = require('express');
 const request = require('supertest');
 
-const mockRequireJwtAuth = jest.fn((_req, _res, next) => next());
+const mockRequireRumProxyAuth = jest.fn((_req, _res, next) => next());
 const mockIsRumProxyEnabled = jest.fn();
 const mockProxyRumRequest = jest.fn((_req, res) => res.status(202).send());
 
 jest.mock('~/server/middleware', () => ({
-  requireJwtAuth: (...args) => mockRequireJwtAuth(...args),
+  requireRumProxyAuth: (...args) => mockRequireRumProxyAuth(...args),
 }));
 
 jest.mock('@librechat/api', () => ({
@@ -26,9 +26,13 @@ describe('RUM proxy routes', () => {
   });
 
   beforeEach(() => {
-    mockRequireJwtAuth.mockClear();
+    mockRequireRumProxyAuth.mockClear();
     mockIsRumProxyEnabled.mockReset();
     mockProxyRumRequest.mockClear();
+  });
+
+  afterEach(() => {
+    delete process.env.RUM_PROXY_AUTHORIZATION;
   });
 
   it('returns 404 before auth and proxying when RUM proxy mode is disabled', async () => {
@@ -41,20 +45,59 @@ describe('RUM proxy routes', () => {
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ message: 'RUM proxy is not configured' });
-    expect(mockRequireJwtAuth).not.toHaveBeenCalled();
+    expect(mockRequireRumProxyAuth).not.toHaveBeenCalled();
     expect(mockProxyRumRequest).not.toHaveBeenCalled();
   });
 
-  it('authenticates and proxies when RUM proxy mode is enabled', async () => {
+  it.each(['traces', 'logs'])(
+    'passes server authorization to the %s proxy after auth',
+    async (signal) => {
+      process.env.RUM_PROXY_AUTHORIZATION = 'server-only-ingestion-key';
+      mockIsRumProxyEnabled.mockReturnValue(true);
+
+      const response = await request(app)
+        .post(`/api/rum/v1/${signal}`)
+        .set('Content-Type', 'application/x-protobuf')
+        .send(Buffer.from('payload'));
+
+      expect(response.status).toBe(202);
+      expect(mockRequireRumProxyAuth).toHaveBeenCalledTimes(1);
+      expect(mockProxyRumRequest).toHaveBeenCalledTimes(1);
+      expect(mockProxyRumRequest).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Object),
+        'server-only-ingestion-key',
+      );
+    },
+  );
+
+  it.each(['traces', 'logs'])(
+    'does not export %s when session authentication fails',
+    async (signal) => {
+      process.env.RUM_PROXY_AUTHORIZATION = 'server-only-ingestion-key';
+      mockIsRumProxyEnabled.mockReturnValue(true);
+      mockRequireRumProxyAuth.mockImplementationOnce((_req, res) => res.status(401).end());
+
+      const response = await request(app)
+        .post(`/api/rum/v1/${signal}`)
+        .set('Content-Type', 'application/x-protobuf')
+        .send(Buffer.from('payload'));
+
+      expect(response.status).toBe(401);
+      expect(mockProxyRumRequest).not.toHaveBeenCalled();
+    },
+  );
+
+  it('uses RUM-specific auth for logs as well as traces', async () => {
     mockIsRumProxyEnabled.mockReturnValue(true);
 
     const response = await request(app)
-      .post('/api/rum/v1/traces')
+      .post('/api/rum/v1/logs')
       .set('Content-Type', 'application/x-protobuf')
       .send(Buffer.from('payload'));
 
     expect(response.status).toBe(202);
-    expect(mockRequireJwtAuth).toHaveBeenCalledTimes(1);
+    expect(mockRequireRumProxyAuth).toHaveBeenCalledTimes(1);
     expect(mockProxyRumRequest).toHaveBeenCalledTimes(1);
   });
 });

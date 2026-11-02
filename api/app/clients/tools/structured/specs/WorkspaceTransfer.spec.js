@@ -163,7 +163,8 @@ describe('workspace transfer tools', () => {
     });
 
     it('leaves text above the extraction cap download-only', async () => {
-      await deliver('huge.txt', 'text/plain', Buffer.alloc(1024 * 1024 + 1, 'a'));
+      const { MAX_TEXT_EXTRACT_BYTES } = jest.requireActual('@librechat/api');
+      await deliver('huge.txt', 'text/plain', Buffer.alloc(MAX_TEXT_EXTRACT_BYTES + 1, 'a'));
 
       expect(savedRecord()).toEqual(expect.objectContaining({ text: null, textFormat: null }));
     });

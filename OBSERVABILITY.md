@@ -70,9 +70,17 @@ explícitamente en esa política.
 ## Instrumentación y mantenimiento
 
 [patch-observability.cjs](scripts/patch-observability.cjs) aplica el parche
-idempotente a la versión admitida de agents, en sus distribuciones CJS y ESM.
-Incluye una comprobación de versión: actualizar la dependencia exige revisar la
-compatibilidad, no retirar el guard sin verificarla.
+idempotente a la versión admitida de agents (**4.0.1**, marcador
+`ROKO_OBSERVABILITY_V088`), en sus distribuciones CJS y ESM. Incluye una comprobación
+de versión: actualizar la dependencia exige revisar la compatibilidad, no retirar el
+guard sin verificarla. Cada punto de enganche falla de forma explícita si cambia; en
+particular, la seudonimización de sesión del handler Langfuse no puede perderse en
+silencio.
+
+Las trazas OTEL de la API salen siempre por el procesador filtrado de Roko, no por
+el exportador por defecto del SDK. El transporte sigue las variables estándar:
+`OTEL_EXPORTER_OTLP_TRACES_PROTOCOL` u `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` usa OTLP/gRPC;
+en otro caso, OTLP/HTTP.
 
 ```sh
 npm ci

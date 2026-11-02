@@ -88,7 +88,7 @@ function createSkillLibraryTool({ req }) {
           ([, value]) => value != null,
         ),
       );
-      const result = await call('update', {
+      const result = await call('patch', {
         id: skill_id,
         body: { ...changes, expectedVersion: version },
       });

@@ -3,16 +3,25 @@ import { render, screen, waitFor } from '@testing-library/react';
 import FilePreviewDialog from '../FilePreviewDialog';
 
 const mockDownload = jest.fn(async () => ({ data: 'blob:download' }));
+const mockPreviewBlob = jest.fn(async () => ({ data: new Blob(['bytes']) }));
 jest.mock('recoil', () => ({ useRecoilValue: () => ({ id: 'user-id' }) }));
 jest.mock('~/store', () => ({ __esModule: true, default: { user: 'user' } }));
 jest.mock('~/hooks', () => ({ useLocalize: () => (key: string) => key }));
-jest.mock('~/data-provider', () => ({ useFileDownload: () => ({ refetch: mockDownload }) }));
+jest.mock('~/data-provider', () => ({
+  useFileDownload: () => ({ refetch: mockDownload }),
+  useSharedFileDownload: () => ({ refetch: mockDownload }),
+  useFilePreviewBlob: () => ({ refetch: mockPreviewBlob }),
+  useFilePreview: () => ({ data: undefined, isInitialLoading: false, isFetching: false, isError: false }),
+}));
+jest.mock('~/Providers', () => ({ useFileMapContext: () => ({}), useShareContext: () => ({}) }));
 jest.mock('~/utils', () => ({
   logger: { error: jest.fn() }, sortPagesByRelevance: (pages: number[]) => pages,
   triggerDownload: jest.fn(),
+  getDownloadFilename: (name: string) => name,
 }));
 jest.mock('~/components/Messages/Content/CopyButton', () => ({ __esModule: true, default: () => null }));
 jest.mock('@librechat/client', () => ({
+  Button: (props: React.ComponentProps<'button'>) => <button {...props} />,
   OGDialog: ({ children, open }: React.PropsWithChildren<{ open: boolean }>) => open ? <>{children}</> : null,
   OGDialogContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   OGDialogTitle: ({ children }: React.PropsWithChildren) => <h1>{children}</h1>,
@@ -27,6 +36,7 @@ test('converted Office HTML is isolated without scripts or same-origin permissio
   expect(frame).toHaveAttribute('sandbox', '');
   expect(frame).toHaveAttribute('srcdoc', '<p>Office preview</p>');
   expect(mockDownload).not.toHaveBeenCalled();
+  expect(mockPreviewBlob).not.toHaveBeenCalled();
 });
 
 test('extracted plain text never becomes executable preview HTML', async () => {

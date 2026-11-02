@@ -1,4 +1,4 @@
-import { logger } from '@librechat/data-schemas';
+import { logger, getTenantId } from '@librechat/data-schemas';
 import { Constants } from 'librechat-data-provider';
 import { isRokoBridgeModel } from '~/utils/rokoBridge';
 
@@ -70,7 +70,9 @@ export function rokoWorkspaceIdentity({
   conversationId?: string | null;
 }): RokoWorkspaceIdentity | undefined {
   const userId = user?.id;
-  const tenantId = user?.tenantId ?? '';
+  /** Run-config users are "safe" projections without tenantId (it must not reach MCP
+   * placeholders), so fall back to the request's tenant context. */
+  const tenantId = user?.tenantId ?? getTenantId() ?? '';
   if (
     !userId ||
     !conversationId ||

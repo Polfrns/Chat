@@ -5,9 +5,9 @@ Bridge independiente, un workspace MCP por conversación para los demás modelos
 actividad progresiva y descarga y previsualización de archivos generados.
 
 Esta documentación describe el código y la configuración del repositorio revisados
-el **20 de octubre de 2026**. El paquete raíz conserva la versión de base
-`v0.8.6`; las antiguas entregas de integración 0.7.x no son la versión de LibreChat
-ni acreditan qué imagen está desplegada en producción.
+el **2 de noviembre de 2026**. La base es LibreChat **v0.8.8**; las antiguas entregas
+de integración 0.7.x no son la versión de LibreChat ni acreditan qué imagen está
+desplegada en producción.
 
 ## Componentes
 
@@ -24,7 +24,7 @@ ni acreditan qué imagen está desplegada en producción.
 normalmente `http://roko-workspace:8080`; Roko usa `/mcp` para MCP y las rutas
 REST `/v1/workspace/...` para transferencias. No publiques el puerto del servicio
 en el host. La activación es global por usuario y se controla desde
-Configuración → Personalización; los modelos Bridge quedan excluidos.
+Configuración → Datos → Workspace MCP; los modelos Bridge quedan excluidos.
 
 ## Desarrollo
 

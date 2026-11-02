@@ -7,7 +7,7 @@ const mockHandlers = {
   list: jest.fn(),
   get: jest.fn(),
   create: jest.fn(),
-  update: jest.fn(),
+  patch: jest.fn(),
   remove: jest.fn(),
 };
 
@@ -99,7 +99,7 @@ describe('skill_library tool', () => {
       }),
     ).resolves.toMatchObject({ created: { name: 'weekly-report', version: 1 } });
 
-    mockHandlers.update.mockImplementation((request, res) => {
+    mockHandlers.patch.mockImplementation((request, res) => {
       expect(request.body).toEqual({ body: '# New', expectedVersion: 3 });
       res.status(200).json({ ...skill, body: '# New', version: 4 });
     });

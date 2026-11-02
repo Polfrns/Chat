@@ -22,6 +22,7 @@ export type AdminSkillsRequest = Request & {
   user?: {
     _id?: Types.ObjectId;
     id?: string;
+    tenantId?: string;
   };
   skillSyncAllowServerCredentials?: boolean;
   skillSyncCanReadCredentials?: boolean;
@@ -112,14 +113,29 @@ function isCredentialError(status: ISkillSyncStatus): boolean {
   );
 }
 
+function isPromotedSkippedSkillError(status: ISkillSyncStatus): boolean {
+  const firstSkippedSkill = status.skippedSkills?.[0];
+  return Boolean(
+    firstSkippedSkill &&
+      status.errorCode === firstSkippedSkill.errorCode &&
+      status.errorMessage === firstSkippedSkill.errorMessage,
+  );
+}
+
 function serializeErrorMessage(
   status: ISkillSyncStatus,
   { includeCredentialMetadata }: { includeCredentialMetadata: boolean },
 ): string | undefined {
-  if (includeCredentialMetadata || !isCredentialError(status)) {
+  if (includeCredentialMetadata) {
     return status.errorMessage;
   }
-  return 'GitHub skill sync credentials are not available';
+  if (isPromotedSkippedSkillError(status)) {
+    return 'One or more GitHub skills could not be synchronized';
+  }
+  if (isCredentialError(status)) {
+    return 'GitHub skill sync credentials are not available';
+  }
+  return status.errorMessage;
 }
 
 function serializeSourceStatus(
@@ -148,9 +164,35 @@ function serializeSourceStatus(
     syncedFileCount: status.syncedFileCount,
     deletedSkillCount: status.deletedSkillCount,
     deletedFileCount: status.deletedFileCount,
+    skippedSkillCount: status.skippedSkillCount ?? 0,
+    /* The per-skill entries name repository paths, so they follow the same
+       visibility rule as owner/repo/paths rather than the bare count. */
+    skippedSkills: includePrivateSourceMetadata ? status.skippedSkills : undefined,
+    skippedFileCount: status.skippedFileCount ?? 0,
+    /* Same rule: `path`/`skillPath` name repository paths, unlike the count. */
+    skippedFiles: includePrivateSourceMetadata ? status.skippedFiles : undefined,
     createdAt: toIso(status.createdAt),
     updatedAt: toIso(status.updatedAt),
   };
+}
+
+function getRequestTenantId(req: AdminSkillsRequest): string | undefined {
+  const tenantId = req.user?.tenantId;
+  return typeof tenantId === 'string' && tenantId ? tenantId : undefined;
+}
+
+function getVisibleSourceStatuses<T extends ISkillSyncStatus>(
+  req: AdminSkillsRequest,
+  sources: T[],
+): T[] {
+  if (req.skillSyncCanReadCredentials !== false) {
+    return sources;
+  }
+  const tenantId = getRequestTenantId(req);
+  if (!tenantId) {
+    return [];
+  }
+  return sources.filter((source) => !source.tenantId || source.tenantId === tenantId);
 }
 
 function isCredentialKey(value: unknown): value is string {
@@ -332,7 +374,7 @@ export function createAdminSkillsSyncHandlers(deps: AdminSkillSyncDeps): AdminSk
       enabled: status.enabled,
       intervalMinutes: status.intervalMinutes,
       runOnStartup: status.runOnStartup,
-      sources: status.sources.map((source) =>
+      sources: getVisibleSourceStatuses(req, status.sources).map((source) =>
         serializeSourceStatus(source, { includeCredentialMetadata }),
       ),
       credentials: includeCredentialMetadata ? status.credentials.map(serializeCredential) : [],

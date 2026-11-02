@@ -52,10 +52,20 @@ jest.mock('@librechat/client', () => {
       ),
     ),
     TooltipAnchor: (props) => props.render,
+    /* Mirrors the real primitive closely enough for these assertions: it applies
+     * `label` as the accessible name, which is how the trigger is queried. */
+    IconButton: R.forwardRef((props, ref) => {
+      const { label, size: _size, shape: _shape, variant: _variant, children, ...rest } = props;
+      return R.createElement('button', { ref, 'aria-label': label, ...rest }, children);
+    }),
     DropdownPopup: (props) =>
       R.createElement(
         'div',
-        null,
+        {
+          'data-testid': 'dropdown-popup',
+          'data-modal': props.modal,
+          'data-portal': props.portal,
+        },
         R.createElement('div', { onClick: () => props.setIsOpen(!props.isOpen) }, props.trigger),
         props.isOpen &&
           R.createElement(
@@ -101,6 +111,7 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false 
 
 function setupMocks(overrides: { provider?: string } = {}) {
   const translations: Record<string, string> = {
+    com_files_upload_local_machine: 'From Local Computer',
     com_files_upload_sharepoint: 'Upload from SharePoint',
     com_sidepanel_attach_files: 'Attach Files',
     com_ui_upload_code_environment: 'Upload to Code Environment',
@@ -143,6 +154,7 @@ function renderMenu(props: Record<string, unknown> = {}) {
           setFiles={() => {}}
           setFilesLoading={() => {}}
           conversation={null}
+          isUnifiedMode={false}
           {...props}
         />
       </RecoilRoot>
@@ -156,6 +168,79 @@ function openMenu() {
 
 describe('AttachFileMenu', () => {
   beforeEach(jest.clearAllMocks);
+
+  describe('unified mode upload sources', () => {
+    it('uses a single upload button when SharePoint is disabled', () => {
+      setupMocks();
+      renderMenu({ isUnifiedMode: true });
+
+      expect(screen.getByRole('button', { name: /attach files/i })).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /attach file options/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('offers SharePoint alongside local upload when SharePoint is enabled', () => {
+      setupMocks();
+      mockUseGetStartupConfig.mockReturnValue({ data: { sharePointFilePickerEnabled: true } });
+      renderMenu({ isUnifiedMode: true });
+
+      openMenu();
+
+      expect(screen.getByText('From Local Computer')).toBeInTheDocument();
+      expect(screen.getByText('Upload from SharePoint')).toBeInTheDocument();
+    });
+
+    it('does not offer a destination choice on either source', () => {
+      setupMocks();
+      mockUseAgentCapabilities.mockReturnValue({
+        contextEnabled: true,
+        fileSearchEnabled: true,
+        codeEnabled: true,
+      });
+      mockUseAgentToolPermissions.mockReturnValue({
+        fileSearchAllowedByAgent: true,
+        codeAllowedByAgent: true,
+        provider: undefined,
+      });
+      mockUseGetStartupConfig.mockReturnValue({ data: { sharePointFilePickerEnabled: true } });
+      renderMenu({ isUnifiedMode: true });
+
+      openMenu();
+
+      expect(screen.queryByText('Upload to Code Environment')).not.toBeInTheDocument();
+      expect(screen.queryByText('Upload for File Search')).not.toBeInTheDocument();
+      expect(screen.queryByText('Upload as Text')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Upload to Provider picker filter', () => {
+    /** `accept` is reset right after `click()`, so capture it at click time. */
+    const captureAcceptOnClick = () => {
+      const seen: string[] = [];
+      const spy = jest.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(function (
+        this: HTMLInputElement,
+      ) {
+        seen.push(this.accept);
+      });
+      return { seen, spy };
+    };
+
+    /** Roko: the native picker never hides files; endpoint limits apply when the upload is
+     * validated, so a user always sees why a file is rejected instead of not finding it. */
+    it.each([
+      ['the inherited default config', {}],
+      ['an explicit allowlist', { supportedMimeTypes: [/^image\/.*$/, /^video\/.*$/] }],
+    ])('shows every file in the picker for a custom endpoint with %s', (_label, endpointFileConfig) => {
+      const { seen, spy } = captureAcceptOnClick();
+      setupMocks({ provider: 'MyGateway' });
+      renderMenu({ endpointType: EModelEndpoint.custom, endpointFileConfig });
+      openMenu();
+      fireEvent.click(screen.getByText('Upload to Provider'));
+      expect(seen).toEqual(['']);
+      spy.mockRestore();
+    });
+  });
 
   describe('Upload to Provider vs Upload Image', () => {
     it('shows "Upload to Provider" when endpointType is custom (resolved from agent provider)', () => {
@@ -267,6 +352,22 @@ describe('AttachFileMenu', () => {
       setupMocks();
       renderMenu({ disabled: false });
       expect(screen.getByRole('button', { name: /attach file options/i })).not.toBeDisabled();
+    });
+
+    it('portals the menu without making the conversation tree inert', () => {
+      setupMocks();
+      renderMenu();
+      expect(screen.getByTestId('dropdown-popup')).toHaveAttribute('data-modal', 'false');
+      expect(screen.getByTestId('dropdown-popup')).toHaveAttribute('data-portal', 'true');
+    });
+
+    it('renders the unified upload button when legacyFileUploadUX is not true', () => {
+      setupMocks();
+      renderMenu({ isUnifiedMode: true });
+      expect(screen.getByRole('button', { name: /attach files/i })).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /attach file options/i }),
+      ).not.toBeInTheDocument();
     });
   });
 

@@ -142,12 +142,17 @@ test('the real LLM constructor normalizes both protocols before sending to eithe
   const [, { normalizeBridgeParameters }, { isRokoBridgeModel }] = await modules;
   const code = stripTypeScriptTypes(source('packages/api/src/endpoints/openai/llm.ts')
     .replace(/^import[\s\S]*?;\r?\n/gm, '').replaceAll('export ', ''));
+  /* Real data-provider/agents exports keep this harness in step with upstream imports;
+   * Azure helpers are unreachable for the custom and openAI endpoints exercised here. */
+  const azureUnused = () => { throw new Error('Azure path not exercised'); };
   const getConfig = vm.runInNewContext(code + '\ngetOpenAILLMConfig;', {
-    EModelEndpoint: { openAI: 'openAI', azureOpenAI: 'azureOpenAI' },
-    ReasoningParameterFormat: { disabled: 'disabled', reasoningEffort: 'reasoning_effort', reasoningObject: 'reasoning' },
-    removeNullishValues: obj => Object.fromEntries(Object.entries(obj).filter(([, value]) => value != null && value !== '')),
+    ...require('librechat-data-provider'),
+    Providers: require('@librechat/agents').Providers,
+    isOpenAILike: require('@librechat/agents').isOpenAILike,
+    sanitizeModelName: azureUnused, constructAzureURL: azureUnused, isCanonicalAzureURL: azureUnused,
+    getAzureDeploymentName: azureUnused, constructAzureChatBasePath: azureUnused,
+    constructAzureInstanceBasePath: azureUnused,
     normalizeBridgeParameters, isRokoBridgeModel, isEnabled: value => value === true,
-    supportsAdaptiveThinking: () => false,
     process: { env: {} },
   });
   for (const useResponsesApi of [true, false]) {

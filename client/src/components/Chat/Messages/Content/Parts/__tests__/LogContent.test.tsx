@@ -3,6 +3,7 @@ import { RecoilRoot } from 'recoil';
 import { render, screen } from '@testing-library/react';
 import type { TAttachment } from 'librechat-data-provider';
 import type { MutableSnapshot } from 'recoil';
+import { MessageContext } from '~/Providers/MessageContext';
 import LogContent from '../LogContent';
 import store from '~/store';
 
@@ -76,7 +77,15 @@ const renderWith = (ui: React.ReactElement, opts: { streaming?: boolean } = {}) 
   const initializeState = (snapshot: MutableSnapshot) => {
     snapshot.set(store.isSubmittingFamily(0), streaming);
   };
-  return render(<RecoilRoot initializeState={initializeState}>{ui}</RecoilRoot>);
+  return render(
+    <RecoilRoot initializeState={initializeState}>
+      <MessageContext.Provider
+        value={{ messageId: 'test-response', isExpanded: true, isSubmitting: streaming }}
+      >
+        {ui}
+      </MessageContext.Provider>
+    </RecoilRoot>,
+  );
 };
 
 describe('LogContent attachment routing', () => {
@@ -87,8 +96,8 @@ describe('LogContent attachment routing', () => {
       text: '<h1>hi</h1>',
     } as Partial<TAttachment>);
     renderWith(<LogContent output="" attachments={[html]} />);
-    // The panel card carries an aria-pressed state; auto-focused on mount.
-    expect(screen.getByRole('button', { pressed: true })).toBeInTheDocument();
+    // The artifact row carries an aria-expanded state; auto-focused on mount.
+    expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument();
     expect(screen.getByText('index.html')).toBeInTheDocument();
   });
 
@@ -101,7 +110,7 @@ describe('LogContent attachment routing', () => {
     renderWith(<LogContent output="" attachments={[mmd]} />);
     expect(screen.getByTestId('mermaid-render')).toHaveTextContent('graph TD');
     // Panel card not rendered for mermaid
-    expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { expanded: true })).not.toBeInTheDocument();
   });
 
   it('routes text-bearing JSON through inline <pre>, not the panel', () => {
@@ -115,7 +124,7 @@ describe('LogContent attachment routing', () => {
     });
     const { container } = renderWith(<LogContent output="" attachments={[json]} />);
     expect(container.querySelector('pre')).not.toBeNull();
-    expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { expanded: true })).not.toBeInTheDocument();
     expect(screen.queryByTestId('mermaid-render')).not.toBeInTheDocument();
   });
 
@@ -152,7 +161,7 @@ describe('LogContent attachment routing', () => {
       text: undefined,
     });
     renderWith(<LogContent output="" attachments={[pptx]} />);
-    expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { expanded: true })).not.toBeInTheDocument();
     expect(screen.getByTestId('log-link')).toHaveAttribute('data-filename', 'slides.pptx');
   });
 
@@ -170,7 +179,7 @@ describe('LogContent attachment routing', () => {
     });
     renderWith(<LogContent output="" attachments={[expired]} />);
     // No panel card and no log-link (the expired branch returns plain text).
-    expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { expanded: true })).not.toBeInTheDocument();
     expect(screen.queryByTestId('log-link')).not.toBeInTheDocument();
     // The localize mock returns the key, so we assert the expired-message key
     // appears in the rendered output alongside the filename.
@@ -185,7 +194,7 @@ describe('LogContent attachment routing', () => {
       expiresAt: Date.now() + 60_000,
     } as Partial<TAttachment>);
     renderWith(<LogContent output="" attachments={[fresh]} />);
-    expect(screen.getByRole('button', { pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument();
   });
 
   it('splits a mixed list into the right buckets', () => {

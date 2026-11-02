@@ -1,18 +1,29 @@
 import { useMemo, useState, useCallback, memo } from 'react';
 import type { TFile, TMessage } from 'librechat-data-provider';
 import FileContainer from '~/components/Chat/Input/Files/FileContainer';
+import { hydrateFileDeliveryMetadata, isPreviewableImage } from '~/utils';
+import { useFileMapContext, useShareContext } from '~/Providers';
 import FilePreviewDialog from './FilePreviewDialog';
 import Image from './Image';
-import { isPreviewableImage } from '~/utils';
+
+/** Roko: generated images may lack a MIME type, and `/uploads/` paths are not servable previews. */
+const showsAsImage = (file: Partial<TFile>) =>
+  isPreviewableImage(file) && file.llmDeliveryPath !== 'text';
 
 const Files = ({ message }: { message?: TMessage }) => {
+  const fileMap = useFileMapContext();
+  const { shareId } = useShareContext();
+  const files = useMemo(
+    () => hydrateFileDeliveryMetadata(message?.files, undefined, shareId ? undefined : fileMap),
+    [message?.files, fileMap, shareId],
+  );
   const imageFiles = useMemo(() => {
-    return message?.files?.filter((file) => isPreviewableImage(file)) || [];
-  }, [message?.files]);
+    return files?.filter(showsAsImage) || [];
+  }, [files]);
 
   const otherFiles = useMemo(() => {
-    return message?.files?.filter((file) => !isPreviewableImage(file)) || [];
-  }, [message?.files]);
+    return files?.filter((file) => !showsAsImage(file)) || [];
+  }, [files]);
 
   const [selectedFile, setSelectedFile] = useState<Partial<TFile> | null>(null);
 
@@ -36,6 +47,7 @@ const Files = ({ message }: { message?: TMessage }) => {
         imageFiles.map((file) => (
           <Image
             key={file.file_id}
+            alignRight
             imagePath={file.preview ?? file.filepath ?? ''}
             height={file.height ?? 1920}
             width={file.width ?? 1080}
@@ -47,8 +59,11 @@ const Files = ({ message }: { message?: TMessage }) => {
         onOpenChange={handleClose}
         fileName={selectedFile?.filename ?? ''}
         fileId={selectedFile?.file_id}
+        filePath={selectedFile?.filepath}
         fileType={selectedFile?.type ?? undefined}
+        fileSource={selectedFile?.source}
         fileSize={(selectedFile as TFile)?.bytes}
+        deliveryPath={selectedFile?.llmDeliveryPath}
       />
     </>
   );

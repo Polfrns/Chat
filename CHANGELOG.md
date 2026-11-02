@@ -1,8 +1,43 @@
 # Historial de Roko
 
-Este historial recoge cambios de la adaptación. El paquete raíz declara
-`v0.8.6` como base LibreChat; las etiquetas 0.7.x de las entregas anteriores
-identificaban integraciones y no una nueva versión del paquete raíz.
+Este historial recoge cambios de la adaptación. La base es LibreChat v0.8.8; las
+etiquetas 0.7.x de las entregas anteriores identificaban integraciones y no una
+nueva versión del paquete raíz.
+
+## Sin publicar — integración de LibreChat v0.8.8 (2 de noviembre de 2026)
+
+La base real no era v0.8.6 como declaraba el paquete, sino el commit intermedio
+`9efe487` (14 de junio de 2026). El historial git ahora lo registra como ancestro y
+v0.8.8 se integró como merge de tres vías.
+
+### Cambios de comportamiento
+
+- Actividad: se adoptan las fases de actividad y el plegado de LibreChat v0.8.8 en
+  lugar del grupo «Actividad de la respuesta» de Roko. Se conservan el progreso
+  Bridge en línea, las salidas Bridge a nivel de mensaje y los enlaces de descarga.
+- Tiempo total: lo da `Elapsed` de LibreChat, que se persiste; se retira el
+  contador montado de Roko. Los tiempos por herramienta Bridge siguen igual.
+- Ajustes: el interruptor del workspace pasa a Configuración → Datos → Workspace
+  MCP dentro del registro de ajustes de v0.8.8.
+- Envío: se retira el filtro de texto vacío de Roko; upstream valida el envío y
+  permite mensajes solo con adjuntos.
+
+### Adaptaciones
+
+- `@librechat/agents` 4.0.1: el parche de observabilidad se porta (marcador
+  `ROKO_OBSERVABILITY_V088`) y falla explícitamente si cambia el handler Langfuse.
+- Trazas OTEL: el procesador filtrado elige OTLP/HTTP u OTLP/gRPC según las
+  variables estándar.
+- Zod: se mantiene zod 3 como v0.8.8; se revierten las adaptaciones a zod 4 que
+  Roko había adelantado (upstream migra en v0.8.9-rc1).
+- Seguridad: `tenantId` vuelve a quedar fuera del usuario seguro que alimenta los
+  marcadores MCP; la identidad del workspace toma el tenant del contexto de la
+  petición. La exención SSRF del workspace se añade también al resolvedor de
+  allowlist por petición. Se mantiene la parada de generación restringida al dueño.
+- Skills: las cadenas CRUD de Roko reutilizan los handlers de upstream.
+- Workspace y Bridge: borrado de workspaces en cascada con los hilos de subagentes,
+  restauración de salidas Bridge solo para modelos Bridge (sin bloquear la carga en
+  paralelo del resto) y cabeceras de identidad sobre la nueva conexión MCP.
 
 ## Sin publicar — estado documental del 20 de octubre de 2026
 

@@ -1,4 +1,4 @@
-# v0.8.6
+# v0.8.8
 
 # Runtime base: everything the API needs at run time, without the compiler toolchain.
 FROM node:24.22.1-alpine AS runtime
@@ -12,6 +12,8 @@ RUN npm install -g npm@11.21.1 --no-audit --no-fund && rm -rf /root/.npm
 
 # Set environment variable to use jemalloc
 ENV LD_PRELOAD=/usr/lib/libjemalloc.so.2
+# Disable dependency installation analytics before any npm lifecycle scripts run.
+ENV SCARF_ANALYTICS=false
 
 # Add `uv` for extended MCP support
 COPY --from=ghcr.io/astral-sh/uv:0.9.5-python3.12-alpine /usr/local/bin/uv /usr/local/bin/uvx /bin/
@@ -45,7 +47,8 @@ RUN \
     # Allow mounting of these files, which have no default
     touch .env ; \
     # Create directories for the volumes to inherit the correct permissions
-    mkdir -p /app/client/public/images /app/logs /app/uploads /app/skill ; \
+    mkdir -p /app/client/public/images /app/logs /app/uploads /app/skill /app/data ; \
+    chmod 1777 /app/data ; \
     npm config set fetch-retry-maxtimeout 600000 ; \
     npm config set fetch-retries 5 ; \
     npm config set fetch-retry-mintimeout 15000 ; \

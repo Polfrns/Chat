@@ -47,19 +47,14 @@ Ejecutar el script en un checkout sin dependencias no equivale a ejecutar la CI.
 
 ## Actividad y tiempo general
 
-`responseParts.test.ts` comprueba la separación entre actividad y respuesta:
-comentario, THINK y herramientas se agrupan; texto final, errores, handoffs y
-adjuntos permanecen visibles. `ResponseActivity.test.tsx` comprueba apertura,
-actualizaciones y plegado al finalizar. `ContentParts.integration.test.ts`
-protege la integración, los adjuntos de una o varias herramientas y la separación
-de columnas y mensajes de usuario.
-
-**Estos grupos adicionales no están todos seleccionados por `ci/test.sh`.** Los
-últimos cambios del contador general y de presentación en segundos tuvieron
-comprobaciones estáticas, pero no una validación completa de navegador o de
-persistencia. El total se mide durante el montaje y no se guarda como dato
-histórico. No interpretar una prueba anterior de tarjetas como cobertura completa
-del reloj general.
+Desde la integración de v0.8.8 la agrupación y el tiempo total son los de
+LibreChat; sus suites (`ContentParts.test.tsx`, `ContentParts.integration.test.tsx`,
+`Elapsed`) los protegen y Roko no mantiene pruebas propias de esa lógica.
+`ContentParts.test.tsx` añade dos casos de Roko: las salidas Bridge
+(`bridge-output-*`) se muestran a nivel de mensaje aunque no haya partes, y un
+adjunto normal de herramienta no se confunde con una salida Bridge.
+`BridgeToolReasoning.test.tsx` y `bridgeToolRecords.test.ts` siguen cubriendo la
+presentación del progreso Bridge.
 
 ## Descargas y previews
 
@@ -98,11 +93,21 @@ solo se transfiere el adjunto explícitamente seleccionado, que no se aceptan ID
 fuera del mensaje, y que una salida descargada se persiste y devuelve como
 artefacto. También fija el registro que alimenta la vista previa del panel: MIME
 sin parámetros (`application/octet-stream` si falta), `text` para `.txt`/`.json`,
-truncado entre 512 KiB y 1 MiB y ausente por encima, sin `text` para PNG, PDF no
+truncado entre 512 KiB y el límite de extracción compartido (2 MiB por defecto,
+`FILE_PREVIEW_MAX_EXTRACT_BYTES`; el test lo lee del código) y ausente por encima, sin `text` para PNG, PDF no
 legible ni ofimática (CSV), y el `type` original intacto. El extractor real se usa
 sin simular para que los límites sean los del código compartido.
 `api/server/routes/__tests__/convos.spec.js` verifica la solicitud de
-borrado del workspace junto al borrado de conversaciones. Los adaptadores usan
+borrado del workspace junto al borrado de conversaciones, para todas las
+conversaciones que upstream borra en cascada (hilos de subagentes incluidos).
+
+`workspace.spec.ts` comprueba además que la identidad del workspace toma el tenant
+del usuario o, si llega un usuario "seguro" sin `tenantId` (la proyección de
+upstream que alimenta los marcadores MCP y no debe exponerlo), del contexto de
+tenant de la petición. `initializeMCPs.spec.js` comprueba que la exención SSRF del
+workspace está tanto en el registro inicial como en el resolvedor de allowlist por
+petición de upstream; sin la segunda, la comprobación por petición bloquearía el
+workspace. Los adaptadores usan
 servicios simulados; no acreditan conexión a Bridge o roko-workspace real.
 
 Las suites de autenticación del servidor son distintas de las de integración
@@ -133,6 +138,31 @@ ejecutan en sus respectivos repositorios; los adaptadores simulados no acreditan
 acceso real a las suscripciones ni al servidor de producción.
 
 ## Evidencia y mantenimiento
+
+### Integración de LibreChat v0.8.8 — 2 de noviembre de 2026
+
+Windows, Node 24.22.1, npm 11.19.1. `npm install --ignore-scripts` (sin compilador
+C++ local, `better-sqlite3` de `packages/roko-server` no compila; ese paquete se
+construye en la imagen Linux) y `npm rebuild esbuild unrs-resolver protobufjs`.
+
+- `npm run build:packages`, `tsc --noEmit` de `packages/api`, `data-schemas` y
+  `client`, y el build Vite del cliente: correctos, sin errores de tipos.
+- `sh ci/test.sh` completo: correcto (Node 18+3, Jest cliente 18, paquete API 43,
+  API 266). El parche de observabilidad se aplica dos veces sin cambios sobre
+  agents 4.0.1.
+- Suites amplias: los fallos que quedan en esta máquina son de entorno y se
+  reproducen sin relación con Roko: MongoMemoryServer no arranca (código 2),
+  rutas `C:\` frente a `/`, symlinks sin privilegio (EPERM), modo de archivo 438
+  frente a 384, ejecutor de hooks de shell POSIX y formatos de moneda/fecha del
+  locale `es-ES` (`Trace Viewer`, `TokenUsage`, `ProviderKeyRow`).
+  `CodeWorkspaceMenu` falla solo en la ejecución completa y pasa aislado.
+
+Tests de upstream ajustados a decisiones de Roko, con el motivo en el propio test:
+footer y landing con marca Roko, selector de archivos sin filtro (`AttachFileMenu`),
+esfuerzo `ultra` válido (`schemas.spec.ts`), procesador de spans filtrado
+(`sdk.spec.ts`) y mocks de `abortMiddleware.spec.js` para la comprobación de dueño
+de la generación (379a6ff24, que v0.8.8 no incluye).
+
 
 ### Ejecución amplia con Docker — 24 de octubre de 2026
 

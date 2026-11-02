@@ -73,9 +73,9 @@ el catálogo de Bridge. Los registros se usan para presentación, no para ejecut
 acciones. Las explicaciones deben basarse en descripción, argumentos y resultado
 observados; no afirmar una validación completa por un simple exit code cero.
 
-El chat agrupa la actividad en un desplegable y muestra explicaciones breves,
-sin el panel técnico anterior. Los tiempos son segundos; el contador del
-encabezado mide la generación general mientras está montado. La procedencia y
+El chat usa las fases de actividad de LibreChat v0.8.8 y muestra explicaciones
+breves, sin el panel técnico anterior. Los tiempos por herramienta son segundos; el
+total de la respuesta es el `Elapsed` persistido de LibreChat. La procedencia y
 los límites de esas medidas están en [SPEC.md](SPEC.md). Los ajustes de privacidad
 de Langfuse solo afectan a la exportación, véase [OBSERVABILITY.md](OBSERVABILITY.md).
 

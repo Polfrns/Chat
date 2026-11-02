@@ -21,6 +21,8 @@ jest.mock('~/hooks', () => ({ useLocalize: () => (key: string) => key }));
 jest.mock('~/Providers', () => ({
   useMessageContext: () => ({ attachments: mockAttachments }),
   useCodeBlockContext: () => ({}),
+  useMediaContext: () => ({}),
+  useShareContext: () => ({}),
 }));
 jest.mock('~/data-provider', () => ({
   useFileDownload: () => ({ refetch: mockDownload }),
@@ -30,6 +32,7 @@ jest.mock('~/utils', () => ({
   triggerDownload: (...args: unknown[]) => mockTriggerDownload(...args),
   isHttpDownloadTarget: () => false,
   handleDoubleClick: () => undefined,
+  getDownloadFilename: (name: string) => name,
 }));
 
 test('clicking a generated-document link downloads the corresponding stored file', async () => {

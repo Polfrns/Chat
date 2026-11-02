@@ -5,6 +5,7 @@ import { Permissions, PermissionTypes } from 'librechat-data-provider';
 import { useLocalize, useHasAccess } from '~/hooks';
 import { useBadgeRowContext } from '~/Providers';
 import useChatWebSearch from '~/hooks/Chat/useChatWebSearch';
+import { badgeAccents } from './accents';
 
 function WebSearch() {
   const localize = useLocalize();
@@ -27,12 +28,12 @@ function WebSearch() {
   if (search.bridge) {
     return (
       <CheckboxButton
-        className="max-w-fit disabled:opacity-50 disabled:grayscale"
+        className="disabled:opacity-50 disabled:grayscale"
         checked={search.enabled}
         disabled={!search.available}
         setValue={({ value }) => search.setEnabled(value === true)}
         label={localize('com_ui_web_search')}
-        isCheckedClassName="border-blue-600/40 bg-blue-500/10 hover:bg-blue-700/10"
+        isCheckedClassName={badgeAccents.blue}
         icon={<Globe className="icon-md" aria-hidden="true" />}
       />
     );
@@ -41,11 +42,10 @@ function WebSearch() {
   return (
     <CheckboxButton
       ref={badgeTriggerRef}
-      className="max-w-fit"
       checked={webSearch}
       setValue={debouncedChange}
       label={localize('com_ui_web_search')}
-      isCheckedClassName="border-blue-600/40 bg-blue-500/10 hover:bg-blue-700/10"
+      isCheckedClassName={badgeAccents.blue}
       icon={<Globe className="icon-md" aria-hidden="true" />}
     />
   );

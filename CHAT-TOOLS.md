@@ -64,7 +64,7 @@ de código en esta versión.
 ## Workspace MCP
 
 Roko conecta `roko-workspace` por defecto para modelos que no usan Bridge. El
-usuario puede desactivarlo globalmente desde Configuración → Personalización.
+usuario puede desactivarlo globalmente desde Configuración → Datos → Workspace MCP.
 Claude Max y ChatGPT Codex se excluyen porque Bridge ya ofrece su propio
 workspace. Configura `ROKO_WORKSPACE_URL` como URL base del servicio y
 `ROKO_WORKSPACE_KEY` como secreto compartido. La conexión MCP usa

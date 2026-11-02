@@ -1,3 +1,4 @@
+const { ATTACHMENT_ONLY_TEXT } = require('@librechat/api');
 const { EModelEndpoint, ContentTypes } = require('librechat-data-provider');
 const {
   AIMessage,
@@ -5,6 +6,12 @@ const {
   HumanMessage,
   SystemMessage,
 } = require('@librechat/agents/langchain/messages');
+
+/**
+ * Stands in for a user turn that carries no text and whose attachments are no longer
+ * being resent, so the turn stays valid without inventing content it never had.
+ */
+const EMPTY_MESSAGE_PLACEHOLDER = '(no text)';
 
 /**
  * Formats a message to OpenAI Vision API payload format.
@@ -18,9 +25,15 @@ const {
  * @returns {(Object)} - The formatted message.
  */
 const formatVisionMessage = ({ message, image_urls, documents = [], endpoint }) => {
+  // Omit an empty text part for image-only messages. Anthropic rejects empty
+  // text content blocks with HTTP 400, and an empty block adds nothing for
+  // other providers either.
   const contentBlocks = Array.isArray(message.content)
     ? message.content
-    : [{ type: ContentTypes.TEXT, text: message.content }];
+    : typeof message.content === 'string' && message.content.trim() !== ''
+      ? [{ type: ContentTypes.TEXT, text: message.content }]
+      : [];
+
   if (endpoint === EModelEndpoint.anthropic) {
     message.content = [...image_urls, ...documents, ...contentBlocks];
     return message;
@@ -79,8 +92,17 @@ const formatMessage = ({ message, userName, assistantName, endpoint, langChain =
   if (documents.length > 0) {
     const contentBlocks = Array.isArray(content)
       ? content
-      : [{ type: ContentTypes.TEXT, text: content }];
+      : content === ''
+        ? []
+        : [{ type: ContentTypes.TEXT, text: content }];
     formattedMessage.content = [...contentBlocks, ...documents];
+  } else if (role === 'user' && content === '' && message.files?.length > 0) {
+    /**
+     * An attachment-only turn whose files reach the model out-of-band (RAG,
+     * code environment) leaves nothing in the content itself, and providers
+     * such as Anthropic reject an empty user message outright.
+     */
+    formattedMessage.content = ATTACHMENT_ONLY_TEXT;
   }
 
   if (_name) {
@@ -159,10 +181,32 @@ const formatAgentMessages = (payload) => {
 
   for (const message of payload) {
     if (typeof message.content === 'string') {
-      message.content = [{ type: ContentTypes.TEXT, [ContentTypes.TEXT]: message.content }];
+      /** An empty string yields a blank text block, which strict providers (Bedrock,
+       *  Anthropic) reject outright for the whole request. `formatVisionMessage`
+       *  already guards this for image-bearing sends; history replay of a
+       *  promptless send reaches here with no `image_urls`, so guard it too. */
+      message.content = message.content.trim()
+        ? [{ type: ContentTypes.TEXT, [ContentTypes.TEXT]: message.content }]
+        : [];
     }
     if (message.role !== 'assistant') {
-      messages.push(formatMessage({ message, langChain: true }));
+      const formatted = formatMessage({ message, langChain: true });
+      /** A promptless send replayed from history can reduce to nothing once its
+       *  attachments are no longer resent. Providers reject a blank text block and
+       *  an empty content array alike, but dropping the turn is not safe either:
+       *  nothing merges the assistant turns it would leave adjacent, and the same
+       *  providers reject consecutive assistant messages. Keep the turn, and give
+       *  it the smallest honest stand-in for the content that is no longer there. */
+      const { content: formattedContent } = formatted;
+      const isEmpty = Array.isArray(formattedContent)
+        ? formattedContent.length === 0
+        : typeof formattedContent === 'string' && formattedContent.trim() === '';
+      if (isEmpty) {
+        formatted.content = [
+          { type: ContentTypes.TEXT, [ContentTypes.TEXT]: EMPTY_MESSAGE_PLACEHOLDER },
+        ];
+      }
+      messages.push(formatted);
       continue;
     }
 
@@ -213,7 +257,12 @@ const formatAgentMessages = (payload) => {
         }
 
         // Note: `tool_calls` list is defined when constructed by `AIMessage` class, and outputs should be excluded from it
-        const { output, args: _args, ...tool_call } = part.tool_call;
+        const {
+          output,
+          args: _args,
+          inputValidationError: _inputValidationError,
+          ...tool_call
+        } = part.tool_call;
         // TODO: investigate; args as dictionary may need to be provider-or-tool-specific
         let args = _args;
         try {
@@ -241,7 +290,49 @@ const formatAgentMessages = (payload) => {
       } else if (part.type === ContentTypes.THINK) {
         hasReasoning = true;
         continue;
-      } else if (part.type === ContentTypes.ERROR || part.type === ContentTypes.AGENT_UPDATE) {
+      } else if (part.type === ContentTypes.STEER) {
+        /*
+        A mid-run steer: user speech persisted inline in the assistant message.
+        Flush any accumulated assistant text first so ordering is preserved, then
+        replay the steer as a standalone user message. `lastAIMessage` is NOT
+        reset — the aggregator emits a fresh text-with-tool_call_ids part for any
+        post-steer tool step, and preceding tool_call parts already pushed their
+        ToolMessages, so the HumanMessage lands after them (valid provider order).
+         */
+        if (currentContent.length > 0) {
+          if (currentContent.some((curr) => curr.type !== ContentTypes.TEXT)) {
+            /** Non-text parts (images, files) must survive the flush intact —
+             *  folding to text here would drop them from replayed history. */
+            messages.push(new AIMessage({ content: currentContent }));
+          } else {
+            const content = currentContent
+              .reduce((acc, curr) => `${acc}${curr[ContentTypes.TEXT] ?? ''}\n`, '')
+              .trim();
+            if (content.length > 0) {
+              messages.push(new AIMessage({ content }));
+            }
+          }
+          currentContent = [];
+        }
+        messages.push(
+          new HumanMessage({
+            content:
+              Array.isArray(part.media) && part.media.length > 0
+                ? part.media
+                : (part[ContentTypes.STEER] ?? ''),
+            additional_kwargs: { source: 'steer' },
+          }),
+        );
+        /** A post-steer tool_call must mint a FRESH assistant anchor —
+         *  attaching to the pre-steer one would emit its ToolMessage after
+         *  the HumanMessage while the call sat before it (invalid order). */
+        lastAIMessage = null;
+      } else if (
+        part.type === ContentTypes.ERROR ||
+        part.type === ContentTypes.AGENT_UPDATE ||
+        part.type === ContentTypes.ACTIVITY_LABEL
+      ) {
+        // ACTIVITY_LABEL parts are UI-only progress notes — never model input.
         continue;
       } else {
         currentContent.push(part);

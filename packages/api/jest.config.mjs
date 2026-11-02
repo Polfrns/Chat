@@ -1,7 +1,17 @@
+import { maxWorkers } from '../../config/jest.workers.cjs';
+
 const esModules = [
   '@langchain/langgraph',
   '@langchain/langgraph-checkpoint',
   '@langchain/langgraph-sdk',
+  '@mistralai/mistralai',
+  'domelementtype',
+  'domhandler',
+  'dom-serializer',
+  'domutils',
+  'entities',
+  'htmlparser2',
+  'sanitize-html',
   'uuid',
   // sanitize-html nests ESM-only htmlparser2 and its dom* helpers.
   'htmlparser2',
@@ -53,8 +63,8 @@ export default {
   //     lines: 57,
   //   },
   // },
-  setupFiles: ['<rootDir>/jest.setup.cjs'],
-  maxWorkers: '50%',
+  setupFiles: ['<rootDir>/jest.setup.cjs', '<rootDir>/../../config/jest.setup.logging.cjs'],
+  maxWorkers,
   restoreMocks: true,
   testTimeout: 15000,
 };

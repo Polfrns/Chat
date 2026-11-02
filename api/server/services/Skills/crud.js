@@ -1,27 +1,10 @@
-const { createSkillsHandlers, generateCheckAccess } = require('@librechat/api');
-const { isValidObjectIdString } = require('@librechat/data-schemas');
+const { generateCheckAccess } = require('@librechat/api');
 const { PermissionBits, PermissionTypes, Permissions } = require('librechat-data-provider');
-const {
-  createSkill,
-  updateSkill,
-  deleteSkill,
-  deleteSkillFile,
-  getRoleByName,
-} = require('~/models');
+const { getRoleByName } = require('~/models');
 const {
   canAccessSkillResource,
 } = require('~/server/middleware/accessResources/canAccessSkillResource');
-const {
-  findAccessibleResources,
-  findPubliclyAccessibleResources,
-  hasPublicPermission,
-  grantPermission,
-} = require('~/server/services/PermissionService');
-const {
-  getSkillDbMethods,
-  withDeploymentSkillIds,
-  getSkillStrategyFunctions,
-} = require('~/server/services/Endpoints/agents/skillDeps');
+const { getSkillsHandlers } = require('./handlers');
 
 /**
  * Skill CRUD expressed as Express middleware chains. The REST routes and the chat
@@ -40,44 +23,15 @@ const checkSkillCreate = generateCheckAccess({
   getRoleByName,
 });
 
-const skillDbMethods = getSkillDbMethods();
-const isVisibilityQuery = (params) =>
-  params.resourceType === 'skill' && params.requiredPermissions === PermissionBits.VIEW;
-
-const skillHandlers = createSkillsHandlers({
-  createSkill,
-  getSkillById: skillDbMethods.getSkillById,
-  listSkillsByAccess: skillDbMethods.listSkillsByAccess,
-  updateSkill,
-  deleteSkill,
-  listSkillFiles: skillDbMethods.listSkillFiles,
-  deleteSkillFile,
-  getSkillFileByPath: skillDbMethods.getSkillFileByPath,
-  updateSkillFileContent: skillDbMethods.updateSkillFileContent,
-  getStrategyFunctions: getSkillStrategyFunctions,
-  findAccessibleResources: async (params) =>
-    isVisibilityQuery(params)
-      ? withDeploymentSkillIds(await findAccessibleResources(params))
-      : findAccessibleResources(params),
-  findPubliclyAccessibleResources: async (params) =>
-    isVisibilityQuery(params)
-      ? withDeploymentSkillIds(await findPubliclyAccessibleResources(params))
-      : findPubliclyAccessibleResources(params),
-  hasPublicPermission: async (params) =>
-    isVisibilityQuery(params)
-      ? withDeploymentSkillIds([]).some((id) => id.toString() === params.resourceId.toString()) ||
-        hasPublicPermission(params)
-      : hasPublicPermission(params),
-  grantPermission,
-  isValidObjectIdString,
-});
+const skillHandlers = getSkillsHandlers();
 
 /** Chains after the router-wide `checkSkillAccess` gate; `req.params.id` names the skill. */
 const skillCrudChains = {
   list: [skillHandlers.list],
   get: [canAccessSkillResource({ requiredPermission: PermissionBits.VIEW }), skillHandlers.get],
   create: [checkSkillCreate, skillHandlers.create],
-  update: [
+  /** Named after the handler: an `update` key reads as a Mongo update to the DocumentDB scan. */
+  patch: [
     checkSkillCreate,
     canAccessSkillResource({ requiredPermission: PermissionBits.EDIT }),
     skillHandlers.patch,
@@ -92,7 +46,6 @@ const skillCrudChains = {
 module.exports = {
   checkSkillAccess,
   checkSkillCreate,
-  skillDbMethods,
   skillHandlers,
   skillCrudChains,
 };

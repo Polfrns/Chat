@@ -1,32 +1,51 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import copy from 'copy-to-clipboard';
-import { useRecoilValue } from 'recoil';
 import { Download } from 'lucide-react';
-import { OGDialog, OGDialogContent, OGDialogTitle, OGDialogDescription } from '@librechat/client';
+import { useRecoilValue } from 'recoil';
+import {
+  Button,
+  OGDialog,
+  OGDialogContent,
+  OGDialogTitle,
+  OGDialogDescription,
+} from '@librechat/client';
+import { FileSources } from 'librechat-data-provider';
+import type { TFile } from 'librechat-data-provider';
+import {
+  getFileExtension,
+  isExtractedTextPreviewLoading,
+  shouldUseExtractedTextPreview,
+  shouldUseSharedFileDownload,
+} from './preview';
+import {
+  useFilePreview,
+  useFilePreviewBlob,
+  useFileDownload,
+  useSharedFileDownload,
+} from '~/data-provider';
+import { getDownloadFilename, logger, sortPagesByRelevance, triggerDownload } from '~/utils';
 import CopyButton from '~/components/Messages/Content/CopyButton';
-import { logger, sortPagesByRelevance, triggerDownload } from '~/utils';
-import { useFileDownload } from '~/data-provider';
+import { useFileMapContext, useShareContext } from '~/Providers';
 import { useLocalize } from '~/hooks';
-import store from '~/store';
 import { getFilePreviewKind } from '~/utils/filePreview';
+import store from '~/store';
 
 interface FilePreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fileName: string;
   fileId?: string;
+  filePath?: string;
   relevance?: number;
   pages?: number[];
   pageRelevance?: Record<number, number>;
   fileType?: string;
+  fileSource?: string;
   fileSize?: number;
+  deliveryPath?: TFile['llmDeliveryPath'];
+  /** Roko: server-converted preview (e.g. Office documents) shown instead of the raw bytes. */
   previewText?: string | null;
   previewTextFormat?: 'html' | 'text' | null;
-}
-
-function getFileExtension(filename: string): string {
-  const dot = filename.lastIndexOf('.');
-  return dot > 0 ? filename.slice(dot + 1).toLowerCase() : '';
 }
 
 /** Formats bytes with unit suffix (differs from ~/utils/formatBytes which returns a raw number). */
@@ -80,76 +99,134 @@ export default function FilePreviewDialog({
   pages,
   pageRelevance,
   fileType,
+  fileSource,
   fileSize,
+  deliveryPath,
   previewText,
   previewTextFormat,
 }: FilePreviewDialogProps) {
   const localize = useLocalize();
   const user = useRecoilValue(store.user);
-  const { refetch: downloadFile } = useFileDownload(user?.id ?? '', fileId, { direct: false });
+  const { shareId } = useShareContext();
+  const fileMap = useFileMapContext();
+  const showExtractedText = shouldUseExtractedTextPreview(
+    deliveryPath ?? (!shareId && fileId ? fileMap?.[fileId]?.llmDeliveryPath : undefined),
+  );
+  const {
+    data: extractedPreview,
+    isInitialLoading: extractedTextLoading,
+    isFetching: extractedTextFetching,
+    isError: extractedTextError,
+    refetch: refetchExtractedPreview,
+  } = useFilePreview(
+    fileId,
+    {
+      enabled: open && showExtractedText && !!fileId,
+    },
+    shareId,
+  );
+  // Downloads own URLs; previews share bytes and create only their display URL.
+  const { refetch: downloadOwned } = useFileDownload(user?.id ?? '', fileId, { direct: false });
+  const { refetch: downloadShared } = useSharedFileDownload(shareId, fileId);
+  const { refetch: previewFile } = useFilePreviewBlob(user?.id, fileId, shareId);
+  // A shared viewer must stay inside the share-scoped authorization boundary;
+  // citation and retrieval previews do not carry a rewritten filepath signal.
+  const useShared = shouldUseSharedFileDownload(shareId, fileId);
+  const downloadFile = useShared ? downloadShared : downloadOwned;
 
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const loadingRef = useRef(false);
 
-  const nativeKind = getFilePreviewKind(fileName, fileType);
-  const previewKind = nativeKind && nativeKind !== 'text' ? nativeKind
-    : typeof previewText === 'string' ? (previewTextFormat === 'html' ? 'html' : 'text')
-    : nativeKind;
+  const nativeKind =
+    fileSource === FileSources.text ? 'text' : (getFilePreviewKind(fileName, fileType) ?? false);
+  /** Roko: images, audio and video preview natively; anything else falls back to the
+   * server-converted text or HTML when the file carries one. */
+  const previewKind = showExtractedText
+    ? false
+    : nativeKind && nativeKind !== 'text'
+      ? nativeKind
+      : typeof previewText === 'string'
+        ? previewTextFormat === 'html'
+          ? 'html'
+          : 'text'
+        : nativeKind;
+  const downloadFilename = getDownloadFilename(fileName, fileId, fileSource);
+  const displayedText = showExtractedText ? (extractedPreview?.text ?? null) : fileContent;
+  const isLoading =
+    (!showExtractedText && loading) ||
+    (showExtractedText &&
+      isExtractedTextPreviewLoading(
+        extractedPreview?.status,
+        extractedTextLoading,
+        extractedTextError,
+      ));
+  const hasPreviewError =
+    (!showExtractedText && previewError) ||
+    (showExtractedText &&
+      (extractedTextError ||
+        extractedPreview?.status === 'failed' ||
+        (extractedPreview?.status === 'ready' && extractedPreview.text == null)));
 
-  const cancelledRef = useRef(false);
-
-  const loadPreview = useCallback(async () => {
-    if (!fileId || !previewKind || loadingRef.current) {
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | undefined;
+    setFileContent(null);
+    setFileBlobUrl(null);
+    setPreviewError(false);
+    setLoading(false);
+    if (!open || !previewKind) {
       return;
     }
-    loadingRef.current = true;
-    cancelledRef.current = false;
-    setLoading(true);
-    setPreviewError(false);
+    if ((previewKind === 'text' || previewKind === 'html') && typeof previewText === 'string') {
+      setFileContent(previewText);
+      return;
+    }
+    if (!fileId) {
+      return;
+    }
 
-    try {
-      if ((previewKind === 'text' || previewKind === 'html') && typeof previewText === 'string') {
-        setFileContent(previewText);
-        return;
-      }
-      const result = await downloadFile();
-      if (cancelledRef.current || !result.data) {
-        if (!cancelledRef.current) {
+    setLoading(true);
+    const load = async () => {
+      try {
+        const { data: blob } = await previewFile();
+        if (!blob) {
+          throw new Error('Preview download unavailable');
+        }
+        if (cancelled) {
+          return;
+        }
+        if (previewKind === 'text') {
+          const text = await blob.text();
+          if (!cancelled) {
+            setFileContent(text);
+          }
+        } else {
+          const mime =
+            previewKind === 'pdf' ? 'application/pdf' : fileType?.split(';', 1)[0].trim();
+          objectUrl = URL.createObjectURL(mime ? new Blob([blob], { type: mime }) : blob);
+          setFileBlobUrl(objectUrl);
+        }
+      } catch {
+        if (!cancelled) {
           setPreviewError(true);
         }
-        return;
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-
-      const resp = await fetch(result.data);
-      if (!resp.ok) throw new Error('Preview download failed');
-      const blob = await resp.blob();
-
-      if (cancelledRef.current) {
-        return;
+    };
+    void load();
+    return () => {
+      cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
       }
-
-      if (previewKind === 'text') {
-        setFileContent(await blob.text());
-      } else {
-        const mime = previewKind === 'pdf' ? 'application/pdf' : fileType?.split(';', 1)[0].trim();
-        const typed = mime ? new Blob([blob], { type: mime }) : blob;
-        setFileBlobUrl(URL.createObjectURL(typed));
-      }
-    } catch {
-      if (!cancelledRef.current) {
-        setPreviewError(true);
-      }
-    } finally {
-      loadingRef.current = false;
-      if (!cancelledRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [fileId, fileType, previewKind, previewText, downloadFile]);
+    };
+  }, [open, fileId, fileType, previewKind, previewText, previewFile, shareId, user?.id]);
 
   const handleDownload = useCallback(async () => {
     if (!fileId) {
@@ -160,45 +237,26 @@ export default function FilePreviewDialog({
       if (!result.data) {
         return;
       }
-      triggerDownload(result.data, fileName);
+      triggerDownload(result.data, downloadFilename);
     } catch (err) {
       logger.error('[FilePreviewDialog] Download failed:', err);
     }
-  }, [downloadFile, fileId, fileName]);
-
-  useEffect(() => {
-    if (open && previewKind && fileContent === null && !fileBlobUrl) {
-      loadPreview();
-    }
-  }, [open, previewKind, fileContent, fileBlobUrl, loadPreview]);
-
-  useEffect(() => {
-    return () => {
-      if (fileBlobUrl) {
-        URL.revokeObjectURL(fileBlobUrl);
-      }
-    };
-  }, [fileBlobUrl]);
+  }, [downloadFile, downloadFilename, fileId]);
 
   useEffect(() => {
     if (!open) {
-      cancelledRef.current = true;
-      setFileContent(null);
-      setFileBlobUrl(null);
-      setPreviewError(false);
-      setLoading(false);
       setIsCopied(false);
     }
   }, [open]);
 
   const handleCopy = useCallback(() => {
-    if (!fileContent) {
+    if (!displayedText) {
       return;
     }
-    copy(fileContent, { format: 'text/plain' });
+    copy(displayedText, { format: 'text/plain' });
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 3000);
-  }, [fileContent]);
+  }, [displayedText]);
 
   const displayType = useMemo(() => getDisplayType(fileType, fileName), [fileType, fileName]);
   const sortedPages = useMemo(
@@ -244,21 +302,32 @@ export default function FilePreviewDialog({
         </div>
 
         <div className="relative min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-4">
-          {loading && (
+          {isLoading && (
             <div className="flex h-60 items-center justify-center rounded-lg bg-surface-secondary">
               <span className="shimmer text-sm text-text-secondary">
                 {localize('com_ui_loading')}
               </span>
             </div>
           )}
-          {previewError && (
-            <div className="flex h-32 items-center justify-center rounded-lg bg-surface-secondary">
+          {hasPreviewError && !isLoading && (
+            <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-lg bg-surface-secondary">
               <span className="text-sm text-text-secondary">
                 {localize('com_ui_preview_unavailable')}
               </span>
+              {showExtractedText && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={extractedTextFetching}
+                  onClick={() => void refetchExtractedPreview()}
+                >
+                  {localize('com_ui_retry')}
+                </Button>
+              )}
             </div>
           )}
-          {fileBlobUrl && !previewError && previewKind === 'pdf' && (
+          {fileBlobUrl && !showExtractedText && !previewError && previewKind === 'pdf' && (
             <iframe
               src={fileBlobUrl}
               title={`${localize('com_ui_preview')}: ${fileName}`}
@@ -266,23 +335,41 @@ export default function FilePreviewDialog({
             />
           )}
           {fileBlobUrl && !previewError && previewKind === 'image' && (
-            <img src={fileBlobUrl} alt={fileName} className="mx-auto max-h-[70vh] max-w-full object-contain"
-              onError={() => setPreviewError(true)} />
+            <img
+              src={fileBlobUrl}
+              alt={fileName}
+              className="mx-auto max-h-[70vh] max-w-full object-contain"
+              onError={() => setPreviewError(true)}
+            />
           )}
           {fileBlobUrl && !previewError && previewKind === 'audio' && (
-            <audio src={fileBlobUrl} controls preload="metadata" className="w-full"
-              onError={() => setPreviewError(true)} />
+            <audio
+              src={fileBlobUrl}
+              controls
+              preload="metadata"
+              className="w-full"
+              onError={() => setPreviewError(true)}
+            />
           )}
           {fileBlobUrl && !previewError && previewKind === 'video' && (
-            <video src={fileBlobUrl} controls preload="metadata" className="max-h-[70vh] w-full"
-              onError={() => setPreviewError(true)} />
+            <video
+              src={fileBlobUrl}
+              controls
+              preload="metadata"
+              className="max-h-[70vh] w-full"
+              onError={() => setPreviewError(true)}
+            />
           )}
           {fileContent !== null && previewKind === 'html' && (
-            <iframe srcDoc={fileContent} sandbox="" referrerPolicy="no-referrer"
+            <iframe
+              srcDoc={fileContent}
+              sandbox=""
+              referrerPolicy="no-referrer"
               title={`${localize('com_ui_preview')}: ${fileName}`}
-              className="h-[70vh] w-full rounded-lg border border-border-light" />
+              className="h-[70vh] w-full rounded-lg border border-border-light"
+            />
           )}
-          {fileContent !== null && previewKind === 'text' && (
+          {displayedText !== null && !isLoading && !hasPreviewError && previewKind !== 'html' && (
             <>
               <div className="pointer-events-none sticky top-0 z-10 flex justify-end pr-1">
                 <CopyButton
@@ -295,12 +382,12 @@ export default function FilePreviewDialog({
               </div>
               <div className="-mt-8 rounded-lg bg-surface-secondary p-4">
                 <pre className="whitespace-pre-wrap break-words pr-8 font-mono text-sm leading-6 text-text-primary">
-                  {fileContent}
+                  {displayedText}
                 </pre>
               </div>
             </>
           )}
-          {!previewKind && !loading && (
+          {!previewKind && !showExtractedText && !isLoading && (
             <div className="flex h-32 items-center justify-center rounded-lg bg-surface-secondary">
               <span className="text-sm text-text-secondary">
                 {localize('com_ui_preview_unavailable')}

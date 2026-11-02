@@ -2,39 +2,61 @@ import { useState, useId, useRef, memo, useCallback, useMemo } from 'react';
 import * as Ariakit from '@ariakit/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DropdownPopup, Spinner, useToastContext } from '@librechat/client';
+import { QueryKeys, PermissionTypes, Permissions } from 'librechat-data-provider';
+import {
+  DropdownPopup,
+  Spinner,
+  buttonVariants,
+  useToastContext,
+  useMediaQuery,
+} from '@librechat/client';
 import {
   Ellipsis,
   Share2,
   CopyPlus,
   Archive,
+  ArchiveRestore,
   FolderInput,
   FolderX,
   Pen,
+  Pin,
   Trash,
 } from 'lucide-react';
-import { QueryKeys, PermissionTypes, Permissions } from 'librechat-data-provider';
-import type { MouseEvent } from 'react';
 import type { TMessage } from 'librechat-data-provider';
+import type { MouseEvent } from 'react';
 import {
   useDuplicateConversationMutation,
   useAssignConversationToProjectMutation,
   useDeleteConversationMutation,
   useGetStartupConfig,
   useArchiveConvoMutation,
+  usePinConversationMutation,
 } from '~/data-provider';
 import { useHasAccess, useLocalize, useNavigateToConvo, useNewConvo } from '~/hooks';
+import { useChatContext, useLiveAnnouncer } from '~/Providers';
 import { NotificationSeverity } from '~/common';
-import { useChatContext } from '~/Providers';
-import DeleteButton from './DeleteButton';
 import ProjectButton from './ProjectButton';
+import DeleteButton from './DeleteButton';
 import ShareButton from './ShareButton';
 import { cn } from '~/utils';
+/** The overflow menu and the shift-held quick action show the same archive control in two
+ *  sizes, and must never disagree about which direction it moves the conversation. */
+function renderArchiveIcon(isLoading: boolean, isArchived: boolean, className: string) {
+  if (isLoading) {
+    return <Spinner className="size-4" />;
+  }
+  if (isArchived) {
+    return <ArchiveRestore className={className} aria-hidden="true" />;
+  }
+  return <Archive className={className} aria-hidden="true" />;
+}
 
 function ConvoOptions({
   conversationId,
   chatProjectId,
   title,
+  isPinned = false,
+  isArchived = false,
   retainView,
   renameHandler,
   isPopoverActive,
@@ -45,6 +67,9 @@ function ConvoOptions({
   conversationId: string | null;
   chatProjectId?: string | null;
   title: string | null;
+  isPinned?: boolean;
+  /** This row's own archive state, which the sidebar filter does not stand in for. */
+  isArchived?: boolean;
   retainView: () => void;
   renameHandler: (e: MouseEvent) => void;
   isPopoverActive: boolean;
@@ -54,23 +79,32 @@ function ConvoOptions({
 }) {
   const localize = useLocalize();
   const queryClient = useQueryClient();
-  const { index } = useChatContext();
+  const isSmallScreen = useMediaQuery('(max-width: 768px)');
+  const { index, setConversation } = useChatContext();
   const { data: startupConfig } = useGetStartupConfig();
   const { navigateToConvo } = useNavigateToConvo(index);
   const { showToast } = useToastContext();
+  /* Archiving or restoring removes the row from the list that held it, unmounting this
+     menu: the announcement has to come from a live region that outlives the row. */
+  const { announcePolite } = useLiveAnnouncer();
 
   const navigate = useNavigate();
   const { conversationId: currentConvoId } = useParams();
+  /* A mutation callback outlives the click that made it: the route it should compare
+     against is whichever chat is open when the request resolves, not the one that was
+     open when the menu item was pressed. */
+  const openConvoIdRef = useRef(currentConvoId);
+  openConvoIdRef.current = currentConvoId;
   const { newConversation } = useNewConvo();
 
   const menuId = useId();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const projectButtonRef = useRef<HTMLButtonElement>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
-  const [announcement, setAnnouncement] = useState('');
 
   const canCreateSharedLinks = useHasAccess({
     permissionType: PermissionTypes.SHARED_LINKS,
@@ -79,6 +113,7 @@ function ConvoOptions({
 
   const archiveConvoMutation = useArchiveConvoMutation();
   const assignConversationToProject = useAssignConversationToProjectMutation();
+  const pinConvoMutation = usePinConversationMutation();
 
   const deleteMutation = useDeleteConversationMutation({
     onSuccess: () => {
@@ -127,6 +162,7 @@ function ConvoOptions({
 
   const isDuplicateLoading = duplicateConversation.isLoading;
   const isArchiveLoading = archiveConvoMutation.isLoading;
+  const isPinLoading = pinConvoMutation.isLoading;
   const isDeleteLoading = deleteMutation.isLoading;
 
   const shareHandler = useCallback(() => {
@@ -192,14 +228,21 @@ function ConvoOptions({
       }
 
       archiveConvoMutation.mutate(
-        { conversationId: convoId, isArchived: true },
+        { conversationId: convoId, isArchived: !isArchived },
         {
           onSuccess: () => {
-            setAnnouncement(localize('com_ui_convo_archived'));
-            setTimeout(() => {
-              setAnnouncement('');
-            }, 10000);
-            if (currentConvoId === convoId || currentConvoId === 'new') {
+            /* The request outlives the row: by the time it resolves the user may have opened
+               another chat, so the open conversation is identified at commit time rather than
+               from the one this callback closed over. */
+            setConversation((prev) =>
+              prev?.conversationId === convoId ? { ...prev, isArchived: !isArchived } : prev,
+            );
+            announcePolite({
+              message: localize(isArchived ? 'com_ui_convo_unarchived' : 'com_ui_convo_archived'),
+              isStatus: true,
+            });
+            const openConvoId = openConvoIdRef.current;
+            if (!isArchived && (openConvoId === convoId || openConvoId === 'new')) {
               newConversation();
               navigate('/c/new', { replace: true });
             }
@@ -208,7 +251,7 @@ function ConvoOptions({
           },
           onError: () => {
             showToast({
-              message: localize('com_ui_archive_error'),
+              message: localize(isArchived ? 'com_ui_unarchive_error' : 'com_ui_archive_error'),
               severity: NotificationSeverity.ERROR,
               showIcon: true,
             });
@@ -218,16 +261,38 @@ function ConvoOptions({
     },
     [
       conversationId,
-      currentConvoId,
+      isArchived,
+      setConversation,
       archiveConvoMutation,
       navigate,
       newConversation,
       retainView,
       setIsPopoverActive,
+      announcePolite,
       showToast,
       localize,
     ],
   );
+
+  const handlePinClick = useCallback(() => {
+    const convoId = conversationId ?? '';
+    if (!convoId) {
+      return;
+    }
+    pinConvoMutation.mutate(
+      { conversationId: convoId, pinned: !isPinned },
+      {
+        onSuccess: () => setIsPopoverActive(false),
+        onError: () => {
+          showToast({
+            message: localize(isPinned ? 'com_ui_unpin_error' : 'com_ui_pin_error'),
+            severity: NotificationSeverity.ERROR,
+            showIcon: true,
+          });
+        },
+      },
+    );
+  }, [conversationId, isPinned, pinConvoMutation, setIsPopoverActive, showToast, localize]);
 
   const handleDuplicateClick = useCallback(() => {
     duplicateConversation.mutate({
@@ -248,6 +313,16 @@ function ConvoOptions({
         hideOnClick: false,
         ref: shareButtonRef,
         render: (props) => <button {...props} />,
+      },
+      {
+        label: localize(isPinned ? 'com_ui_unpin' : 'com_ui_pin'),
+        onClick: handlePinClick,
+        hideOnClick: false,
+        icon: isPinLoading ? (
+          <Spinner className="size-4" />
+        ) : (
+          <Pin className="icon-sm mr-2 text-text-primary" aria-hidden="true" />
+        ),
       },
       {
         label: localize('com_ui_rename'),
@@ -286,14 +361,10 @@ function ConvoOptions({
         ),
       },
       {
-        label: localize('com_ui_archive'),
+        label: localize(isArchived ? 'com_ui_unarchive' : 'com_ui_archive'),
         onClick: handleArchiveClick,
         hideOnClick: false,
-        icon: isArchiveLoading ? (
-          <Spinner className="size-4" />
-        ) : (
-          <Archive className="icon-sm mr-2 text-text-primary" aria-hidden="true" />
-        ),
+        icon: renderArchiveIcon(isArchiveLoading, isArchived, 'icon-sm mr-2 text-text-primary'),
       },
       {
         label: localize('com_ui_delete'),
@@ -309,12 +380,16 @@ function ConvoOptions({
     ],
     [
       localize,
+      isPinned,
+      isPinLoading,
       shareHandler,
       startupConfig,
       renameHandler,
       deleteHandler,
       isArchiveLoading,
+      isArchived,
       isDuplicateLoading,
+      handlePinClick,
       handleArchiveClick,
       canCreateSharedLinks,
       handleDuplicateClick,
@@ -326,8 +401,12 @@ function ConvoOptions({
   );
 
   const buttonClassName = cn(
-    'inline-flex h-7 w-7 items-center justify-center rounded-md border-none p-0 text-sm font-medium ring-ring-primary transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50',
-    isActiveConvo === true || isPopoverActive
+    /** The same shared row action the unpin badge beside it uses, rather than a
+     *  second copy of that recipe. */
+    buttonVariants({ variant: 'row-action', size: 'icon-xs' }),
+    'text-text-secondary',
+    /** Touch has no hover, so a reveal-on-hover trigger is simply invisible there. */
+    isActiveConvo === true || isPopoverActive || isSmallScreen
       ? 'opacity-100'
       : 'opacity-0 focus:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 data-[open]:opacity-100',
   );
@@ -336,20 +415,16 @@ function ConvoOptions({
     return (
       <div className="flex items-center gap-0.5">
         <button
-          aria-label={localize('com_ui_archive')}
-          className={cn(buttonClassName, 'hover:bg-surface-hover')}
+          aria-label={localize(isArchived ? 'com_ui_unarchive' : 'com_ui_archive')}
+          className={buttonClassName}
           onClick={handleArchiveClick}
           disabled={isArchiveLoading}
         >
-          {isArchiveLoading ? (
-            <Spinner className="size-4" />
-          ) : (
-            <Archive className="icon-md text-text-secondary" aria-hidden={true} />
-          )}
+          {renderArchiveIcon(isArchiveLoading, isArchived, 'icon-md text-text-secondary')}
         </button>
         <button
           aria-label={localize('com_ui_delete')}
-          className={cn(buttonClassName, 'hover:bg-surface-hover')}
+          className={buttonClassName}
           onClick={handleInstantDelete}
           disabled={isDeleteLoading}
         >
@@ -365,10 +440,15 @@ function ConvoOptions({
 
   return (
     <>
-      <span className="sr-only" aria-live="polite" aria-atomic="true">
-        {announcement}
-      </span>
       <DropdownPopup
+        /**
+         * Must portal: the row sits inside the nav's `overflow-hidden` and a
+         * virtualized list, and on mobile inside a transformed drawer that
+         * would become the containing block. Portaling escapes all three.
+         * The drawer cannot occlude it — the drawer's z-index only ranks it
+         * within `Root`'s `relative z-0` stacking context, while this lands on
+         * `document.body` outside it.
+         */
         portal={true}
         menuId={menuId}
         focusLoop={true}
@@ -378,14 +458,17 @@ function ConvoOptions({
         setIsOpen={setIsPopoverActive}
         trigger={
           <Ariakit.MenuButton
+            ref={menuButtonRef}
             id={`conversation-menu-${conversationId}`}
             aria-label={localize('com_nav_convo_menu_options')}
             aria-expanded={isPopoverActive}
+            /** Shared with the shift-held variant so both obey the same reveal rules. */
             className={cn(
-              'inline-flex h-7 w-7 items-center justify-center gap-2 rounded-md border-none p-0 text-sm font-medium ring-ring-primary transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50',
-              isActiveConvo === true || isPopoverActive
-                ? 'opacity-100'
-                : 'opacity-0 focus:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 data-[open]:opacity-100',
+              buttonClassName,
+              'gap-2',
+              /** The hover fill persists while the menu is open, even once the
+               *  pointer moves into the dropdown. */
+              isPopoverActive && 'bg-surface-active text-text-primary',
             )}
             onClick={(e: MouseEvent<HTMLButtonElement>) => {
               e.stopPropagation();
@@ -396,7 +479,7 @@ function ConvoOptions({
               }
             }}
           >
-            <Ellipsis className="icon-md text-text-secondary" aria-hidden={true} />
+            <Ellipsis className="icon-md" aria-hidden={true} />
           </Ariakit.MenuButton>
         }
         items={dropdownItems}
@@ -425,7 +508,7 @@ function ConvoOptions({
           conversationId={conversationId ?? ''}
           chatProjectId={chatProjectId}
           setMenuOpen={setIsPopoverActive}
-          triggerRef={projectButtonRef}
+          triggerRef={menuButtonRef}
           showProjectDialog={showProjectDialog}
           setShowProjectDialog={setShowProjectDialog}
         />
@@ -439,6 +522,8 @@ export default memo(ConvoOptions, (prevProps, nextProps) => {
     prevProps.conversationId === nextProps.conversationId &&
     prevProps.title === nextProps.title &&
     prevProps.chatProjectId === nextProps.chatProjectId &&
+    prevProps.isPinned === nextProps.isPinned &&
+    prevProps.isArchived === nextProps.isArchived &&
     prevProps.isPopoverActive === nextProps.isPopoverActive &&
     prevProps.isActiveConvo === nextProps.isActiveConvo &&
     prevProps.isShiftHeld === nextProps.isShiftHeld

@@ -1,6 +1,6 @@
 # Especificación actual de Roko
 
-Estado del código revisado el 20 de octubre de 2026. Esta especificación describe
+Estado del código revisado el 2 de noviembre de 2026, tras integrar LibreChat v0.8.8. Esta especificación describe
 el repositorio; no certifica la versión instalada en servidores externos.
 
 ## Arquitectura
@@ -8,7 +8,9 @@ el repositorio; no certifica la versión instalada en servidores externos.
 Roko conserva el monorepo LibreChat: `api/` sirve Express y sus rutas existentes;
 `packages/api` aporta lógica TypeScript; `packages/data-provider` comparte contratos;
 `packages/data-schemas` define persistencia MongoDB; `client/` y `packages/client`
-contienen aplicación y componentes React. El paquete raíz declara `v0.8.6`.
+contienen aplicación y componentes React. La base es LibreChat **v0.8.8** (`e8f3be0`);
+el historial git enlaza el import original con su commit upstream `9efe487`, de modo
+que futuras actualizaciones son merges de tres vías.
 
 ```mermaid
 flowchart LR
@@ -166,11 +168,16 @@ ese servicio. El workspace Roko se configura en el backend desde
 
 ## Actividad de la respuesta
 
-El cliente agrupa comentario de progreso, partes THINK y herramientas en
-**Actividad de la respuesta**. El grupo se abre durante la generación, se pliega
-al terminar y permite reapertura manual. Respuesta final, errores y adjuntos
-descargables quedan visibles fuera del grupo. Las columnas de agentes mantienen
-sus propios grupos.
+La agrupación es la de LibreChat v0.8.8: fases de actividad con etiqueta, grupos de
+herramientas y plegado del tramo en curso (`ContentParts`, `ActivityPhaseGroup`,
+`ToolCallGroup`). Roko ya no mantiene un grupo propio. Sobre esa base conserva:
+
+- el progreso Bridge (`BridgeToolReasoning`): dentro de un grupo de herramientas se
+  muestra en línea; fuera, como razonamiento con disclosure propio por bloque;
+- las salidas Bridge (`toolCallId` `bridge-output-*`), que pertenecen al mensaje y
+  se muestran como adjuntos a nivel de mensaje, fuera de cualquier parte;
+- los adjuntos del mensaje en `MessageContext`, para que los enlaces Markdown a
+  archivos generados resuelvan su descarga.
 
 Los registros Bridge V1 se interpretan únicamente para presentación: no habilitan
 ejecución. Se conserva el orden del comentario intercalado y una sola tarjeta por
@@ -194,11 +201,9 @@ fiable no se convierte en una ejecución ficticia de cero segundos. La procedenc
 puede ser tiempo de ejecución, tiempo del proveedor o intervalo observado entre
 eventos; no todos representan tiempo de CPU ni duración completa del comando.
 
-El encabezado comparte el contador general de generación: incluye la espera
-anterior al primer evento y se detiene al acabar el envío. Usa un reloj monotónico
-durante el montaje. Ese total **no se persiste**: al recargar una conversación
-antigua no se inventa un total histórico. No se asigna un tiempo ficticio a cada
-fragmento de pensamiento.
+El tiempo total de la respuesta es el `Elapsed` de LibreChat v0.8.8, en el pie del
+mensaje; el servidor lo persiste, así que también aparece en conversaciones
+recargadas. No se asigna un tiempo ficticio a cada fragmento de pensamiento.
 
 ## Archivos generados y previsualización
 

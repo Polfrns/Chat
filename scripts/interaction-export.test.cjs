@@ -57,7 +57,13 @@ for (const mode of ['redacted', 'debug']) {
             const run=Object.create(Run.prototype);
             Object.assign(run,{id:'response-'+i,langfuse:{deterministicTraceId:true},skipCleanup:true,
               graphRunnable:sequence,Graph:{defaultAgentId:'agent',agentContexts:new Map([['agent',{name:'agent'}]]),
-                resetValues(){},getRunMessages(){return [message,new AIMessage('VISIBLE_ANSWER')];},getCalibrationRatio(){return 1;}}});
+                resetValues(){},getRunMessages(){return [message,new AIMessage('VISIBLE_ANSWER')];},getCalibrationRatio(){return 1;},
+                // agents 4.x Graph surface reached by processStream; neutral: no continuations or segments.
+                startFreshLangfuseExecution(){},getStopContinuationExecutionId(){return '';},startStopContinuationExecution(){},
+                getStopContinuationCount(){return 0;},setStopContinuationCount(){},getStreamSegment(){return 0;},advanceStreamSegment(){},
+                createRunStepResumeState(){return {};},closeOpenMessageStep(){},closeUnfinishedRunSteps(){},getContentParts(){return [];},
+                getFadingTier(){},getFadingTiers(){return [];},didResetFadingTier(){return false;},getFadingTierResetAgentIds(){return [];},
+                clearHeavyState(){},recordStepCompletion(){},hasHandlerDispatchedEvent(){return false;},getDiscoveredTools(){return [];}}});
             await run.processStream({messages:[message]}, {runName:'AgentRun',version:'v2',configurable:{user_id:user,thread_id:'conversation',user:{id:user}},signal:controller.signal});
             // Title chains may execute after the response, outside its async scope.
             await withLangfuseAttributes({userId:user,sessionId:'conversation',parentContext:run.rokoInteractionContext},

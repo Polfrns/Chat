@@ -10,8 +10,8 @@
   registro no se presentan como un panel técnico.
 - Un SDK puede no comunicar el inicio real. Un intervalo observado mide eventos,
   no necesariamente toda la ejecución. Los segundos no eliminan esa limitación.
-- El contador del encabezado incluye espera y generación mientras está montado;
-  no se persiste y no aparece como una duración histórica inventada tras recargar.
+- El tiempo total de la respuesta lo mide y persiste LibreChat (`Elapsed`); los
+  tiempos por herramienta Bridge siguen dependiendo de los eventos observados.
 - El streaming depende del proveedor, de Bridge y de los proxies intermedios.
   Agrupar tarjetas en React no convierte una salida final en eventos incrementales.
 
