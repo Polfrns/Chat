@@ -40,6 +40,9 @@ services:
       - ./skill:/app/skill
       - librechat-data:/app/data
   admin-panel:
+    # Roko: opt-in (`docker compose --profile admin-panel up`); without
+    # ADMIN_PANEL_SESSION_SECRET it restart-loops and it claims host port 3000.
+    profiles: [admin-panel]
     container_name: admin-panel
     image: registry.librechat.ai/clickhouse/librechat-admin-panel:latest
     ports:
