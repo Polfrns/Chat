@@ -17,6 +17,7 @@ import useSmoothStreaming from '~/hooks/Messages/useSmoothStreaming';
 import CopyButton from '~/components/Messages/Content/CopyButton';
 import { showThinkingAtom } from '~/store/showThinking';
 import { useReasoningDisclosure } from '../disclosure';
+import type { ReasoningDisclosureKey } from '../disclosure';
 import { fontSizeAtom } from '~/store/fontSize';
 import { useMessageContext } from '~/Providers';
 import Markdown from '../Markdown';
@@ -114,6 +115,8 @@ StreamingThoughtPeek.displayName = 'StreamingThoughtPeek';
 
 type ReasoningProps = {
   partKeyIndex?: number;
+  /** Overrides `partKeyIndex` for disclosure state when one part renders several blocks. */
+  disclosureKey?: ReasoningDisclosureKey;
   reasoning: string;
   isLast: boolean;
   inline?: boolean;
@@ -154,12 +157,15 @@ export const ReasoningMarker = memo(({ label }: { label?: string }) => {
 ReasoningMarker.displayName = 'ReasoningMarker';
 
 const Reasoning = memo((props: ReasoningProps) => {
-  const { reasoning, isLast, reasoningLabel, partKeyIndex = 0, inline = false } = props;
+  const { reasoning, isLast, reasoningLabel, partKeyIndex = 0, disclosureKey, inline = false } =
+    props;
   const contentId = useId();
   const localize = useLocalize();
   const showThinking = useAtomValue(showThinkingAtom);
   const smoothStreaming = useSmoothStreaming();
-  const [expansionOverride, setIsExpanded] = useAtom(useReasoningDisclosure(partKeyIndex));
+  const [expansionOverride, setIsExpanded] = useAtom(
+    useReasoningDisclosure(disclosureKey ?? partKeyIndex),
+  );
   const [defaultExpanded] = useState(showThinking);
   const isExpanded = expansionOverride ?? defaultExpanded;
   const [isBarVisible, setIsBarVisible] = useState(false);

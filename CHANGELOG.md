@@ -35,6 +35,12 @@ v0.8.8 se integró como merge de tres vías.
   petición. La exención SSRF del workspace se añade también al resolvedor de
   allowlist por petición. Se mantiene la parada de generación restringida al dueño.
 - Skills: las cadenas CRUD de Roko reutilizan los handlers de upstream.
+- Alias Bridge en una sola fuente (`isBridgeModel`); el cliente deja de reconocer
+  Bridge por el nombre del endpoint y sigue la misma regla por modelo que el servidor.
+- Identidad del workspace: sin tenant y con `TENANT_ISOLATION_STRICT` se rechaza
+  explícitamente en lugar de usar `''`; `__SYSTEM__` no se acepta como tenant.
+- Disclosures de razonamiento: clave tipada por bloque (`parte:bloque`) en lugar de
+  un índice fraccionario para los bloques de progreso Bridge.
 - Workspace y Bridge: borrado de workspaces en cascada con los hilos de subagentes,
   restauración de salidas Bridge solo para modelos Bridge (sin bloquear la carga en
   paralelo del resto) y cabeceras de identidad sobre la nueva conexión MCP.

@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import { parseBridgeToolRecords } from './bridgeToolRecords';
 import { bridgeActivityOutput } from './bridgeActivityDetails';
+import { reasoningBlockKey } from './disclosure';
 import { Reasoning } from './Parts';
 import ToolCall from './ToolCall';
 import BridgeToolTime from './BridgeToolTime';
@@ -32,9 +33,10 @@ const BridgeToolReasoning = memo(function BridgeToolReasoning({
           return (
             <Reasoning
               key={`progress-${index}`}
-              /** Disclosure state is keyed per message by number. Fractional offsets keep
-               *  each Bridge text block distinct without colliding with sibling parts. */
-              partKeyIndex={partKeyIndex == null ? undefined : partKeyIndex + index / 1000}
+              partKeyIndex={partKeyIndex}
+              disclosureKey={
+                partKeyIndex == null ? undefined : reasoningBlockKey(partKeyIndex, index)
+              }
               reasoning={entry.text}
               reasoningLabel={reasoningLabel}
               isLast={isLast && index === entries.length - 1}

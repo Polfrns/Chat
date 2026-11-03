@@ -2,12 +2,24 @@ import { createContext, useContext, useMemo } from 'react';
 import { atom } from 'jotai';
 import type { PrimitiveAtom } from 'jotai';
 
-export type ReasoningDisclosures = Map<number, PrimitiveAtom<boolean | undefined>>;
+/** A reasoning part's key index, or one block inside a part that renders several
+ *  (Roko Bridge progress). Block 0 keeps the part's own index so phase cards that
+ *  address reasoning by part index still reach it. */
+export type ReasoningDisclosureKey = number | `${number}:${number}`;
+
+export function reasoningBlockKey(partKeyIndex: number, block: number): ReasoningDisclosureKey {
+  return block === 0 ? partKeyIndex : `${partKeyIndex}:${block}`;
+}
+
+export type ReasoningDisclosures = Map<ReasoningDisclosureKey, PrimitiveAtom<boolean | undefined>>;
 
 /** Owned by one message, above the layouts that can move its reasoning. */
 export const ReasoningDisclosureContext = createContext<ReasoningDisclosures | null>(null);
 
-export function reasoningDisclosure(disclosures: ReasoningDisclosures, index: number) {
+export function reasoningDisclosure(
+  disclosures: ReasoningDisclosures,
+  index: ReasoningDisclosureKey,
+) {
   let disclosure = disclosures.get(index);
   if (disclosure == null) {
     disclosure = atom<boolean | undefined>(undefined);
@@ -16,7 +28,7 @@ export function reasoningDisclosure(disclosures: ReasoningDisclosures, index: nu
   return disclosure;
 }
 
-export function useReasoningDisclosure(index: number) {
+export function useReasoningDisclosure(index: ReasoningDisclosureKey) {
   const disclosures = useContext(ReasoningDisclosureContext);
   return useMemo(
     () =>

@@ -7,6 +7,7 @@ import {
   prefersResponsesApiByModel,
   supportsAdaptiveThinking,
   gpt6Tier,
+  getBridgeCapabilities,
 } from 'librechat-data-provider';
 import type { BindToolsInput } from '@librechat/agents/langchain/language_models/chat_models';
 import type { AzureOpenAIInput } from '@librechat/agents/langchain/openai';
@@ -946,7 +947,7 @@ export function getOpenAILLMConfig({
   }
 
   if (
-    llmConfig.model?.startsWith('gpt-codex') &&
+    getBridgeCapabilities(llmConfig.model)?.provider === 'codex' &&
     llmConfig.useResponsesApi !== true &&
     reasoningSummary
   ) {

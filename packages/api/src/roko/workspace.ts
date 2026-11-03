@@ -1,4 +1,4 @@
-import { logger, getTenantId } from '@librechat/data-schemas';
+import { logger, getTenantId, SYSTEM_TENANT_ID } from '@librechat/data-schemas';
 import { Constants } from 'librechat-data-provider';
 import { isRokoBridgeModel } from '~/utils/rokoBridge';
 
@@ -62,17 +62,44 @@ export function isRokoWorkspaceUrl(url: string, config: RokoWorkspaceConfig): bo
   );
 }
 
+/**
+ * The tenant a workspace belongs to. Run-config users are "safe" projections without
+ * tenantId (it must not reach MCP placeholders), so the request's tenant context is the
+ * fallback; the system sentinel is never a workspace owner. Without either, the answer
+ * depends on the deployment: single-tenant installs legitimately have no tenant (`''`),
+ * while `TENANT_ISOLATION_STRICT` makes a missing tenant an error, as upstream's tenant
+ * middleware does.
+ */
+export function resolveWorkspaceTenant(
+  user: RokoWorkspaceUser | null | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  const contextTenant = getTenantId();
+  const tenantId =
+    user?.tenantId ?? (contextTenant !== SYSTEM_TENANT_ID ? contextTenant : undefined);
+  if (tenantId != null && tenantId !== '') {
+    return tenantId;
+  }
+  return env.TENANT_ISOLATION_STRICT === 'true' ? undefined : '';
+}
+
 export function rokoWorkspaceIdentity({
   user,
   conversationId,
+  env = process.env,
 }: {
   user?: RokoWorkspaceUser | null;
   conversationId?: string | null;
+  env?: NodeJS.ProcessEnv;
 }): RokoWorkspaceIdentity | undefined {
   const userId = user?.id;
-  /** Run-config users are "safe" projections without tenantId (it must not reach MCP
-   * placeholders), so fall back to the request's tenant context. */
-  const tenantId = user?.tenantId ?? getTenantId() ?? '';
+  const tenantId = resolveWorkspaceTenant(user, env);
+  if (tenantId === undefined) {
+    logger.warn(
+      '[roko-workspace] No tenant for the workspace identity under TENANT_ISOLATION_STRICT; refusing workspace access',
+    );
+    return undefined;
+  }
   if (
     !userId ||
     !conversationId ||

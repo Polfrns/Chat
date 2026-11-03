@@ -59,7 +59,11 @@ transporte agrega en cada petición HTTP la identidad obtenida del
 `AsyncLocalStorage` de esa invocación; no la guarda en la configuración cacheada
 ni usa `setRequestHeaders` por llamada. Cada firma incluye tenant, usuario,
 conversación, timestamp actual, versión 1, audiencia `roko-workspace` y los
-seudónimos de telemetría disponibles. Las cabeceras falsas `x-roko-*` se eliminan
+seudónimos de telemetría disponibles. El tenant sale del usuario o, si llega la
+proyección «segura» sin `tenantId`, del contexto de tenant de la petición (nunca del
+centinela `__SYSTEM__`). Sin tenant, un despliegue de tenant único usa `''`; con
+`TENANT_ISOLATION_STRICT=true` no se crea identidad, se registra un aviso y el
+servicio rechaza la petición. Las cabeceras falsas `x-roko-*` se eliminan
 y solo se firman destinos que coinciden con el origen y prefijo configurados. Si
 falta contexto no se inventa una conversación: la petición queda sin firma. El
 servicio es stateless y no requiere `mcp-session-id` ni SSE.
@@ -117,7 +121,10 @@ Configuración, límites y rutas de uso: [NEXTCLOUD.md](NEXTCLOUD.md).
 ## Modelos y Bridge
 
 El endpoint personalizado Claude Max usa los alias `claude-max`, `claude-max-fast`
-y `claude-max-deep`. El endpoint ChatGPT Codex (`gpt-codex*`) vuelve a estar configurado sobre el mismo Bridge. Los valores efectivos se incluyen en
+y `claude-max-deep`. El endpoint ChatGPT Codex (`gpt-codex*`) vuelve a estar configurado sobre el mismo Bridge.
+Los alias Bridge se definen solo en `packages/data-provider/src/bridgeModels.ts`
+(`getBridgeCapabilities`/`isBridgeModel`); servidor, cliente y parámetros derivan de ahí,
+y la decisión se toma por modelo, no por el nombre configurable del endpoint. Los valores efectivos se incluyen en
 el contexto firmado. Véase [CLI-BRIDGE.md](CLI-BRIDGE.md).
 
 Google (Gemini API) es un endpoint nativo de LibreChat. Requiere `google` en

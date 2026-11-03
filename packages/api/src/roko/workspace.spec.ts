@@ -1,4 +1,4 @@
-import { tenantStorage } from '@librechat/data-schemas';
+import { tenantStorage, SYSTEM_TENANT_ID } from '@librechat/data-schemas';
 import { isRokoWorkspaceEnabled, rokoWorkspaceIdentity } from './workspace';
 
 const configured: NodeJS.ProcessEnv = {
@@ -59,5 +59,29 @@ describe('Roko workspace identity', () => {
       rokoWorkspaceIdentity({ user: { id: 'user-1' }, conversationId: 'c1' }),
     );
     expect(identity).toEqual({ tenantId: 'tenant-b', userId: 'user-1', conversationId: 'c1' });
+  });
+
+  it('uses the empty tenant only for single-tenant deployments', () => {
+    expect(
+      rokoWorkspaceIdentity({ user: { id: 'user-1' }, conversationId: 'c1', env: {} }),
+    ).toEqual({ tenantId: '', userId: 'user-1', conversationId: 'c1' });
+  });
+
+  it('refuses an identity without tenant under strict tenant isolation', () => {
+    expect(
+      rokoWorkspaceIdentity({
+        user: { id: 'user-1' },
+        conversationId: 'c1',
+        env: { TENANT_ISOLATION_STRICT: 'true' },
+      }),
+    ).toBeUndefined();
+  });
+
+  it('never assigns a workspace to the system tenant sentinel', async () => {
+    const strict = { TENANT_ISOLATION_STRICT: 'true' };
+    const identity = await tenantStorage.run({ tenantId: SYSTEM_TENANT_ID }, async () =>
+      rokoWorkspaceIdentity({ user: { id: 'user-1' }, conversationId: 'c1', env: strict }),
+    );
+    expect(identity).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { getBridgeCapabilities } from 'librechat-data-provider';
+import { isBridgeModel } from 'librechat-data-provider';
 import { normalizeBridgeParameters, normalizeBridgeRequest } from './bridgeParameters';
 
 type BridgeUser = { id?: string; tenantId?: string };
@@ -20,7 +20,7 @@ type BridgeLLMConfig = {
 };
 
 export function isRokoBridgeModel(model?: string | null): boolean {
-  return getBridgeCapabilities(model ?? undefined) !== undefined;
+  return isBridgeModel(model);
 }
 
 /** Adds trusted identity only to the administrator's fixed bridge URL. */

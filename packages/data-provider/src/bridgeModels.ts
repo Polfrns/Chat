@@ -23,8 +23,13 @@ const CLAUDE: BridgeCapabilities = {
   supportsWebSearch: true,
 };
 
+/** The single list of Bridge model aliases; every Bridge check derives from it. */
 export function getBridgeCapabilities(model?: string | null): BridgeCapabilities | undefined {
   if (/^gpt-codex(?:-fast|-deep)?$/.test(model ?? '')) return CODEX;
   if (/^claude-max(?:-fast|-deep)?$/.test(model ?? '')) return CLAUDE;
   return undefined;
+}
+
+export function isBridgeModel(model?: string | null): boolean {
+  return getBridgeCapabilities(model) !== undefined;
 }

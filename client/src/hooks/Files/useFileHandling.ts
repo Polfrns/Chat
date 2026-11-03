@@ -13,6 +13,7 @@ import {
   isAssistantsEndpoint,
   getEndpointFileConfig,
   defaultAssistantsVersion,
+  isBridgeModel,
 } from 'librechat-data-provider';
 import type {
   TError,
@@ -350,9 +351,8 @@ const useFileHandlingCore = (params: UseFileHandling | undefined, fileState: Fil
     ? queryClient.getQueryData<Agent>([QueryKeys.agent, conversation.agent_id])
     : undefined;
   const uploadModel = cachedAgent?.model ?? conversation?.model ?? '';
-  const preserveOriginal =
-    ['ChatGPT Codex', 'Claude Max'].includes(endpoint) ||
-    /^(gpt-codex|claude-max)(-fast|-deep)?$/.test(uploadModel);
+  /** Same rule as the server's upload routing: Bridge is decided by the model alone. */
+  const preserveOriginal = isBridgeModel(uploadModel);
 
   const uploadWithRecovery = (
     formData: FormData,

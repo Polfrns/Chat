@@ -54,7 +54,10 @@ LibreChat; sus suites (`ContentParts.test.tsx`, `ContentParts.integration.test.t
 (`bridge-output-*`) se muestran a nivel de mensaje aunque no haya partes, y un
 adjunto normal de herramienta no se confunde con una salida Bridge.
 `BridgeToolReasoning.test.tsx` y `bridgeToolRecords.test.ts` siguen cubriendo la
-presentación del progreso Bridge.
+presentación del progreso Bridge. `BridgeToolReasoning.test.tsx` fija también las
+claves de disclosure: el primer bloque conserva el índice de la parte (las tarjetas
+de fase lo usan para abrir el razonamiento) y los siguientes reciben `parte:bloque`,
+sin colisionar con otras partes.
 
 ## Descargas y previews
 
@@ -104,7 +107,9 @@ conversaciones que upstream borra en cascada (hilos de subagentes incluidos).
 `workspace.spec.ts` comprueba además que la identidad del workspace toma el tenant
 del usuario o, si llega un usuario "seguro" sin `tenantId` (la proyección de
 upstream que alimenta los marcadores MCP y no debe exponerlo), del contexto de
-tenant de la petición. `initializeMCPs.spec.js` comprueba que la exención SSRF del
+tenant de la petición; que `''` solo vale sin `TENANT_ISOLATION_STRICT`, que en modo
+estricto no hay identidad sin tenant y que el centinela `__SYSTEM__` nunca es dueño
+de un workspace. `initializeMCPs.spec.js` comprueba que la exención SSRF del
 workspace está tanto en el registro inicial como en el resolvedor de allowlist por
 petición de upstream; sin la segunda, la comprobación por petición bloquearía el
 workspace. Los adaptadores usan

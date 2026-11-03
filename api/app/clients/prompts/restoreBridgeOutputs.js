@@ -5,11 +5,13 @@
  * @param {{ messages: object[], options: object, getFiles: Function }} params
  * @returns {Promise<object[] | null>}
  */
+const { isBridgeModel } = require('librechat-data-provider');
+
 /** Synchronous gate, so non-Bridge turns never wait on the restore before context work. */
 function shouldRestoreBridgeOutputs(options) {
   const model = options.agent?.model_parameters?.model ?? options.agent?.model ?? options.model;
   return (
-    ['gpt-codex', 'gpt-codex-fast', 'gpt-codex-deep', 'claude-max', 'claude-max-fast', 'claude-max-deep'].includes(model) &&
+    isBridgeModel(model) &&
     options.resendFiles !== false &&
     !(options.req?.body?.files?.length > 0)
   );
