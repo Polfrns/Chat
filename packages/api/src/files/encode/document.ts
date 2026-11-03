@@ -53,6 +53,11 @@ function getAnthropicDocumentSource(
  * documents. OpenAI-compatible gateways report an OpenAI-like provider for Claude models.
  */
 function usesAnthropicDocumentCapabilities(provider: Providers, model?: string): boolean {
+  /** Roko: Bridge models (`claude-max*`) never reach the Anthropic API with the file; the
+   *  Bridge copies the original into Claude Code's workspace, so any type is readable. */
+  if (isRokoBridgeModel(model)) {
+    return false;
+  }
   return (
     provider === Providers.ANTHROPIC ||
     (isOpenAILikeProvider(provider) && (model?.toLowerCase().includes('claude') ?? false))

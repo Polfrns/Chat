@@ -16,6 +16,11 @@ nueva versión del paquete raíz.
 - Nextcloud: el botón para elegir archivos de Nextcloud desapareció de la barra de
   texto. v0.8.8 añade un modo de subida unificado (un solo clip) con su propio render,
   y Roko solo pintaba el panel en el menú clásico. Ahora aparece en los dos modos.
+- Documentos con Claude por Bridge: un `.docx` (y cualquier tipo que no sea PDF o texto)
+  hacía fallar el chat con «The attached documents could not be read or encoded». v0.8.8
+  aplica los límites de entrada de documentos de Claude a todo modelo con «claude» en el
+  nombre; el Bridge no usa esa API, copia el original al workspace. Los modelos Bridge
+  quedan exentos y reciben el archivo original, como antes.
 
 La base real no era v0.8.6 como declaraba el paquete, sino el commit intermedio
 `9efe487` (14 de junio de 2026). El historial git ahora lo registra como ancestro y

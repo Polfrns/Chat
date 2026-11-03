@@ -909,6 +909,34 @@ describe('encodeAndFormatDocuments - fileConfig integration', () => {
       expect(mockedGetFileStream).not.toHaveBeenCalled();
     });
 
+    /** Roko: the CLI Bridge copies the original file into Claude Code's workspace instead of
+     *  forwarding it to the Anthropic API, so Claude's document-input limits do not apply. */
+    it.each([
+      [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'cv.docx',
+        'docx-bytes',
+      ],
+      ['text/plain', 'notes.txt', 'hello from test'],
+    ])('sends %s to a Claude Bridge model as the original file', async (mimeType, name, body) => {
+      const req = createMockRequest(30) as ServerRequest;
+      const file = createMockDocFile(1, mimeType, name);
+      const content = Buffer.from(body).toString('base64');
+      mockedGetFileStream.mockResolvedValue({ file, content, metadata: file });
+
+      const result = await encodeAndFormatDocuments(
+        req,
+        [file],
+        { provider: Providers.OPENAI, model: 'claude-max' },
+        mockStrategyFunctions,
+      );
+
+      expect(result.documents).toEqual([
+        { type: 'file', file: { filename: name, file_data: `data:${mimeType};base64,${content}` } },
+      ]);
+      expect(result.files).toHaveLength(1);
+    });
+
     it('should send textual documents as text parts to Claude through an OpenAI-compatible gateway', async () => {
       const req = createMockRequest(30) as ServerRequest;
       const file = createMockDocFile(1, 'text/plain', 'notes.txt');
