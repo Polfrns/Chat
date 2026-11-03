@@ -244,6 +244,28 @@ async function resolveMcpServerNames(req) {
 }
 
 /**
+ * Roko injects its workspace server per request, outside `mcpConfig`, so a context built
+ * from the config snapshot alone never contains it. Tool loading reads server configs and
+ * boundary names from this context: without the workspace here, the agent's `mcp_all` entry
+ * for it resolves to nothing and the chat is rejected as having no MCP tools.
+ * @param {import('@librechat/api').MCPServerContext} context
+ * @param {import('express').Request} req
+ * @returns {import('@librechat/api').MCPServerContext}
+ */
+function withRokoWorkspaceServer(context, req) {
+  const rokoServers = resolveRokoMcpServer(req);
+  const rawNames = Object.keys(rokoServers);
+  if (rawNames.length === 0) {
+    return context;
+  }
+  return {
+    configServers: { ...context.configServers, ...rokoServers },
+    serverNames: [...new Set([...context.serverNames, ...rawNames.map(normalizeServerName)])],
+    rawServerNames: [...new Set([...context.rawServerNames, ...rawNames])],
+  };
+}
+
+/**
  * Config-source servers and all configured names from a single app-config read,
  * so the tool-loading path does not pay two lookups for the same principal.
  * Degrades to empty like `resolveConfigServers` rather than aborting tool loading.
@@ -253,10 +275,11 @@ async function resolveMcpServerNames(req) {
 async function resolveMcpServerContext(req) {
   try {
     const appConfig = await getAppConfigForRequest(req);
-    return await resolveMCPServerContext({
+    const context = await resolveMCPServerContext({
       mcpConfig: appConfig?.mcpConfig || {},
       ensureConfigServers: (mcpConfig) => getMCPServersRegistry().ensureConfigServers(mcpConfig),
     });
+    return withRokoWorkspaceServer(context, req);
   } catch (error) {
     logger.warn(
       '[resolveMcpServerContext] Failed to resolve MCP servers, degrading to empty:',

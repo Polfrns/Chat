@@ -295,6 +295,66 @@ describe('resolveMcpServerContext', () => {
     expect(result).toEqual({ configServers: {}, serverNames: [], rawServerNames: [] });
   });
 
+  describe('Roko workspace server', () => {
+    const rokoEnv = {
+      ROKO_WORKSPACE_URL: 'http://roko-workspace:8080',
+      ROKO_WORKSPACE_KEY: 'k'.repeat(32),
+    };
+    const saved = {};
+    beforeEach(() => {
+      for (const key of Object.keys(rokoEnv)) {
+        saved[key] = process.env[key];
+        process.env[key] = rokoEnv[key];
+      }
+      getAppConfig.mockResolvedValue({ mcpConfig: { srv: {} } });
+      mockRegistry.ensureConfigServers.mockResolvedValue({});
+    });
+    afterEach(() => {
+      for (const key of Object.keys(rokoEnv)) {
+        if (saved[key] === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = saved[key];
+        }
+      }
+    });
+
+    /** The workspace is injected per request, outside `mcpConfig`. Tool loading reads its
+     *  config from this context, so without it the agent's `mcp_all` entry for the workspace
+     *  resolves to nothing and the chat is rejected as having no MCP tools. */
+    it('adds the per-request workspace server to the config servers and names', async () => {
+      const result = await resolveMcpServerContext({
+        user: { id: 'u1' },
+        body: { model: 'gemini-3.5-flash-lite' },
+      });
+
+      expect(result.configServers[Constants.roko_mcp_server]).toEqual(
+        expect.objectContaining({ type: 'streamable-http', url: 'http://roko-workspace:8080/mcp' }),
+      );
+      expect(result.rawServerNames).toEqual(['srv', Constants.roko_mcp_server]);
+      expect(result.serverNames).toContain(Constants.roko_mcp_server);
+    });
+
+    it('leaves the context untouched for Bridge models, which have their own workspace', async () => {
+      const result = await resolveMcpServerContext({
+        user: { id: 'u1' },
+        body: { model: 'claude-max' },
+      });
+
+      expect(result.configServers).toEqual({});
+      expect(result.rawServerNames).toEqual(['srv']);
+    });
+
+    it('does not duplicate the workspace when the operator also configured it', async () => {
+      getAppConfig.mockResolvedValue({ mcpConfig: { [Constants.roko_mcp_server]: {} } });
+
+      const result = await resolveMcpServerContext({ user: { id: 'u1' }, body: {} });
+
+      expect(result.rawServerNames).toEqual([Constants.roko_mcp_server]);
+      expect(result.serverNames).toEqual([Constants.roko_mcp_server]);
+    });
+  });
+
   it('keeps the name lists when only ensureConfigServers throws', async () => {
     /** The name lists derive from the config snapshot alone; losing them
      *  would leave normalized tool keys unresolvable for the whole request —

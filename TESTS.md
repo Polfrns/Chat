@@ -104,6 +104,11 @@ sin simular para que los límites sean los del código compartido.
 borrado del workspace junto al borrado de conversaciones, para todas las
 conversaciones que upstream borra en cascada (hilos de subagentes incluidos).
 
+`api/server/services/__tests__/MCP.spec.js` (`Roko workspace server`) fija que el contexto
+de servidores con el que se cargan las herramientas incluye el workspace inyectado por
+petición (config y nombres), que no lo incluye para modelos Bridge y que no se duplica si el
+operador lo configuró. Sin esto, upstream rechaza el chat por no tener herramientas MCP.
+
 `workspace.spec.ts` comprueba además que la identidad del workspace toma el tenant
 del usuario o, si llega un usuario "seguro" sin `tenantId` (la proyección de
 upstream que alimenta los marcadores MCP y no debe exponerlo), del contexto de

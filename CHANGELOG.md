@@ -6,6 +6,14 @@ nueva versión del paquete raíz.
 
 ## Sin publicar — integración de LibreChat v0.8.8 (2 de noviembre de 2026)
 
+### Corrección tras el primer despliegue (3 de noviembre de 2026)
+
+- Workspace MCP: los chats con modelos sin Bridge fallaban con «The agent is configured
+  to use MCP tools, but none are available». v0.8.8 carga las herramientas MCP desde un
+  contexto nuevo (`resolveMcpServerContext`) que Roko no conocía; el servidor
+  `roko-workspace`, inyectado por petición fuera de `mcpConfig`, no estaba en él. Ahora
+  se incorpora a `configServers` y a los nombres de servidor.
+
 La base real no era v0.8.6 como declaraba el paquete, sino el commit intermedio
 `9efe487` (14 de junio de 2026). El historial git ahora lo registra como ancestro y
 v0.8.8 se integró como merge de tres vías.
