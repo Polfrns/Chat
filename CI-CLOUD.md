@@ -6,6 +6,15 @@ construyen y prueban la imagen. Un push a `main` publica la imagen fijada por
 digest y, tras completar correctamente el build, solicita al runner propio que
 despliegue `api`.
 
+## Workflows heredados de LibreChat
+
+Solo `ci.yml` publica y despliega. Los workflows de upstream que publican imágenes
+o dependen de la infraestructura de LibreChat (Docker Hub, GHCR legacy, Helm, Locize,
+codegraph, promoción `dev`→`main`) se eliminan al integrar cada versión: fallarían
+por falta de secretos y no producen artefactos de Roko. Se conservan los de tests.
+Al actualizar LibreChat, git los reintroduce como conflicto modificar/borrar o como
+archivos nuevos; hay que repetir esta revisión.
+
 ## Flujo
 
 1. `ubuntu-latest` ejecuta `bash ci/cloud-build.sh roko test` en ramas distintas
