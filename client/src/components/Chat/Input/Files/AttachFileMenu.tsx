@@ -24,10 +24,7 @@ import {
   defaultAgentCapabilities,
   isDocumentSupportedProvider,
 } from 'librechat-data-provider';
-import type {
-  TConversation,
-  EndpointFileConfig,
-} from 'librechat-data-provider';
+import type { TConversation, EndpointFileConfig } from 'librechat-data-provider';
 import type { ExtendedFile, FileSetter } from '~/common';
 import {
   useAgentToolPermissions,
@@ -327,51 +324,65 @@ const AttachFileMenu = ({
     }
   };
 
+  /** Roko: the Nextcloud picker sits beside the attach control in both upload modes. */
+  const nextcloudPanel = (
+    <NextcloudPanel
+      conversationId={conversationId}
+      disabled={isUploadDisabled}
+      onAttach={async (selected) => {
+        await handleFiles(selected);
+      }}
+    />
+  );
+
   if (isUnifiedMode) {
     return (
       <>
-        <FileUpload
-          ref={inputRef}
-          handleFileChange={(e) => {
-            handleFileChange(e, toolResourceRef.current);
-          }}
-        >
-          {sharePointEnabled === true ? (
-            <DropdownPopup
-              menuId="attach-file-menu"
-              className="overflow-visible"
-              isOpen={isPopoverActive}
-              setIsOpen={setIsPopoverActive}
-              modal={false}
-              portal={true}
-              unmountOnHide={true}
-              trigger={menuTrigger}
-              items={unifiedSourceItems}
-              iconClassName="mr-0"
-            />
-          ) : (
-            <TooltipAnchor
-              render={
-                <IconButton
-                  type="button"
-                  size="theme"
-                  shape="theme"
-                  disabled={isUploadDisabled}
-                  id="attach-file-button"
-                  label={localize('com_sidepanel_attach_files')}
-                  onClick={handleUnifiedUpload}
-                  aria-keyshortcuts={uploadFileAriaKey}
-                  className="p-1 hover:bg-surface-composer-hover"
-                >
-                  <AttachmentIcon />
-                </IconButton>
-              }
-              id="attach-file-button"
-              description={uploadFileTooltip}
-              disabled={isUploadDisabled}
-            />
-          )}
-        </FileUpload>
+        <div className="flex items-center gap-1">
+          {nextcloudPanel}
+          <FileUpload
+            ref={inputRef}
+            handleFileChange={(e) => {
+              handleFileChange(e, toolResourceRef.current);
+            }}
+          >
+            {sharePointEnabled === true ? (
+              <DropdownPopup
+                menuId="attach-file-menu"
+                className="overflow-visible"
+                isOpen={isPopoverActive}
+                setIsOpen={setIsPopoverActive}
+                modal={false}
+                portal={true}
+                unmountOnHide={true}
+                trigger={menuTrigger}
+                items={unifiedSourceItems}
+                iconClassName="mr-0"
+              />
+            ) : (
+              <TooltipAnchor
+                render={
+                  <IconButton
+                    type="button"
+                    size="theme"
+                    shape="theme"
+                    disabled={isUploadDisabled}
+                    id="attach-file-button"
+                    label={localize('com_sidepanel_attach_files')}
+                    onClick={handleUnifiedUpload}
+                    aria-keyshortcuts={uploadFileAriaKey}
+                    className="p-1 hover:bg-surface-composer-hover"
+                  >
+                    <AttachmentIcon />
+                  </IconButton>
+                }
+                id="attach-file-button"
+                description={uploadFileTooltip}
+                disabled={isUploadDisabled}
+              />
+            )}
+          </FileUpload>
+        </div>
         <SharePointPickerDialog
           isOpen={isSharePointDialogOpen}
           onOpenChange={setIsSharePointDialogOpen}
@@ -387,13 +398,7 @@ const AttachFileMenu = ({
   return (
     <>
       <div className="flex items-center gap-1">
-        <NextcloudPanel
-          conversationId={conversationId}
-          disabled={isUploadDisabled}
-          onAttach={async (selected) => {
-            await handleFiles(selected);
-          }}
-        />
+        {nextcloudPanel}
         <FileUpload
           ref={inputRef}
           handleFileChange={(e) => {

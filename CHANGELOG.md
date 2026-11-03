@@ -13,6 +13,9 @@ nueva versión del paquete raíz.
   contexto nuevo (`resolveMcpServerContext`) que Roko no conocía; el servidor
   `roko-workspace`, inyectado por petición fuera de `mcpConfig`, no estaba en él. Ahora
   se incorpora a `configServers` y a los nombres de servidor.
+- Nextcloud: el botón para elegir archivos de Nextcloud desapareció de la barra de
+  texto. v0.8.8 añade un modo de subida unificado (un solo clip) con su propio render,
+  y Roko solo pintaba el panel en el menú clásico. Ahora aparece en los dos modos.
 
 La base real no era v0.8.6 como declaraba el paquete, sino el commit intermedio
 `9efe487` (14 de junio de 2026). El historial git ahora lo registra como ancestro y

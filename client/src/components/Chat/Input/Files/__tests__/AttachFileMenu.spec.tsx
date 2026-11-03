@@ -27,10 +27,10 @@ jest.mock('~/components/SharePoint', () => ({
   SharePointPickerDialog: () => null,
 }));
 
-/* NextcloudPanel needs AuthContext; it is out of scope for these menu tests. */
+/* NextcloudPanel needs AuthContext; a marker is enough to prove where it renders. */
 jest.mock('~/components/Nextcloud/NextcloudPanel', () => ({
   __esModule: true,
-  default: () => null,
+  default: () => <div data-testid="nextcloud-panel" />,
 }));
 
 jest.mock('@librechat/client', () => {
@@ -168,6 +168,20 @@ function openMenu() {
 
 describe('AttachFileMenu', () => {
   beforeEach(jest.clearAllMocks);
+
+  /** Roko: the Nextcloud picker sits beside the attach control in every upload mode. v0.8.8's
+   *  unified mode returns its own single-button layout, which first shipped without it. */
+  describe('Nextcloud picker', () => {
+    it.each([
+      ['unified mode', true],
+      ['the destination menu', false],
+    ])('is available in %s', (_label, isUnifiedMode) => {
+      setupMocks();
+      renderMenu({ isUnifiedMode });
+
+      expect(screen.getByTestId('nextcloud-panel')).toBeInTheDocument();
+    });
+  });
 
   describe('unified mode upload sources', () => {
     it('uses a single upload button when SharePoint is disabled', () => {
