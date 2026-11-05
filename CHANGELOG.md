@@ -15,6 +15,12 @@ nueva versión del paquete raíz.
   ficheros propios y de upstream modificados. Sustituye a `MODIFIED-FILES.json`, que se elimina (listaba
   17 ficheros de la 0.7.2; la superficie real son 123 propios y 183 modificados).
 
+- Se retira `packages/roko-server` (prototipo de filestores sin uso en ejecución, 19 ficheros). Desaparecen
+  `better-sqlite3` (módulo nativo, causa de que `npm install` fallara sin compilador), `tsx` y `esbuild`;
+  el lock pierde 1.111 líneas y no cambia ninguna versión. Salen sus líneas `COPY` de los dos Dockerfile y
+  su entrada de `allowScripts`. El compilador (`make g++`) se mantiene en los Dockerfile hasta poder
+  verificar una construcción sin él.
+
 ### Corrección tras el primer despliegue (3 de noviembre de 2026)
 
 - Workspace MCP: los chats con modelos sin Bridge fallaban con «The agent is configured

@@ -21,7 +21,8 @@ RUN uv --version
 
 RUN mkdir -p /app && chown node:node /app
 
-# Build stage: native addons (better-sqlite3) need make/g++.
+# Build stage. make/g++ were needed by better-sqlite3 (packages/roko-server, removed). No remaining
+# dependency compiles native code; they stay until a build without them has been verified.
 FROM runtime AS node
 RUN apk add --no-cache make g++
 
@@ -41,7 +42,6 @@ COPY --chown=node:node packages/data-provider/package.json ./packages/data-provi
 COPY --chown=node:node packages/data-schemas/package.json ./packages/data-schemas/package.json
 COPY --chown=node:node packages/api/package.json ./packages/api/package.json
 COPY --chown=node:node packages/client/package.json ./packages/client/package.json
-COPY --chown=node:node packages/roko-server/package.json ./packages/roko-server/package.json
 
 RUN \
     # Allow mounting of these files, which have no default

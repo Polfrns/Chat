@@ -28,7 +28,6 @@ RUN npm config set fetch-retry-maxtimeout 600000 && \
 COPY package*.json ./
 COPY packages/data-provider/package*.json ./packages/data-provider/
 COPY packages/api/package*.json ./packages/api/
-COPY packages/roko-server/package.json ./packages/roko-server/package.json
 COPY packages/data-schemas/package*.json ./packages/data-schemas/
 COPY packages/client/package*.json ./packages/client/
 COPY client/package*.json ./client/
@@ -39,7 +38,8 @@ FROM base-min AS base
 ARG NPM_CI_TIMEOUT_SECONDS=1500
 ARG NPM_CI_ATTEMPTS=2
 WORKDIR /app
-# better-sqlite3 has no musl prebuild for every Node release, so it may compile from source.
+# Toolchain kept for native addons without a musl prebuild; better-sqlite3 (removed) was the only one
+# that needed it. Drop it once a build without it has been verified.
 RUN apk add --no-cache python3 make g++
 RUN attempt=1; \
     until timeout "$NPM_CI_TIMEOUT_SECONDS" npm ci; do \

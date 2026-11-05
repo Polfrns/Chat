@@ -159,6 +159,18 @@ acceso real a las suscripciones ni al servidor de producción.
 
 ## Evidencia y mantenimiento
 
+### Fase 0 y retirada de `roko-server` — 6 de noviembre de 2026
+
+Windows, Node 24.22.1. `sh ci/test.sh` completo en verde: 26 + 3 pruebas Node y Jest de 8 suites /
+42 tests (cliente), 10 / 64 (`packages/api`) y 11 / 296 (`api`). Con `esbuild` apartado de `node_modules`
+(así queda el árbol tras retirar `roko-server`) se compilaron `data-provider`, `data-schemas`, `api` y el
+cliente, y se repitió la CI completa.
+
+**No se ejecutó la etapa `ci` del Dockerfile (Alpine):** Docker no estaba arrancado en esa máquina. Los 12
+tests añadidos a la CI pasan en Windows y no usan Mongo en memoria ni procesos, pero no se ha visto que
+pasen en Linux. La primera construcción de la imagen en el NAS es su verificación; si falla, la etapa
+`ci` impide generar la imagen y el contenedor en marcha no se toca.
+
 ### Integración de LibreChat v0.8.8 — 2 de noviembre de 2026
 
 Windows, Node 24.22.1, npm 11.19.1. `npm install --ignore-scripts` (sin compilador

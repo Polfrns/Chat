@@ -67,7 +67,6 @@ compilados requiere reconstruir la imagen; reiniciar el contenedor no lo compila
 ### Guías específicas
 
 - [Esquemas de datos](packages/data-schemas/README.md) y [experimentos FerretDB](packages/data-schemas/misc/ferretdb/ferretdb-multitenancy-plan.md).
-- [Servicio local heredado](packages/roko-server/README.md).
 - [Temas de UI](packages/client/src/theme/README.md) y [traducciones](client/src/locales/README.md).
 - [Utilidad de traducción heredada](config/translations/README.md).
 - [Skills de despliegue](skill/README.md), [E2E](e2e/README.md) y [Redis de desarrollo](redis-config/README.md).
