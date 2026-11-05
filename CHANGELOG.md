@@ -6,6 +6,15 @@ nueva versión del paquete raíz.
 
 ## Sin publicar — integración de LibreChat v0.8.8 (2 de noviembre de 2026)
 
+### Fase 0 del plan de mantenibilidad (6 de noviembre de 2026)
+
+- CI: 12 tests de Roko que no se ejecutaban entran en la selección (Nextcloud, salidas de Bridge, Claude
+  nativo, propiedad de las generaciones, vistas previas y enlaces de archivos). La lista sale de
+  `ci/test.sh` a `ci/roko-tests.txt`. Siguen fuera, con su motivo, los dos que necesitan Mongo en memoria.
+- Se registra la base de upstream en `UPSTREAM-BASE`, y `scripts/roko-surface.cjs` genera la lista de
+  ficheros propios y de upstream modificados. Sustituye a `MODIFIED-FILES.json`, que se elimina (listaba
+  17 ficheros de la 0.7.2; la superficie real son 123 propios y 183 modificados).
+
 ### Corrección tras el primer despliegue (3 de noviembre de 2026)
 
 - Workspace MCP: los chats con modelos sin Bridge fallaban con «The agent is configured

@@ -1,0 +1,46 @@
+# Tests de Jest que ejecuta la CI (ci/test.sh) por espacio de trabajo.
+# Formato: <espacio de trabajo> <ruta del test relativa a ese espacio de trabajo>
+# Es la única lista: `sh ci/test.sh` ejecuta todo y `sh ci/test.sh seams` solo los
+# tests de enganche (los que se llaman «Roko hook: ...»). Añade aquí cualquier test nuevo.
+
+# --- Cliente ---
+client src/components/Chat/Messages/Content/__tests__/bridgeToolRecords.test.ts
+client src/components/Chat/Messages/Content/__tests__/BridgeToolReasoning.test.tsx
+client src/components/Skills/__tests__/SkillDeletionRequests.spec.tsx
+client src/hooks/Messages/__tests__/useSubmitMessage.spec.ts
+client src/components/Chat/Messages/Content/__tests__/FilePreviewDialog.test.tsx
+client src/components/Chat/Messages/Content/__tests__/MarkdownFileLinks.test.tsx
+client src/utils/__tests__/filePreview.test.ts
+client src/utils/__tests__/messageFileLinks.test.ts
+
+# --- packages/api ---
+packages/api src/utils/rokoBridge.spec.ts
+packages/api src/telemetry/sdk.spec.ts
+packages/api src/roko/client.spec.ts
+packages/api src/roko/workspace.spec.ts
+packages/api src/roko/workspaceContext.spec.ts
+packages/api src/skills/__tests__/deletionRequests.test.ts
+# Claude nativo (OAuth, cliente) y propiedad de las generaciones: seguridad.
+packages/api src/endpoints/claude/fetch.spec.ts
+packages/api src/endpoints/claude/llm.spec.ts
+packages/api src/endpoints/claude/oauth.spec.ts
+packages/api src/stream/__tests__/ownedGeneration.test.ts
+
+# --- api ---
+api server/utils/__tests__/runMiddlewareChain.spec.js
+api server/services/MCP.spec.js
+api server/services/Tools/mcp.spec.js
+api server/services/initializeMCPs.spec.js
+api server/routes/__tests__/convos.spec.js
+api app/clients/tools/structured/specs/SkillLibrary.spec.js
+api app/clients/tools/structured/specs/WorkspaceTransfer.spec.js
+# Nextcloud: credenciales, WebDAV y escritura con confirmación; salidas de Bridge.
+api server/routes/nextcloudAuth.spec.js
+api server/services/Nextcloud/service.spec.js
+api server/services/Nextcloud/webdav.spec.js
+api server/services/Files/output.spec.js
+
+# FUERA DE CI a propósito: necesitan mongodb-memory-server, que no tiene binarios para la imagen
+# Alpine. Se ejecutan a mano en un entorno con Mongo (ver TESTS.md):
+#   api/server/routes/__tests__/skills-library.spec.js
+#   packages/api/src/endpoints/claude/tokens.spec.ts

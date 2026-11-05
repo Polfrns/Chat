@@ -1,0 +1,7 @@
+# Versión de LibreChat sobre la que está Roko. La lee scripts/roko-surface.cjs.
+# Actualízalo en el mismo commit que integra una versión nueva (ver ROKO-UPGRADE.md).
+UPSTREAM_REPO=https://github.com/LibreChat-AI/LibreChat.git
+UPSTREAM_TAG=v0.8.8
+UPSTREAM_COMMIT=e8f3be08623663d4ad7f7241e693c94469b63bb0
+# Commit de LibreChat desde el que se importó Roko (ancestro registrado en el historial).
+FIRST_RECORDED_ANCESTOR=9efe4878e7251d3b66d0ece7135706fdacf5a334

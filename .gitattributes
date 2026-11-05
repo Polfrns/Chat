@@ -5,4 +5,5 @@
 # CI shell scripts execute on Linux.
 ci/*.sh text eol=lf
 ci/*.py text eol=lf
+ci/*.txt text eol=lf
 Dockerfile text eol=lf

@@ -8,6 +8,10 @@ La revisión documental del 20 de octubre de 2026 no ejecuta suites de aplicaci�
 
 La fuente es [ci/test.sh](ci/test.sh), ejecutada por la etapa `ci` del Dockerfile.
 La imagen de producción depende de esa etapa y de la compilación del frontend.
+La lista de tests de Jest vive en un único fichero, [ci/roko-tests.txt](ci/roko-tests.txt)
+(`<espacio de trabajo> <ruta>`): para añadir un test a la CI se añade una línea ahí.
+`sh ci/test.sh seams` ejecuta solo los tests de enganche (los que se llaman
+`Roko hook: ...`; ver [ROKO-UPGRADE.md](ROKO-UPGRADE.md)).
 
 | Grupo seleccionado | Invariante protegida |
 | --- | --- |
@@ -28,9 +32,15 @@ La imagen de producción depende de esa etapa y de la compilación del frontend.
 | `packages/api/src/skills/__tests__/deletionRequests.test.ts` | Una solicitud de borrado de skill solo la ve y decide su usuario; la decisión no cambia y sin respuesta no hay decisión |
 | `api/server/utils/__tests__/runMiddlewareChain.spec.js` | Los guards de ruta se ejecutan en orden, uno que responde detiene la cadena y los errores se propagan |
 | `api/app/clients/tools/structured/specs/SkillLibrary.spec.js` | `skill_library` solo borra tras aprobación explícita (rechazo o timeout conservan), no abre popup para skills inaccesibles y edita con control de versión |
-| `api/server/routes/__tests__/skills-library.spec.js` (fuera de CI: necesita `mongodb-memory-server`, sin binarios para la imagen Alpine) | Con Mongo y permisos reales: rutas REST de skills tras el refactor, el chat crea/edita, el borrado solo ocurre tras aprobar el popup, otro usuario no ve ni puede pedir borrar skills ajenas ni decidir solicitudes ajenas |
+| `api/server/routes/__tests__/skills-library.spec.js` y `packages/api/src/endpoints/claude/tokens.spec.ts` (fuera de CI: necesitan `mongodb-memory-server`, sin binarios para la imagen Alpine) | Con Mongo y permisos reales: rutas REST de skills tras el refactor, el chat crea/edita, el borrado solo ocurre tras aprobar el popup, otro usuario no ve ni puede pedir borrar skills ajenas ni decidir solicitudes ajenas |
 | `SkillDeletionRequests.spec.tsx` | El popup muestra la skill y envía la decisión explícita del usuario |
 | `useSubmitMessage.spec.ts` | Un envío bloqueado se propaga a quien llama (dictado) para que conserve el texto |
+| `api/server/services/Nextcloud/{webdav,service}.spec.js`, `api/server/routes/nextcloudAuth.spec.js` | Rutas bajo el UID del usuario y sin traversal, XML con entidades rechazado, límites de descarga, redirecciones no aceptadas; ninguna escritura antes de aprobar, consulta ligada a propietario y tenant, ETag sin sobrescritura silenciosa; flujo de navegador con cookie, origen y tenant, sin secretos en las respuestas |
+| `api/server/services/Files/output.spec.js` | Las salidas de archivo del Bridge se reconocen solo en un payload válido; el texto normal del asistente no se toca |
+| `packages/api/src/endpoints/claude/{fetch,llm,oauth}.spec.ts` | Claude nativo: el cliente sustituye la clave por el bearer OAuth y antepone la identidad de Claude Code sin duplicarla; PKCE S256 y URL de autorización; pegado de código |
+| `packages/api/src/stream/__tests__/ownedGeneration.test.ts` | Solo el dueño (y su tenant) puede parar una generación; la de otro usuario se comporta como inexistente |
+| `FilePreviewDialog.test.tsx`, `filePreview.test.ts` | Vista previa de Office convertido en iframe aislado sin scripts, texto extraído nunca como HTML, tipos MIME normalizados |
+| `MarkdownFileLinks.test.tsx`, `messageFileLinks.test.ts` | Un enlace a un documento generado descarga el archivo de esa respuesta; nombres ambiguos, externos o con traversal no se resuelven |
 
 Los dos tests de exportación activan tracing sobre receptores de prueba; las
 otras pruebas Node lo desactivan. No requieren las credenciales de Langfuse de
