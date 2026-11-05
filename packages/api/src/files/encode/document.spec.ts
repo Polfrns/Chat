@@ -918,7 +918,7 @@ describe('encodeAndFormatDocuments - fileConfig integration', () => {
         'docx-bytes',
       ],
       ['text/plain', 'notes.txt', 'hello from test'],
-    ])('sends %s to a Claude Bridge model as the original file', async (mimeType, name, body) => {
+    ])('Roko hook: sends %s to a Claude Bridge model as the original file', async (mimeType, name, body) => {
       const req = createMockRequest(30) as ServerRequest;
       const file = createMockDocFile(1, mimeType, name);
       const content = Buffer.from(body).toString('base64');

@@ -1930,4 +1930,30 @@ describe('useFileHandling', () => {
       consoleLog.mockRestore();
     });
   });
+
+  /**
+   * Los modelos Bridge reciben el documento original (el CLI lo lee él mismo); el servidor decide por el
+   * modelo, y el cliente tiene que pedirlo con `preserve_original`. Si una actualización reescribe
+   * cómo se arma el FormData, el Bridge volvería a recibir texto extraído sin ningún error.
+   */
+  describe('Roko hook: subir el original a modelos Bridge', () => {
+    const upload = async (model: string) => {
+      mockConversation = { conversationId: 'convo-1', endpoint: 'Claude Max', model };
+      const useFileHandling = await loadHook();
+      const { result } = renderHook(() => useFileHandling());
+      await act(async () => {
+        await result.current.handleFiles([new File(['hola'], 'notas.txt', { type: 'text/plain' })]);
+      });
+      expect(mockMutate).toHaveBeenCalledTimes(1);
+      return mockMutate.mock.calls[0][0] as FormData;
+    };
+
+    it.each(['claude-max', 'gpt-codex'])('pide el original con el modelo %s', async (model) => {
+      expect((await upload(model)).get('preserve_original')).toBe('true');
+    });
+
+    it('no lo pide con un modelo que no es Bridge', async () => {
+      expect((await upload('gpt-4o')).get('preserve_original')).toBeNull();
+    });
+  });
 });

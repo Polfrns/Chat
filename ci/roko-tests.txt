@@ -1,44 +1,68 @@
 # Tests de Jest que ejecuta la CI (ci/test.sh) por espacio de trabajo.
-# Formato: <espacio de trabajo> <ruta del test relativa a ese espacio de trabajo>
-# Es la única lista: `sh ci/test.sh` ejecuta todo y `sh ci/test.sh seams` solo los
-# tests de enganche (los que se llaman «Roko hook: ...»). Añade aquí cualquier test nuevo.
+# Formato: <espacio de trabajo> <ruta del test relativa a ese espacio de trabajo> [roko]
+#   roko  el fichero es enteramente de Roko: `sh ci/test.sh seams` lo ejecuta completo.
+#         Sin esa marca es un test de upstream con tests de Roko dentro: `seams` ejecuta
+#         solo los que se llaman «Roko hook: ...».
+# Es la única lista: `sh ci/test.sh` ejecuta todo. Añade aquí cualquier test nuevo.
 
 # --- Cliente ---
-client src/components/Chat/Messages/Content/__tests__/bridgeToolRecords.test.ts
-client src/components/Chat/Messages/Content/__tests__/BridgeToolReasoning.test.tsx
-client src/components/Skills/__tests__/SkillDeletionRequests.spec.tsx
+client src/components/Chat/Messages/Content/__tests__/bridgeToolRecords.test.ts roko
+client src/components/Chat/Messages/Content/__tests__/BridgeToolReasoning.test.tsx roko
+client src/components/Skills/__tests__/SkillDeletionRequests.spec.tsx roko
 client src/hooks/Messages/__tests__/useSubmitMessage.spec.ts
-client src/components/Chat/Messages/Content/__tests__/FilePreviewDialog.test.tsx
-client src/components/Chat/Messages/Content/__tests__/MarkdownFileLinks.test.tsx
-client src/utils/__tests__/filePreview.test.ts
-client src/utils/__tests__/messageFileLinks.test.ts
+client src/components/Chat/Messages/Content/__tests__/FilePreviewDialog.test.tsx roko
+client src/components/Chat/Messages/Content/__tests__/MarkdownFileLinks.test.tsx roko
+client src/utils/__tests__/filePreview.test.ts roko
+client src/utils/__tests__/messageFileLinks.test.ts roko
+client src/components/Nav/Settings/__tests__/rokoWorkspaceSetting.spec.ts roko
+client src/hooks/Chat/__tests__/useChatWebSearch.spec.tsx roko
+client src/components/Chat/Input/Files/__tests__/AttachFileMenu.spec.tsx
+client src/hooks/Files/__tests__/useFileHandling.test.ts
+client src/components/Chat/Messages/Content/__tests__/ContentParts.test.tsx
+client src/components/Chat/__tests__/Footer.spec.tsx
+client src/components/Chat/__tests__/Landing.agent-contact.spec.tsx
+client src/components/Nav/Settings/__tests__/registry.spec.ts
+
+# --- packages/data-provider ---
+packages/data-provider src/bridgeModels.spec.ts roko
 
 # --- packages/api ---
-packages/api src/utils/rokoBridge.spec.ts
+packages/api src/utils/rokoBridge.spec.ts roko
 packages/api src/telemetry/sdk.spec.ts
-packages/api src/roko/client.spec.ts
-packages/api src/roko/workspace.spec.ts
-packages/api src/roko/workspaceContext.spec.ts
-packages/api src/skills/__tests__/deletionRequests.test.ts
+packages/api src/roko/client.spec.ts roko
+packages/api src/roko/workspace.spec.ts roko
+packages/api src/roko/workspaceContext.spec.ts roko
+packages/api src/skills/__tests__/deletionRequests.test.ts roko
 # Claude nativo (OAuth, cliente) y propiedad de las generaciones: seguridad.
-packages/api src/endpoints/claude/fetch.spec.ts
-packages/api src/endpoints/claude/llm.spec.ts
-packages/api src/endpoints/claude/oauth.spec.ts
-packages/api src/stream/__tests__/ownedGeneration.test.ts
+packages/api src/endpoints/claude/fetch.spec.ts roko
+packages/api src/endpoints/claude/llm.spec.ts roko
+packages/api src/endpoints/claude/oauth.spec.ts roko
+packages/api src/stream/__tests__/ownedGeneration.test.ts roko
+packages/api src/roko/agentTools.spec.ts roko
+packages/api src/roko/safeUser.spec.ts roko
+packages/api src/utils/env.spec.ts
+packages/api src/files/encode/document.spec.ts
 
 # --- api ---
-api server/utils/__tests__/runMiddlewareChain.spec.js
+
+api server/utils/__tests__/runMiddlewareChain.spec.js roko
 api server/services/MCP.spec.js
 api server/services/Tools/mcp.spec.js
 api server/services/initializeMCPs.spec.js
 api server/routes/__tests__/convos.spec.js
-api app/clients/tools/structured/specs/SkillLibrary.spec.js
-api app/clients/tools/structured/specs/WorkspaceTransfer.spec.js
+api app/clients/tools/structured/specs/SkillLibrary.spec.js roko
+api app/clients/tools/structured/specs/WorkspaceTransfer.spec.js roko
+api app/clients/prompts/restoreBridgeOutputs.spec.js roko
+api server/middleware/abortMiddleware.spec.js
+api server/controllers/agents/__tests__/callbacks.spec.js
+api server/services/__tests__/MCP.spec.js
+api server/services/AuthService.spec.js
+api server/services/Files/process.spec.js
 # Nextcloud: credenciales, WebDAV y escritura con confirmación; salidas de Bridge.
-api server/routes/nextcloudAuth.spec.js
-api server/services/Nextcloud/service.spec.js
-api server/services/Nextcloud/webdav.spec.js
-api server/services/Files/output.spec.js
+api server/routes/nextcloudAuth.spec.js roko
+api server/services/Nextcloud/service.spec.js roko
+api server/services/Nextcloud/webdav.spec.js roko
+api server/services/Files/output.spec.js roko
 
 # FUERA DE CI a propósito: necesitan mongodb-memory-server, que no tiene binarios para la imagen
 # Alpine. Se ejecutan a mano en un entorno con Mongo (ver TESTS.md):

@@ -282,7 +282,7 @@ describe('abortMiddleware - handleAbort billing', () => {
   });
 });
 
-describe('abortMiddleware - stop ownership', () => {
+describe('Roko hook: abortMiddleware - stop ownership', () => {
   const notFound = { success: false, jobData: null, content: [], text: '', collectedUsage: [] };
   const buildReq = (user) => ({ body: { abortKey: 'convo-123:msg', endpoint: 'agents' }, user });
   const buildRes = () => {

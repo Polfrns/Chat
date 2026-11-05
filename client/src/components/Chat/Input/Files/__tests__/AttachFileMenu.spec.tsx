@@ -171,7 +171,7 @@ describe('AttachFileMenu', () => {
 
   /** Roko: the Nextcloud picker sits beside the attach control in every upload mode. v0.8.8's
    *  unified mode returns its own single-button layout, which first shipped without it. */
-  describe('Nextcloud picker', () => {
+  describe('Roko hook: selector de Nextcloud', () => {
     it.each([
       ['unified mode', true],
       ['the destination menu', false],

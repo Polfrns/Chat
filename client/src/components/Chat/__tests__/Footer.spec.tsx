@@ -23,7 +23,7 @@ jest.mock('~/hooks', () => ({
 }));
 
 describe('Footer', () => {
-  test('opens the default Roko site link in a new tab', () => {
+  test('Roko hook: opens the default Roko site link in a new tab', () => {
     render(<Footer startupConfig={null} />);
     const link = screen.getByRole('link', { name: /Roko/ });
     expect(link).toHaveAttribute('href', 'https://www.leedeo.es');

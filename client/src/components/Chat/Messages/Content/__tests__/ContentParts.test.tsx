@@ -231,7 +231,7 @@ describe('ContentParts — interim skill cards', () => {
     expect(screen.getByTestId('workspace-changes')).toHaveAttribute('data-count', '1');
   });
 
-  it('renders Roko bridge outputs at message level, outside any tool part', () => {
+  it('Roko hook: renders Roko bridge outputs at message level, outside any tool part', () => {
     const output = {
       filename: 'answer.docx',
       filepath: '/api/files/answer.docx',
@@ -245,7 +245,7 @@ describe('ContentParts — interim skill cards', () => {
     expect(screen.getByTestId('attachment-group')).toHaveAttribute('data-count', '1');
   });
 
-  it('does not treat ordinary tool attachments as bridge outputs', () => {
+  it('Roko hook: does not treat ordinary tool attachments as bridge outputs', () => {
     const toolFile = {
       filename: 'chart.png',
       filepath: '/api/files/chart.png',

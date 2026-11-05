@@ -21,6 +21,17 @@ nueva versión del paquete raíz.
   su entrada de `allowScripts`. El compilador (`make g++`) se mantiene en los Dockerfile hasta poder
   verificar una construcción sin él.
 
+### Fase 2 del plan de mantenibilidad (6 de noviembre de 2026)
+
+- Tests de enganche nuevos (nombre `Roko hook: ...`): herramientas inyectadas en el agente, usuario seguro
+  sin tenant, búsqueda web de Bridge, interruptor del workspace en ajustes, `preserve_original` en subidas,
+  workspace en `resolveConfigServers`, lista de modelos Bridge y restauración de salidas de Bridge.
+- Los tests de Roko ya existentes se renombran a `Roko hook: ...`. `sh ci/test.sh seams` ejecuta solo los
+  enganches. La CI pasa a incluir 14 suites más (upstream con reglas de Roko dentro).
+- La inyección de Nextcloud y skills en el agente pasa a `packages/api/src/roko/agentTools.ts`
+  (mismo comportamiento, comprobado con 54 combinaciones).
+- Nuevo [ROKO-UPGRADE.md](ROKO-UPGRADE.md): procedimiento de actualización y tabla de enganches.
+
 ### Corrección tras el primer despliegue (3 de noviembre de 2026)
 
 - Workspace MCP: los chats con modelos sin Bridge fallaban con «The agent is configured

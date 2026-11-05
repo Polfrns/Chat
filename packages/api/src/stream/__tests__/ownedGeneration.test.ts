@@ -29,7 +29,7 @@ class FakeJobManager {
 
 const control = (manager: FakeJobManager) => manager as unknown as OwnedGenerationControl;
 
-describe('abortOwnedGeneration', () => {
+describe('Roko hook: abortOwnedGeneration', () => {
   it("stops the caller's own run", async () => {
     const manager = new FakeJobManager();
     await expect(abortOwnedGeneration('s1', { id: 'u1' }, control(manager))).resolves.toMatchObject(

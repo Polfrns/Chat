@@ -226,7 +226,7 @@ describe('initializeMCPs', () => {
     });
   });
 
-  describe('Roko workspace SSRF exemption', () => {
+  describe('Roko hook: exención SSRF del workspace', () => {
     it('allows only the configured Docker service host and port', async () => {
       process.env.ROKO_WORKSPACE_URL = 'http://roko-workspace:8080';
       mockGetAppConfig.mockResolvedValue({

@@ -269,6 +269,46 @@ describe('resolveConfigServers', () => {
   });
 });
 
+describe('Roko hook: servidor del workspace en resolveConfigServers', () => {
+  const rokoEnv = { ROKO_WORKSPACE_URL: 'http://roko-workspace:8080', ROKO_WORKSPACE_KEY: 'k'.repeat(32) };
+  const saved = {};
+  beforeEach(() => {
+    jest.clearAllMocks();
+    for (const key of Object.keys(rokoEnv)) {
+      saved[key] = process.env[key];
+      process.env[key] = rokoEnv[key];
+    }
+    getAppConfig.mockResolvedValue({ mcpConfig: { srv: {} } });
+    mockRegistry.ensureConfigServers.mockResolvedValue({ srv: { name: 'srv' } });
+  });
+  afterEach(() => {
+    for (const key of Object.keys(rokoEnv)) {
+      if (saved[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = saved[key];
+      }
+    }
+  });
+
+  /** Es el segundo camino de upstream hacia la misma lista: si deja de añadir el workspace, las
+   *  herramientas se cargan sin él y el chat falla sin error claro. */
+  it('añade el workspace a los servidores de la petición', async () => {
+    const result = await resolveConfigServers({ user: { id: 'u1' }, body: { model: 'gemini-3.5-flash-lite' } });
+
+    expect(result.srv).toEqual({ name: 'srv' });
+    expect(result[Constants.roko_mcp_server]).toEqual(
+      expect.objectContaining({ type: 'streamable-http', url: 'http://roko-workspace:8080/mcp' }),
+    );
+  });
+
+  it('no lo añade a los modelos Bridge, que tienen su propio workspace', async () => {
+    const result = await resolveConfigServers({ user: { id: 'u1' }, body: { model: 'claude-max' } });
+
+    expect(result).toEqual({ srv: { name: 'srv' } });
+  });
+});
+
 describe('resolveMcpServerContext', () => {
   beforeEach(() => jest.clearAllMocks());
 
@@ -295,7 +335,7 @@ describe('resolveMcpServerContext', () => {
     expect(result).toEqual({ configServers: {}, serverNames: [], rawServerNames: [] });
   });
 
-  describe('Roko workspace server', () => {
+  describe('Roko hook: servidor del workspace en el contexto MCP', () => {
     const rokoEnv = {
       ROKO_WORKSPACE_URL: 'http://roko-workspace:8080',
       ROKO_WORKSPACE_KEY: 'k'.repeat(32),

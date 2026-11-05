@@ -6,7 +6,7 @@ const configured: NodeJS.ProcessEnv = {
   ROKO_WORKSPACE_KEY: 'k'.repeat(32),
 };
 
-describe('Roko workspace MCP selection', () => {
+describe('Roko hook: selección del workspace MCP', () => {
   it('is globally enabled by default for models without Bridge workspace', () => {
     expect(
       isRokoWorkspaceEnabled({ user: { id: 'user-1' }, model: 'gpt-4o', env: configured }),
@@ -47,7 +47,7 @@ describe('Roko workspace MCP selection', () => {
   });
 });
 
-describe('Roko workspace identity', () => {
+describe('Roko hook: identidad del workspace', () => {
   it('prefers the tenant carried by the user', () => {
     expect(
       rokoWorkspaceIdentity({ user: { id: 'user-1', tenantId: 'tenant-a' }, conversationId: 'c1' }),

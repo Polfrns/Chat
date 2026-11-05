@@ -1,3 +1,4 @@
+export * from './agentTools';
 export * from './client';
 export * from './context';
 export * from './workspace';

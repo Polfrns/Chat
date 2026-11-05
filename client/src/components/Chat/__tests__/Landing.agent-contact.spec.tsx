@@ -198,7 +198,7 @@ describe('Landing temporary chat empty state', () => {
     expect(screen.queryByText('Contact:')).not.toBeInTheDocument();
   });
 
-  it('keeps the normal greeting when temporary chat is off', () => {
+  it('Roko hook: keeps the normal greeting when temporary chat is off', () => {
     renderLanding();
 
     expect(screen.getByText('Welcome')).toBeInTheDocument();

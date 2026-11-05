@@ -41,6 +41,7 @@ const {
   encodeAndFormatVideos,
   extractFileContext,
   createScheduleUpstreamTokenProviderResolver,
+  addRokoAgentTools,
 } = require('@librechat/api');
 const {
   ResourceType,
@@ -55,7 +56,6 @@ const {
   MAX_SUBAGENT_GRAPH_NODES,
   MAX_SUBAGENT_RUN_CONFIGS,
   isEphemeralAgentId,
-  SKILL_LIBRARY_TOOL_NAME,
   resolveAllowedStatefulCodeEnvironments,
 } = require('librechat-data-provider');
 const {
@@ -633,14 +633,12 @@ const initializeClientWithProvider = async ({
     req.body.codeWorkspaces = codeEnvironmentDecision.codeWorkspaces;
   }
   delete endpointOption.agent;
-  // Add only to the request's chat agent; memory workers keep their own tool scope.
-  const rokoTools = [
-    ...(process.env.NEXTCLOUD_URL ? ['nextcloud_files'] : []),
-    // The tool re-checks the user's skill permissions on every call.
-    ...(appConfig?.interfaceConfig?.skills?.create !== false ? [SKILL_LIBRARY_TOOL_NAME] : []),
-  ];
-  if (rokoTools.length) {
-    primaryAgent.tools = [...new Set([...(primaryAgent.tools || []), ...rokoTools])];
+  const agentTools = addRokoAgentTools(primaryAgent.tools, {
+    nextcloudConfigured: Boolean(process.env.NEXTCLOUD_URL),
+    skillLibraryEnabled: appConfig?.interfaceConfig?.skills?.create !== false,
+  });
+  if (agentTools !== primaryAgent.tools) {
+    primaryAgent.tools = agentTools;
   }
 
   /** The deployment switch AND the role grant. `initializeAgent` rebuilds

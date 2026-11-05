@@ -619,7 +619,7 @@ describe('createToolEndCallback', () => {
     artifactPromises = [];
   });
 
-  it('persists generated bridge files and emits only the assistant text', async () => {
+  it('Roko hook: persists generated bridge files and emits only the assistant text', async () => {
     const { GraphEvents } = require('@librechat/agents');
     const { sendEvent } = require('@librechat/api');
     const { saveBridgeOutputFile } = require('~/server/services/Files/process');

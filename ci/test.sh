@@ -1,8 +1,9 @@
 #!/bin/sh
 # Uso: sh ci/test.sh [all|seams]
 #   all    (por defecto) pruebas Node de scripts/ y todos los Jest de ci/roko-tests.txt.
-#   seams  solo los tests de enganche: los de ci/roko-tests.txt cuyo nombre empieza por
-#          «Roko hook». Es la comprobación rápida tras fusionar una versión de LibreChat.
+#   seams  solo los tests de enganche: los ficheros de ci/roko-tests.txt marcados `roko` y, en el
+#          resto, los tests cuyo nombre contiene «Roko hook». Es la comprobación rápida tras
+#          fusionar una versión de LibreChat.
 set -eu
 script_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$script_root"
@@ -19,22 +20,47 @@ if [ "$mode" = all ]; then
   LANGFUSE_TRACING_ENABLED=true node --test scripts/otel-export.test.cjs scripts/interaction-export.test.cjs
 fi
 
-# Ejecuta, dentro de un espacio de trabajo, los tests que ci/roko-tests.txt le asigna.
-run_workspace() {
+# Rutas de ci/roko-tests.txt para un espacio de trabajo. $2 filtra por la marca `roko`:
+#   any      todas · only-roko  solo las marcadas · not-roko  solo las no marcadas
+paths_for() {
+  awk -v ws="$1" -v which="$2" '
+    $1 == ws {
+      sub(/\r$/, "", $2); sub(/\r$/, "", $3)
+      marked = ($3 == "roko")
+      if (which == "any" || (which == "only-roko" && marked) || (which == "not-roko" && !marked)) print $2
+    }' ci/roko-tests.txt
+}
+
+# Ejecuta Jest en un espacio de trabajo con las rutas dadas. Las rutas no llevan espacios: la
+# división por palabras es intencionada. Uso: run_jest <espacio> <patrón de nombre|-> <rutas...>
+run_jest() {
   workspace=$1
-  # Las rutas no llevan espacios: la división por palabras es intencionada.
-  # shellcheck disable=SC2046
-  set -- $(awk -v ws="$workspace" '$1 == ws { sub(/\r$/, "", $2); print $2 }' ci/roko-tests.txt)
+  name_pattern=$2
+  shift 2
   if [ "$#" -eq 0 ]; then
     return 0
   fi
-  if [ "$mode" = seams ]; then
-    (cd "$workspace" && "$script_root/node_modules/.bin/jest" --runInBand --coverage=false -t 'Roko hook' "$@")
-  else
+  if [ "$name_pattern" = - ]; then
     (cd "$workspace" && "$script_root/node_modules/.bin/jest" --runInBand --coverage=false "$@")
+  else
+    (cd "$workspace" && "$script_root/node_modules/.bin/jest" --runInBand --coverage=false -t "$name_pattern" "$@")
+  fi
+}
+
+run_workspace() {
+  workspace=$1
+  if [ "$mode" = seams ]; then
+    # shellcheck disable=SC2046
+    run_jest "$workspace" - $(paths_for "$workspace" only-roko)
+    # shellcheck disable=SC2046
+    run_jest "$workspace" 'Roko hook' $(paths_for "$workspace" not-roko)
+  else
+    # shellcheck disable=SC2046
+    run_jest "$workspace" - $(paths_for "$workspace" any)
   fi
 }
 
 run_workspace client
+run_workspace packages/data-provider
 run_workspace packages/api
 run_workspace api
