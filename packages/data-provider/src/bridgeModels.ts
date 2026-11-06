@@ -23,6 +23,9 @@ const CLAUDE: BridgeCapabilities = {
   supportsWebSearch: true,
 };
 
+/** Prefix of the `toolCallId` of the files a Bridge model produced; the client shows them per message. */
+export const BRIDGE_OUTPUT_TOOL_CALL_PREFIX = 'bridge-output-';
+
 /** The single list of Bridge model aliases; every Bridge check derives from it. */
 export function getBridgeCapabilities(model?: string | null): BridgeCapabilities | undefined {
   if (/^gpt-codex(?:-fast|-deep)?$/.test(model ?? '')) return CODEX;

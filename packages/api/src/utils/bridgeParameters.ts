@@ -3,34 +3,59 @@ import { getBridgeCapabilities } from 'librechat-data-provider';
 type ParameterRecord = Record<string, unknown>;
 
 const API_PARAMETERS = [
-  'temperature', 'top_p', 'topP', 'top_k', 'topK', 'frequency_penalty', 'frequencyPenalty',
-  'presence_penalty', 'presencePenalty', 'max_tokens', 'maxTokens', 'maxCompletionTokens',
-  'max_completion_tokens', 'max_output_tokens', 'stop', 'stopSequences', 'seed',
-  'logitBias', 'logit_bias', 'logprobs', 'topLogprobs', 'top_logprobs', 'n', 'response_format',
+  'temperature',
+  'top_p',
+  'topP',
+  'top_k',
+  'topK',
+  'frequency_penalty',
+  'frequencyPenalty',
+  'presence_penalty',
+  'presencePenalty',
+  'max_tokens',
+  'maxTokens',
+  'maxCompletionTokens',
+  'max_completion_tokens',
+  'max_output_tokens',
+  'stop',
+  'stopSequences',
+  'seed',
+  'logitBias',
+  'logit_bias',
+  'logprobs',
+  'topLogprobs',
+  'top_logprobs',
+  'n',
+  'response_format',
 ];
 
 function record(value: unknown): ParameterRecord | undefined {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? value as ParameterRecord : undefined;
+    ? (value as ParameterRecord)
+    : undefined;
 }
 
 /** Saved values for disabled controls must not leak into another CLI provider. */
-export function normalizeBridgeParameters(model: string, parameters: ParameterRecord): ParameterRecord {
+export function normalizeBridgeParameters(
+  model: string,
+  parameters: ParameterRecord,
+): ParameterRecord {
   const capabilities = getBridgeCapabilities(model);
   if (!capabilities) return parameters;
   const result = { ...parameters };
   for (const name of API_PARAMETERS) delete result[name];
   const validEffort = (value: unknown) =>
     typeof value === 'string' && capabilities.efforts.includes(value);
-  const validSummary = (value: unknown) => capabilities.supportsSummary &&
-    ['auto', 'concise', 'detailed', 'none'].includes(String(value));
-  const validVerbosity = (value: unknown) => capabilities.supportsVerbosity &&
-    ['low', 'medium', 'high'].includes(String(value));
+  const validSummary = (value: unknown) =>
+    capabilities.supportsSummary && ['auto', 'concise', 'detailed', 'none'].includes(String(value));
+  const validVerbosity = (value: unknown) =>
+    capabilities.supportsVerbosity && ['low', 'medium', 'high'].includes(String(value));
 
   if (!validEffort(result.reasoning_effort)) delete result.reasoning_effort;
   if (!validSummary(result.reasoning_summary)) delete result.reasoning_summary;
   if (!validVerbosity(result.verbosity)) delete result.verbosity;
-  if (!capabilities.supportsWebSearch || typeof result.web_search !== 'boolean') delete result.web_search;
+  if (!capabilities.supportsWebSearch || typeof result.web_search !== 'boolean')
+    delete result.web_search;
 
   const reasoning = record(parameters.reasoning);
   if (reasoning) {
@@ -52,7 +77,8 @@ export function normalizeBridgeParameters(model: string, parameters: ParameterRe
   if (cli) {
     const controls = Object.fromEntries(
       ['model', 'reasoning_effort', 'verbosity', 'reasoning_summary', 'web_search']
-        .filter((key) => key in cli).map((key) => [key, cli[key]]),
+        .filter((key) => key in cli)
+        .map((key) => [key, cli[key]]),
     );
     result.cli_options = normalizeBridgeParameters(model, controls);
   } else delete result.cli_options;

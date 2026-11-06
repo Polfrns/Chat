@@ -12,6 +12,8 @@ La lista de tests de Jest vive en un único fichero, [ci/roko-tests.txt](ci/roko
 (`<espacio de trabajo> <ruta>`): para añadir un test a la CI se añade una línea ahí.
 `sh ci/test.sh seams` ejecuta solo los tests de enganche (los que se llaman
 `Roko hook: ...`; ver [ROKO-UPGRADE.md](ROKO-UPGRADE.md)).
+`sh ci/test.sh lint` pasa Prettier y ESLint sobre los ficheros propios de Roko; necesita el historial
+de git, así que no forma parte de la etapa `ci` del Dockerfile.
 
 | Grupo seleccionado | Invariante protegida |
 | --- | --- |

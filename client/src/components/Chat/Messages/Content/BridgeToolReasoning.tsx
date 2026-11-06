@@ -6,6 +6,12 @@ import { Reasoning } from './Parts';
 import ToolCall from './ToolCall';
 import BridgeToolTime from './BridgeToolTime';
 
+const PROVIDER_LABELS: Record<string, string> = {
+  codex: 'Codex',
+  claude: 'Claude',
+  bridge: 'Bridge',
+};
+
 /** Exactly the same ToolCall cards used by MCP, populated with read-only Bridge events.
  *  Never routes these to the tool executor: Codex/Claude already ran them. */
 type BridgeToolReasoningProps = {
@@ -49,7 +55,7 @@ const BridgeToolReasoning = memo(function BridgeToolReasoning({
           <div key={tool.id} className="my-1" data-bridge-state={tool.state}>
             <BridgeToolTime tool={tool} running={isSubmitting && tool.state === 'started'} />
             <ToolCall
-              name={`${tool.label}${tool.filename ? ` ${tool.filename}` : ''}_mcp_${tool.provider === 'codex' ? 'Codex' : tool.provider === 'claude' ? 'Claude' : 'Bridge'}`}
+              name={`${tool.label}${tool.filename ? ` ${tool.filename}` : ''}_mcp_${PROVIDER_LABELS[tool.provider] ?? 'Bridge'}`}
               args=""
               output={bridgeActivityOutput(tool)}
               initialProgress={['started', 'cancelled'].includes(tool.state) ? 0.1 : 1}

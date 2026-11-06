@@ -22,11 +22,12 @@ Versión actual de la base: `UPSTREAM-BASE` (etiqueta, commit y ancestro registr
    no al revés. Si upstream movió el código, el enganche se mueve con él (ver la tabla).
 7. **Tests de enganche primero:** `sh ci/test.sh seams`. Cada fallo lleva el nombre `Roko hook: …` de la regla
    que se ha perdido. Arréglalos antes de seguir.
-8. **Comprobación completa:** `npm run build:data-provider && npm run build:data-schemas && npm run build:api`,
+8. **Estilo:** `sh ci/test.sh lint` (Prettier y ESLint sobre los ficheros propios).
+9. **Comprobación completa:** `npm run build:data-provider && npm run build:data-schemas && npm run build:api`,
    tipos de `client` y `api`, y `sh ci/test.sh` entero.
-9. **Registrar la base.** En el mismo commit del merge actualiza `UPSTREAM-BASE` (`UPSTREAM_TAG`,
+10. **Registrar la base.** En el mismo commit del merge actualiza `UPSTREAM-BASE` (`UPSTREAM_TAG`,
    `UPSTREAM_COMMIT`) y el Changelog.
-10. **Desplegar** solo tras confirmarlo: construir en el NAS (la etapa `ci` del Dockerfile vuelve a pasar los
+11. **Desplegar** solo tras confirmarlo: construir en el NAS (la etapa `ci` del Dockerfile vuelve a pasar los
     tests), recrear solo la app de Roko y probar a mano la lista del final. Marcha atrás: `DEPLOY.md`
     (`bash ci/deploy.sh roko rollback`). No borres volúmenes ni rotes `CREDS_KEY`, `CREDS_IV` ni `JWT_*`.
 

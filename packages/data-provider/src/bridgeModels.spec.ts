@@ -11,10 +11,13 @@ describe('Roko hook: lista única de modelos Bridge', () => {
     expect(isBridgeModel(model)).toBe(true);
   });
 
-  it.each(['claude-max', 'claude-max-fast', 'claude-max-deep'])('%s es un modelo Claude', (model) => {
-    expect(getBridgeCapabilities(model)?.provider).toBe('claude');
-    expect(isBridgeModel(model)).toBe(true);
-  });
+  it.each(['claude-max', 'claude-max-fast', 'claude-max-deep'])(
+    '%s es un modelo Claude',
+    (model) => {
+      expect(getBridgeCapabilities(model)?.provider).toBe('claude');
+      expect(isBridgeModel(model)).toBe(true);
+    },
+  );
 
   it.each([
     'gpt-4o',

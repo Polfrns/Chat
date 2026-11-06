@@ -214,5 +214,4 @@ const runPreviewFinalize = ({ finalize, fileId, previewRevision, onResolved }) =
     });
 };
 
-
 module.exports = { finalizePreview, runPreviewFinalize };

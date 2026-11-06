@@ -11,18 +11,28 @@ jest.mock('~/data-provider', () => ({
   useFileDownload: () => ({ refetch: mockDownload }),
   useSharedFileDownload: () => ({ refetch: mockDownload }),
   useFilePreviewBlob: () => ({ refetch: mockPreviewBlob }),
-  useFilePreview: () => ({ data: undefined, isInitialLoading: false, isFetching: false, isError: false }),
+  useFilePreview: () => ({
+    data: undefined,
+    isInitialLoading: false,
+    isFetching: false,
+    isError: false,
+  }),
 }));
 jest.mock('~/Providers', () => ({ useFileMapContext: () => ({}), useShareContext: () => ({}) }));
 jest.mock('~/utils', () => ({
-  logger: { error: jest.fn() }, sortPagesByRelevance: (pages: number[]) => pages,
+  logger: { error: jest.fn() },
+  sortPagesByRelevance: (pages: number[]) => pages,
   triggerDownload: jest.fn(),
   getDownloadFilename: (name: string) => name,
 }));
-jest.mock('~/components/Messages/Content/CopyButton', () => ({ __esModule: true, default: () => null }));
+jest.mock('~/components/Messages/Content/CopyButton', () => ({
+  __esModule: true,
+  default: () => null,
+}));
 jest.mock('@librechat/client', () => ({
   Button: (props: React.ComponentProps<'button'>) => <button {...props} />,
-  OGDialog: ({ children, open }: React.PropsWithChildren<{ open: boolean }>) => open ? <>{children}</> : null,
+  OGDialog: ({ children, open }: React.PropsWithChildren<{ open: boolean }>) =>
+    open ? <>{children}</> : null,
   OGDialogContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   OGDialogTitle: ({ children }: React.PropsWithChildren) => <h1>{children}</h1>,
   OGDialogDescription: ({ children }: React.PropsWithChildren) => <p>{children}</p>,
@@ -31,7 +41,9 @@ jest.mock('@librechat/client', () => ({
 const base = { open: true, onOpenChange: jest.fn(), fileName: 'report.docx', fileId: 'doc-id' };
 
 test('converted Office HTML is isolated without scripts or same-origin permission', async () => {
-  render(<FilePreviewDialog {...base} previewText="<p>Office preview</p>" previewTextFormat="html" />);
+  render(
+    <FilePreviewDialog {...base} previewText="<p>Office preview</p>" previewTextFormat="html" />,
+  );
   const frame = await screen.findByTitle('com_ui_preview: report.docx');
   expect(frame).toHaveAttribute('sandbox', '');
   expect(frame).toHaveAttribute('srcdoc', '<p>Office preview</p>');
@@ -40,7 +52,13 @@ test('converted Office HTML is isolated without scripts or same-origin permissio
 });
 
 test('extracted plain text never becomes executable preview HTML', async () => {
-  render(<FilePreviewDialog {...base} previewText="<script>private()</script>" previewTextFormat="text" />);
+  render(
+    <FilePreviewDialog
+      {...base}
+      previewText="<script>private()</script>"
+      previewTextFormat="text"
+    />,
+  );
   await waitFor(() => expect(screen.getByText('<script>private()</script>')).toBeVisible());
   expect(screen.queryByTitle('com_ui_preview: report.docx')).toBeNull();
 });

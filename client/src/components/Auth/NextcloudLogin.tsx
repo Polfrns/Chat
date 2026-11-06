@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiBaseUrl, request } from 'librechat-data-provider';
+import { useLocalize } from '~/hooks';
 
 interface LoginResult {
   connected?: boolean;
@@ -14,6 +15,7 @@ export default function NextcloudLogin() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const localize = useLocalize();
   const base = `${apiBaseUrl()}/api/auth/nextcloud`;
 
   const start = async () => {
@@ -24,8 +26,10 @@ export default function NextcloudLogin() {
       setLoginUrl(result.login);
       window.open(result.login, '_blank', 'noopener,noreferrer');
     } catch {
-      setError('No se pudo iniciar el acceso con Nextcloud.');
-    } finally { setBusy(false); }
+      setError(localize('com_roko_nextcloud_login_start_error'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   useEffect(() => {
@@ -48,20 +52,39 @@ export default function NextcloudLogin() {
         if (Date.now() >= expires) throw new Error('expired');
         timer = setTimeout(poll, 2000);
       } catch {
-        if (!disposed) { setError('El acceso no se completó. Puedes volver a intentarlo.'); setLoginUrl(''); }
+        if (!disposed) {
+          setError(localize('com_roko_nextcloud_login_incomplete'));
+          setLoginUrl('');
+        }
       }
     };
     void poll();
-    return () => { disposed = true; clearTimeout(timer); };
-  }, [loginUrl, base, navigate]);
+    return () => {
+      disposed = true;
+      clearTimeout(timer);
+    };
+  }, [loginUrl, base, navigate, localize]);
 
   return (
     <div className="my-4 flex flex-col gap-2">
       <button className="btn btn-neutral w-full" type="button" disabled={busy} onClick={start}>
-        Entrar con Nextcloud
+        {localize('com_roko_nextcloud_login_button')}
       </button>
-      {loginUrl && <a className="text-center underline" href={loginUrl} target="_blank" rel="noopener noreferrer">Continuar la autorización en Nextcloud</a>}
-      {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
+      {loginUrl && (
+        <a
+          className="text-center underline"
+          href={loginUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {localize('com_roko_nextcloud_login_continue')}
+        </a>
+      )}
+      {error && (
+        <p role="alert" className="text-sm text-red-500">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

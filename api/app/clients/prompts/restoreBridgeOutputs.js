@@ -5,15 +5,13 @@
  * @param {{ messages: object[], options: object, getFiles: Function }} params
  * @returns {Promise<object[] | null>}
  */
-const { isBridgeModel } = require('librechat-data-provider');
+const { isBridgeModel, BRIDGE_OUTPUT_TOOL_CALL_PREFIX } = require('librechat-data-provider');
 
 /** Synchronous gate, so non-Bridge turns never wait on the restore before context work. */
 function shouldRestoreBridgeOutputs(options) {
   const model = options.agent?.model_parameters?.model ?? options.agent?.model ?? options.model;
   return (
-    isBridgeModel(model) &&
-    options.resendFiles !== false &&
-    !(options.req?.body?.files?.length > 0)
+    isBridgeModel(model) && options.resendFiles !== false && !(options.req?.body?.files?.length > 0)
   );
 }
 
@@ -28,13 +26,18 @@ async function restoreBridgeOutputs({ messages, options, getFiles }) {
 
   for (let index = messages.length - 2; index >= 0; index--) {
     const message = messages[index];
-    if (message.isCreatedByUser || message.role === 'user' || message.sender?.toLowerCase() === 'user') {
+    if (
+      message.isCreatedByUser ||
+      message.role === 'user' ||
+      message.sender?.toLowerCase() === 'user'
+    ) {
       continue;
     }
-    const outputs = (message.attachments ?? []).filter((file) =>
-      typeof file.file_id === 'string' &&
-      typeof file.toolCallId === 'string' &&
-      file.toolCallId.startsWith('bridge-output-'),
+    const outputs = (message.attachments ?? []).filter(
+      (file) =>
+        typeof file.file_id === 'string' &&
+        typeof file.toolCallId === 'string' &&
+        file.toolCallId.startsWith(BRIDGE_OUTPUT_TOOL_CALL_PREFIX),
     );
     if (outputs.length === 0) {
       continue;
@@ -48,7 +51,9 @@ async function restoreBridgeOutputs({ messages, options, getFiles }) {
     const files = await getFiles(filter, {}, {});
     const byId = new Map(files.map((file) => [file.file_id, file]));
     if (ids.some((id) => !byId.get(id)?.filepath)) {
-      throw new Error('The latest edited file is no longer available. Reattach that version to continue editing; the original will not be used automatically.');
+      throw new Error(
+        'The latest edited file is no longer available. Reattach that version to continue editing; the original will not be used automatically.',
+      );
     }
     return ids.map((id) => byId.get(id));
   }

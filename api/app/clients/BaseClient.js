@@ -50,6 +50,7 @@ const {
   stripReasoningLabelMetadata,
   resolveTurnLLMDeliveryPath,
   resolveUseResponsesApi,
+  BRIDGE_OUTPUT_TOOL_CALL_PREFIX,
 } = require('librechat-data-provider');
 const { getStrategyFunctions } = require('~/server/services/Files/strategies');
 const { saveBridgeOutputFile } = require('~/server/services/Files/process');
@@ -1061,7 +1062,7 @@ class BaseClient {
               ...savedFile,
               messageId: responseMessageId,
               conversationId,
-              toolCallId: `bridge-output-${index}`,
+              toolCallId: `${BRIDGE_OUTPUT_TOOL_CALL_PREFIX}${index}`,
             };
           }),
         );

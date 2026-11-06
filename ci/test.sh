@@ -1,6 +1,8 @@
 #!/bin/sh
-# Uso: sh ci/test.sh [all|seams]
+# Uso: sh ci/test.sh [all|seams|lint]
 #   all    (por defecto) pruebas Node de scripts/ y todos los Jest de ci/roko-tests.txt.
+#   lint   Prettier y ESLint sobre los ficheros propios de Roko (los que no existen en upstream, según
+#          scripts/roko-surface.cjs). Necesita el historial de git: no corre en la etapa `ci` del Dockerfile.
 #   seams  solo los tests de enganche: los ficheros de ci/roko-tests.txt marcados `roko` y, en el
 #          resto, los tests cuyo nombre contiene «Roko hook». Es la comprobación rápida tras
 #          fusionar una versión de LibreChat.
@@ -8,7 +10,20 @@ set -eu
 script_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$script_root"
 mode=${1:-all}
-case "$mode" in all | seams) ;; *) echo "Uso: sh ci/test.sh [all|seams]" >&2; exit 2 ;; esac
+case "$mode" in all | seams | lint) ;; *) echo "Uso: sh ci/test.sh [all|seams|lint]" >&2; exit 2 ;; esac
+
+if [ "$mode" = lint ]; then
+  owned=$(node scripts/roko-surface.cjs --json | node -e '
+    const surface = JSON.parse(require("fs").readFileSync(0, "utf8"));
+    console.log(surface.owned.filter((file) => /\.(c?js|tsx?)$/.test(file)).join(String.fromCharCode(10)));')
+  # Las rutas no llevan espacios: la división por palabras es intencionada.
+  # shellcheck disable=SC2086
+  node_modules/.bin/prettier --check $owned
+  # ESLint no revisa los .cjs de scripts/ ni config/ (herramientas de Node, no código de la aplicación).
+  # shellcheck disable=SC2086
+  node_modules/.bin/eslint $(echo "$owned" | grep -v '^scripts/' | grep -v '^config/' | grep -v '\.cjs$')
+  exit 0
+fi
 
 export LANGFUSE_TRACING_ENABLED=false
 export LANGFUSE_FORCE_FLUSH_ON_DISPOSE=false

@@ -5,7 +5,8 @@ export type BridgeActivityDetailCode = keyof typeof descriptions;
 
 export function bridgeActivityDetailCode(value: unknown): BridgeActivityDetailCode | undefined {
   return typeof value === 'string' && Object.hasOwn(descriptions, value)
-    ? value as BridgeActivityDetailCode : undefined;
+    ? (value as BridgeActivityDetailCode)
+    : undefined;
 }
 
 export function bridgeActivityDescription(code?: BridgeActivityDetailCode) {
@@ -28,24 +29,43 @@ export function bridgeActivityErrorCategory(value: unknown): string | undefined 
   return typeof value === 'string' && Object.hasOwn(ERRORS, value) ? value : undefined;
 }
 
+const VALIDATION_RESULTS: Record<string, string> = {
+  unavailable:
+    'No se pudo comprobar el formato: el toolkit de archivos no está disponible en este entorno.',
+  partial: 'Solo se pudo comprobar el formato de parte de los archivos; no todos están validados.',
+  checked:
+    'Los archivos superaron las comprobaciones disponibles. Esto no comprueba la exactitud de su contenido.',
+};
+
+function bridgeActivityResult(
+  tool: BridgeToolEvent,
+  validationResult: string | undefined,
+  success: string | undefined,
+): string {
+  if (tool.state === 'failed') {
+    return `Error: tool call failed: ${ERRORS[tool.errorCategory ?? ''] ?? 'La operación no se completó.'}`;
+  }
+  if (tool.state === 'cancelled') {
+    return tool.errorCategory === 'timeout'
+      ? 'Operación cancelada al superar el límite de tiempo.'
+      : 'Operación cancelada.';
+  }
+  if (tool.state === 'completed') {
+    return validationResult ?? success ?? 'Operación completada.';
+  }
+  return 'Operación en curso.';
+}
+
 export function bridgeActivityOutput(tool: BridgeToolEvent): string {
   const description = bridgeActivityDescription(tool.detailCode);
-  const validationResult = tool.validationStatus === 'unavailable'
-    ? 'No se pudo comprobar el formato: el toolkit de archivos no está disponible en este entorno.'
-    : tool.validationStatus === 'partial'
-      ? 'Solo se pudo comprobar el formato de parte de los archivos; no todos están validados.'
-      : tool.validationStatus === 'checked'
-        ? 'Los archivos superaron las comprobaciones disponibles. Esto no comprueba la exactitud de su contenido.'
-        : undefined;
-  const result = tool.state === 'failed'
-    ? `Error: tool call failed: ${ERRORS[tool.errorCategory ?? ''] ?? 'La operación no se completó.'}`
-    : tool.state === 'cancelled' ? tool.errorCategory === 'timeout'
-      ? 'Operación cancelada al superar el límite de tiempo.' : 'Operación cancelada.'
-      : tool.state === 'completed' ? validationResult ?? description?.success ?? 'Operación completada.'
-        : 'Operación en curso.';
+  const validationResult = tool.validationStatus
+    ? VALIDATION_RESULTS[tool.validationStatus]
+    : undefined;
+  const result = bridgeActivityResult(tool, validationResult, description?.success);
   const summary = tool.summary ?? tool.description ?? description?.purpose;
   if (tool.state === 'failed') return [result, summary].filter(Boolean).join('\n\n');
   if (tool.state === 'cancelled') return [summary, result].filter(Boolean).join('\n\n');
-  if (tool.state === 'completed' && validationResult) return [summary, validationResult].filter(Boolean).join('\n\n');
+  if (tool.state === 'completed' && validationResult)
+    return [summary, validationResult].filter(Boolean).join('\n\n');
   return summary ?? (tool.state === 'started' ? '' : result);
 }

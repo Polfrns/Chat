@@ -2,7 +2,12 @@ const { formatMessage: formatSDKMessage } = require('@librechat/agents');
 const { ContentTypes } = require('librechat-data-provider');
 
 function formatDocumentForLangChain(document) {
-  const file = document.type === 'file' ? document.file : document.type === 'input_file' ? document : null;
+  let file = null;
+  if (document.type === 'file') {
+    file = document.file;
+  } else if (document.type === 'input_file') {
+    file = document;
+  }
   if (!file || typeof file.file_data !== 'string') {
     return document;
   }

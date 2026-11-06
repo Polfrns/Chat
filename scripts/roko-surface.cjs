@@ -142,7 +142,9 @@ function main() {
     );
     process.exit(2);
   }
-  const surface = classify(parseNameStatus(git(['diff', '--name-status', '--no-renames', base.commit, 'HEAD'])));
+  const surface = classify(
+    parseNameStatus(git(['diff', '--name-status', '--no-renames', base.commit, 'HEAD'])),
+  );
   if (process.argv.includes('--json')) {
     console.log(JSON.stringify({ base, ...surface }, null, 2));
     return;
@@ -156,7 +158,9 @@ function main() {
     const total = /** @type {string[]} */ (files);
     console.log(`${label}: ${total.length} ficheros (${total.filter(isTest).length} de tests)`);
     for (const { area, source, tests } of summarizeByArea(total).slice(0, 12)) {
-      console.log(`  ${String(source).padStart(4)} código ${String(tests).padStart(4)} tests  ${area}`);
+      console.log(
+        `  ${String(source).padStart(4)} código ${String(tests).padStart(4)} tests  ${area}`,
+      );
     }
     if (process.argv.includes('--list')) {
       total.forEach((file) => console.log(`    ${file}`));

@@ -21,6 +21,19 @@ nueva versión del paquete raíz.
   su entrada de `allowScripts`. El compilador (`make g++`) se mantiene en los Dockerfile hasta poder
   verificar una construcción sin él.
 
+### Fase 1 del plan de mantenibilidad (6 de noviembre de 2026)
+
+- Estilo: Prettier sobre los 44 ficheros propios que no cumplían; 7 ternarios anidados sustituidos por tablas
+  o funciones; una variable sin uso fuera; las regex con caracteres de control, intencionadas, llevan su
+  justificación; `any` fuera de un test.
+- Traducciones: los 35 textos fijos de `NextcloudLogin` y `NextcloudPanel` pasan a claves
+  `com_roko_nextcloud_*` en español, inglés y catalán (el catalán no tenía ninguna clave de Roko).
+- `BRIDGE_OUTPUT_TOOL_CALL_PREFIX` sale de `packages/data-provider` y sustituye al texto repetido en
+  4 sitios.
+- `sh ci/test.sh lint` pasa Prettier y ESLint sobre los ficheros propios (necesita el historial de git, por
+  lo que no corre en la etapa `ci` del Dockerfile).
+- Se borra `npm-audit-roko.json` (volcado de 0,3 MB del import inicial).
+
 ### Fase 2 del plan de mantenibilidad (6 de noviembre de 2026)
 
 - Tests de enganche nuevos (nombre `Roko hook: ...`): herramientas inyectadas en el agente, usuario seguro

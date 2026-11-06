@@ -1,6 +1,6 @@
 import { memo, useRef, useMemo, useEffect, useCallback, useContext, Fragment } from 'react';
 import { useStore } from 'jotai';
-import { ContentTypes } from 'librechat-data-provider';
+import { ContentTypes, BRIDGE_OUTPUT_TOOL_CALL_PREFIX } from 'librechat-data-provider';
 import type {
   TMessageContentParts,
   SearchResultData,
@@ -129,8 +129,6 @@ const getToolGroupId = (parts: PartWithIndex[], fallbackScope: number): string =
    *  absorbed. Only a block with no tool call at all falls back to `parts[0]`. */
   return `fallback:${fallbackScope}:${firstToolKeyIdx ?? getPartKeyIndex(firstPart.part, firstPart.idx)}`;
 };
-
-const BRIDGE_OUTPUT_TOOL_CALL_PREFIX = 'bridge-output-';
 
 type PartWithContextProps = {
   part: TMessageContentParts;

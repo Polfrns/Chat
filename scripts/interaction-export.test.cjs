@@ -1,20 +1,24 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {createServer} = require('node:http');
-const {spawn} = require('node:child_process');
-const {gunzipSync} = require('node:zlib');
+const { createServer } = require('node:http');
+const { spawn } = require('node:child_process');
+const { gunzipSync } = require('node:zlib');
 const path = require('node:path');
-const {createHash} = require('node:crypto');
+const { createHash } = require('node:crypto');
 
 for (const mode of ['redacted', 'debug']) {
   test(`real LangChain callbacks share one interaction trace; ${mode} content is sanitized`, async () => {
     const batches = [];
-    const collector = createServer(async (req,res) => {
-      const chunks=[]; for await (const chunk of req) chunks.push(chunk);
-      let body=Buffer.concat(chunks); if(req.headers['content-encoding']==='gzip')body=gunzipSync(body);
-      batches.push(JSON.parse(body)); res.writeHead(200,{'Content-Type':'application/json'});res.end('{}');
+    const collector = createServer(async (req, res) => {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      let body = Buffer.concat(chunks);
+      if (req.headers['content-encoding'] === 'gzip') body = gunzipSync(body);
+      batches.push(JSON.parse(body));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{}');
     });
-    await new Promise(resolve=>collector.listen(0,'127.0.0.1',resolve));
+    await new Promise((resolve) => collector.listen(0, '127.0.0.1', resolve));
     const script = `
       const path=require('node:path');
       const base=path.dirname(require.resolve('@librechat/agents'));
@@ -74,33 +78,65 @@ for (const mode of ['redacted', 'debug']) {
         await tracing.getLangfuseTracerProvider().shutdown();
       })().catch(error=>{console.error(error);process.exitCode=1});
     `;
-    const child=spawn(process.execPath,['-e',script],{cwd:path.resolve(__dirname,'..'),env:{...process.env,
-      LANGFUSE_TRACING_ENABLED:'true',LANGFUSE_BASE_URL:`http://127.0.0.1:${collector.address().port}`,
-      LANGFUSE_PUBLIC_KEY:'pk-test',LANGFUSE_SECRET_KEY:'sk-test',CLAUDE_BRIDGE_KEY:'k'.repeat(32),
-      OBSERVABILITY_TRACE_SECRET:'t'.repeat(32),ROKO_BRIDGE_BASE_URL:'http://cli-bridge:4000/v1',
-      OBSERVABILITY_TRACE_TARGETS:'',OBSERVABILITY_CONTENT_MODE:mode,OTEL_TRACES_SAMPLER:'always_on'},stdio:['ignore','pipe','pipe']});
-    let output='';child.stdout.on('data',c=>output+=c);child.stderr.on('data',c=>output+=c);
-    const code=await new Promise(resolve=>child.on('close',resolve));
-    await new Promise(resolve=>collector.close(resolve));assert.equal(code,0,output);
-    const spans=batches.flatMap(b=>b.resourceSpans??[]).flatMap(r=>r.scopeSpans??[]).flatMap(s=>s.spans??[]);
-    const roots=spans.filter(s=>s.name==='roko.interaction');assert.equal(roots.length,4,JSON.stringify(spans));
-    const attr=(span,key)=>span.attributes.find(a=>a.key===key)?.value.stringValue;
-    for(const root of roots)assert.equal(attr(root,'langfuse.observation.metadata.contentMode'),mode);
-    assert.equal(new Set(roots.map(s=>s.traceId)).size,4);
-    assert.equal(attr(roots[0],'session.id'),attr(roots[1],'session.id'));
-    assert.notEqual(attr(roots[0],'session.id'),attr(roots[2],'session.id'));
-    for(let i=0;i<4;i++) {
-      const id=createHash('sha256').update('response-'+i).digest('hex').slice(0,32);
-      const group=spans.filter(s=>s.traceId===id);
-      assert.ok(group.some(s=>s.name==='AgentRun'),JSON.stringify(spans));
-      assert.ok(group.some(s=>s.name==='bridge.request'));
-      for(const span of group.filter(s=>s.name!=='roko.interaction'))assert.ok(group.some(p=>p.spanId===span.parentSpanId),JSON.stringify(span));
+    const child = spawn(process.execPath, ['-e', script], {
+      cwd: path.resolve(__dirname, '..'),
+      env: {
+        ...process.env,
+        LANGFUSE_TRACING_ENABLED: 'true',
+        LANGFUSE_BASE_URL: `http://127.0.0.1:${collector.address().port}`,
+        LANGFUSE_PUBLIC_KEY: 'pk-test',
+        LANGFUSE_SECRET_KEY: 'sk-test',
+        CLAUDE_BRIDGE_KEY: 'k'.repeat(32),
+        OBSERVABILITY_TRACE_SECRET: 't'.repeat(32),
+        ROKO_BRIDGE_BASE_URL: 'http://cli-bridge:4000/v1',
+        OBSERVABILITY_TRACE_TARGETS: '',
+        OBSERVABILITY_CONTENT_MODE: mode,
+        OTEL_TRACES_SAMPLER: 'always_on',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let output = '';
+    child.stdout.on('data', (c) => (output += c));
+    child.stderr.on('data', (c) => (output += c));
+    const code = await new Promise((resolve) => child.on('close', resolve));
+    await new Promise((resolve) => collector.close(resolve));
+    assert.equal(code, 0, output);
+    const spans = batches
+      .flatMap((b) => b.resourceSpans ?? [])
+      .flatMap((r) => r.scopeSpans ?? [])
+      .flatMap((s) => s.spans ?? []);
+    const roots = spans.filter((s) => s.name === 'roko.interaction');
+    assert.equal(roots.length, 4, JSON.stringify(spans));
+    const attr = (span, key) => span.attributes.find((a) => a.key === key)?.value.stringValue;
+    for (const root of roots)
+      assert.equal(attr(root, 'langfuse.observation.metadata.contentMode'), mode);
+    assert.equal(new Set(roots.map((s) => s.traceId)).size, 4);
+    assert.equal(attr(roots[0], 'session.id'), attr(roots[1], 'session.id'));
+    assert.notEqual(attr(roots[0], 'session.id'), attr(roots[2], 'session.id'));
+    for (let i = 0; i < 4; i++) {
+      const id = createHash('sha256')
+        .update('response-' + i)
+        .digest('hex')
+        .slice(0, 32);
+      const group = spans.filter((s) => s.traceId === id);
+      assert.ok(
+        group.some((s) => s.name === 'AgentRun'),
+        JSON.stringify(spans),
+      );
+      assert.ok(group.some((s) => s.name === 'bridge.request'));
+      for (const span of group.filter((s) => s.name !== 'roko.interaction'))
+        assert.ok(
+          group.some((p) => p.spanId === span.parentSpanId),
+          JSON.stringify(span),
+        );
     }
-    assert.equal(new Set(spans.map(s=>s.traceId)).size,4,JSON.stringify(spans));
-    assert.ok(roots.some(s=>attr(s,'langfuse.observation.metadata.state')==='cancelled'));
-    const exported=JSON.stringify(batches);
-    assert.doesNotMatch(exported,/DO_NOT_EXPORT|JVBERi0|test-user|another-user|conversation/);
-    if(mode==='debug'){assert.match(exported,/VISIBLE_QUESTION/);assert.match(exported,/VISIBLE_ANSWER/);}
-    else assert.doesNotMatch(exported,/VISIBLE_QUESTION|VISIBLE_ANSWER/);
+    assert.equal(new Set(spans.map((s) => s.traceId)).size, 4, JSON.stringify(spans));
+    assert.ok(roots.some((s) => attr(s, 'langfuse.observation.metadata.state') === 'cancelled'));
+    const exported = JSON.stringify(batches);
+    assert.doesNotMatch(exported, /DO_NOT_EXPORT|JVBERi0|test-user|another-user|conversation/);
+    if (mode === 'debug') {
+      assert.match(exported, /VISIBLE_QUESTION/);
+      assert.match(exported, /VISIBLE_ANSWER/);
+    } else assert.doesNotMatch(exported, /VISIBLE_QUESTION|VISIBLE_ANSWER/);
   });
 }

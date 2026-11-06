@@ -21,7 +21,11 @@ describe('Roko hook: el usuario seguro no expone el tenant', () => {
   });
 
   it('conserva los campos que sí se pueden usar en marcadores', () => {
-    expect(createSafeUser(user)).toMatchObject({ id: 'user-1', email: 'user@example.com', role: 'USER' });
+    expect(createSafeUser(user)).toMatchObject({
+      id: 'user-1',
+      email: 'user@example.com',
+      role: 'USER',
+    });
   });
 
   it('la identidad del workspace sigue resolviendo el tenant sin depender del usuario seguro', () => {

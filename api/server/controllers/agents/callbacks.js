@@ -10,6 +10,7 @@ const {
   UsageEvents,
   getRunStepDurationMs,
   getRunStepCloseMetadata,
+  BRIDGE_OUTPUT_TOOL_CALL_PREFIX,
 } = require('librechat-data-provider');
 const {
   GraphEvents,
@@ -730,7 +731,7 @@ function getDefaultHandlers({
               const attachment = Object.assign(savedFile, {
                 messageId: metadata.run_id,
                 conversationId: metadata.thread_id,
-                toolCallId: `bridge-output-${index}`,
+                toolCallId: `${BRIDGE_OUTPUT_TOOL_CALL_PREFIX}${index}`,
               });
               if (!streamId && !res.headersSent) {
                 return attachment;

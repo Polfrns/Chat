@@ -15,6 +15,7 @@ function localReference(href: string): string | null {
   try {
     const path = decodeURIComponent(value.split(/[?#]/, 1)[0]).replace(/\\/g, '/');
     if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(path)) return null;
+    // eslint-disable-next-line no-control-regex -- intencionado: rechaza caracteres de control en la ruta
     if (/[\u0000-\u001f]/.test(path) || path.split('/').includes('..')) return null;
     return path.replace(/^\.\//, '');
   } catch {
@@ -48,18 +49,21 @@ export function resolveMessageDownload(
   const originalMatches = [...files.values()].filter((file) => file.originalFilename === reference);
   if (originalMatches.length === 1) return originalMatches[0];
   if (originalMatches.length > 1) return null;
-  const fullMatches = [...files.values()].filter((file) =>
-    file.filename.replace(/\\/g, '/') === reference ||
-    localReference(file.filepath) === reference,
+  const fullMatches = [...files.values()].filter(
+    (file) =>
+      file.filename.replace(/\\/g, '/') === reference ||
+      localReference(file.filepath) === reference,
   );
   if (fullMatches.length === 1) return fullMatches[0];
   if (fullMatches.length > 1) return null;
   const basename = reference.split('/').pop();
-  const originalBasenames = [...files.values()].filter((file) => file.originalFilename === basename);
+  const originalBasenames = [...files.values()].filter(
+    (file) => file.originalFilename === basename,
+  );
   if (originalBasenames.length === 1) return originalBasenames[0];
   if (originalBasenames.length > 1) return null;
-  const matches = [...files.values()].filter((file) =>
-    file.filename.replace(/\\/g, '/').split('/').pop() === basename,
+  const matches = [...files.values()].filter(
+    (file) => file.filename.replace(/\\/g, '/').split('/').pop() === basename,
   );
   return matches.length === 1 ? matches[0] : null;
 }

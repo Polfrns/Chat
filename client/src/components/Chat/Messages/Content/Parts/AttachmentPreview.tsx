@@ -9,7 +9,8 @@ export default function AttachmentPreview({ attachment }: { attachment: Partial<
   const [open, setOpen] = useState(false);
   const localize = useLocalize();
   const file = attachment as Partial<TFile & TAttachmentMetadata>;
-  const hasPreview = getFilePreviewKind(file.filename ?? '', file.type) || typeof file.text === 'string';
+  const hasPreview =
+    getFilePreviewKind(file.filename ?? '', file.type) || typeof file.text === 'string';
   if (!file.file_id || !hasPreview) {
     return null;
   }

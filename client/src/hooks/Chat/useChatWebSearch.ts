@@ -33,8 +33,7 @@ export default function useChatWebSearch(): ChatWebSearchState {
   );
   const available = bridge?.supportsWebSearch ?? true;
   const enabled =
-    available &&
-    (bridge ? conversation?.web_search === true : ephemeralAgent?.web_search === true);
+    available && (bridge ? conversation?.web_search === true : ephemeralAgent?.web_search === true);
 
   const setEnabled = (value: boolean): void => {
     if (!available) return;

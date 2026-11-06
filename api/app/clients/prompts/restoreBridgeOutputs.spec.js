@@ -58,7 +58,11 @@ describe('Roko hook: seguir editando la última salida de Bridge', () => {
       const restored = await restoreBridgeOutputs({ messages, options: bridgeOptions(), getFiles });
 
       expect(restored).toEqual([stored('f-new')]);
-      expect(getFiles).toHaveBeenCalledWith({ file_id: { $in: ['f-new'] }, user: 'user-1' }, {}, {});
+      expect(getFiles).toHaveBeenCalledWith(
+        { file_id: { $in: ['f-new'] }, user: 'user-1' },
+        {},
+        {},
+      );
     });
 
     it('conserva el orden y no duplica los ids de una misma respuesta', async () => {
@@ -85,7 +89,11 @@ describe('Roko hook: seguir editando la última salida de Bridge', () => {
       const getFiles = getFilesFrom(stored('f1'));
       const options = bridgeOptions({ req: { user: { id: 'user-1', tenantId: 't-a' }, body: {} } });
 
-      await restoreBridgeOutputs({ messages: [assistant(output('f1')), human()], options, getFiles });
+      await restoreBridgeOutputs({
+        messages: [assistant(output('f1')), human()],
+        options,
+        getFiles,
+      });
 
       expect(getFiles).toHaveBeenCalledWith(
         { file_id: { $in: ['f1'] }, user: 'user-1', tenantId: 't-a' },

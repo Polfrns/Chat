@@ -34,6 +34,7 @@ function parseBridgeOutput(content) {
       typeof file.filename !== 'string' ||
       file.filename.length === 0 ||
       file.filename.length > 255 ||
+      // eslint-disable-next-line no-control-regex -- intencionado: rechaza separadores y caracteres de control en nombres de fichero
       /[\\/\u0000-\u001f\u007f]/.test(file.filename) ||
       file.filename === '.' ||
       file.filename === '..' ||

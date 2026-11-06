@@ -82,11 +82,11 @@ test('UPSTREAM-BASE needs a repository, a tag and a full commit hash', () => {
     tag: 'v0.8.8',
     commit: COMMIT,
   });
-  assert.throws(() => parseUpstreamBase(valid.replace('UPSTREAM_TAG=v0.8.8\n', '')), /UPSTREAM_TAG/);
   assert.throws(
-    () => parseUpstreamBase(valid.replace(COMMIT, 'e8f3be0')),
-    /40 caracteres/,
+    () => parseUpstreamBase(valid.replace('UPSTREAM_TAG=v0.8.8\n', '')),
+    /UPSTREAM_TAG/,
   );
+  assert.throws(() => parseUpstreamBase(valid.replace(COMMIT, 'e8f3be0')), /40 caracteres/);
 });
 
 test('the UPSTREAM-BASE committed in the repository parses', () => {

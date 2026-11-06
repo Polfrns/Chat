@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { BridgeToolEvent } from './bridgeToolRecords';
 import { formatActivitySeconds } from './activityTime';
 
-export default function BridgeToolTime({ tool, running }: { tool: BridgeToolEvent; running: boolean }) {
+export default function BridgeToolTime({
+  tool,
+  running,
+}: {
+  tool: BridgeToolEvent;
+  running: boolean;
+}) {
   const start = useRef(performance.now());
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -12,15 +18,26 @@ export default function BridgeToolTime({ tool, running }: { tool: BridgeToolEven
   }, [running]);
   const duration = running ? elapsed : tool.durationMs;
   if (duration === undefined && (tool.attempt ?? 0) <= 1 && tool.state !== 'cancelled') return null;
+  const observed = tool.timingSource === 'observed' || !tool.timingSource;
+  let timingLabel = 'Ejecución · ';
+  if (running) {
+    timingLabel = 'En curso · ';
+  } else if (observed) {
+    timingLabel = 'Tiempo observado · ';
+  }
   return (
     <div className="text-xs text-text-secondary" role="status">
       {tool.state === 'cancelled' ? 'Cancelada · ' : ''}
       {tool.attempt && tool.attempt > 1 ? `Reintento ${tool.attempt - 1} · ` : ''}
       {duration !== undefined && (
-        <span title={running || tool.timingSource === 'observed' || !tool.timingSource
-          ? 'Tiempo observado desde la recepción del evento; puede diferir de la ejecución real por el transporte del SDK.'
-          : 'Duración medida de esta operación; no incluye el tiempo de generación del modelo.'}>
-          {running ? 'En curso · ' : tool.timingSource === 'observed' || !tool.timingSource ? 'Tiempo observado · ' : 'Ejecución · '}
+        <span
+          title={
+            running || tool.timingSource === 'observed' || !tool.timingSource
+              ? 'Tiempo observado desde la recepción del evento; puede diferir de la ejecución real por el transporte del SDK.'
+              : 'Duración medida de esta operación; no incluye el tiempo de generación del modelo.'
+          }
+        >
+          {timingLabel}
           {formatActivitySeconds(duration)}
         </span>
       )}

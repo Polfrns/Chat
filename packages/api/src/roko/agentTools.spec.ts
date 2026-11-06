@@ -11,7 +11,10 @@ const none = { nextcloudConfigured: false, skillLibraryEnabled: false };
  */
 describe('Roko hook: herramientas inyectadas en el agente', () => {
   it('añade Nextcloud y la biblioteca de skills a un agente sin herramientas', () => {
-    expect(addRokoAgentTools(undefined, both)).toEqual([NEXTCLOUD_TOOL_NAME, SKILL_LIBRARY_TOOL_NAME]);
+    expect(addRokoAgentTools(undefined, both)).toEqual([
+      NEXTCLOUD_TOOL_NAME,
+      SKILL_LIBRARY_TOOL_NAME,
+    ]);
   });
 
   it('conserva las herramientas que el agente ya tenía, en su orden, y añade las nuevas detrás', () => {
