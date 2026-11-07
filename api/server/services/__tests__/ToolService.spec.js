@@ -1533,6 +1533,54 @@ describe('ToolService - Action Capability Gating', () => {
       ).resolves.toMatchObject({ toolDefinitions: [] });
     });
 
+    /** El workspace lo añade Roko por su cuenta: si está caído, el chat sigue sin sus herramientas. */
+    it('Roko hook: the chat continues when only the workspace tools are unavailable', async () => {
+      const workspaceAll = `${Constants.mcp_all}${Constants.mcp_delimiter}${Constants.roko_mcp_server}`;
+      const capabilities = [AgentCapabilities.tools];
+      const req = createMockReq(capabilities);
+      mockGetEndpointsConfig.mockResolvedValue(createEndpointsConfig(capabilities));
+      mockLoadToolDefinitions.mockResolvedValueOnce({
+        toolDefinitions: [],
+        toolRegistry: new Map(),
+        hasDeferredTools: false,
+        mcpResolution: { expectedToolCount: 1, resolvedToolCount: 0 },
+      });
+
+      await expect(
+        loadAgentTools({
+          req,
+          res: {},
+          agent: { id: 'agent_123', tools: [workspaceAll, 'attach_chat_file'] },
+          definitionsOnly: true,
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it('Roko hook: a workspace failure does not hide a missing tool of a real MCP server', async () => {
+      const workspaceAll = `${Constants.mcp_all}${Constants.mcp_delimiter}${Constants.roko_mcp_server}`;
+      const capabilities = [AgentCapabilities.tools];
+      const req = createMockReq(capabilities);
+      mockGetEndpointsConfig.mockResolvedValue(createEndpointsConfig(capabilities));
+      mockLoadToolDefinitions.mockResolvedValueOnce({
+        toolDefinitions: [],
+        toolRegistry: new Map(),
+        hasDeferredTools: false,
+        mcpResolution: { expectedToolCount: 2, resolvedToolCount: 0 },
+      });
+
+      await expect(
+        loadAgentTools({
+          req,
+          res: {},
+          agent: {
+            id: 'agent_123',
+            tools: [workspaceAll, `search${Constants.mcp_delimiter}warehouse`],
+          },
+          definitionsOnly: true,
+        }),
+      ).rejects.toMatchObject({ code: 'AGENT_EXPECTED_MCP_TOOLS_UNAVAILABLE' });
+    });
+
     it('allows partial MCP resolution when at least one expected tool is available', async () => {
       const capabilities = [AgentCapabilities.tools];
       const req = createMockReq(capabilities);

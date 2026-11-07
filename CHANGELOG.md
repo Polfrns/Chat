@@ -21,6 +21,21 @@ nueva versión del paquete raíz.
   su entrada de `allowScripts`. El compilador (`make g++`) se mantiene en los Dockerfile hasta poder
   verificar una construcción sin él.
 
+### Fase 3 del plan de mantenibilidad (7 de noviembre de 2026)
+
+- `config/observability` pasa a ser el paquete `@roko/observability` (`packages/observability`); desaparecen los
+  cuatro `require` con rutas relativas desde `packages/api`. La API **no arranca** si se exportan trazas y el
+  parche de privacidad de `@librechat/agents` no está aplicado (si no se exportan, solo avisa).
+- Cliente WebDAV y servicio de aprobación de Nextcloud pasan a TypeScript en `packages/api/src/nextcloud`; en
+  `api/` quedan el almacén Mongoose, las rutas y la herramienta.
+- Nextcloud: la herramienta lee PDF y ofimática (docx, xlsx, xls, odt, ods) de hasta 15 MiB, en páginas de
+  50.000 caracteres (`offset` / `next_offset`). Un archivo con nombre inutilizable ya no impide listar la
+  carpeta: se omite y el panel indica cuántos.
+- El workspace es de mejor esfuerzo: si no responde, el chat sigue sin sus herramientas en lugar de fallar con
+  «herramientas MCP no disponibles».
+- Con modelos Bridge, la respuesta 429 («ocupado») muestra el texto original del Bridge aunque haya política de
+  contenido activa; el resto de errores del proveedor siguen ocultos en ese caso.
+
 ### Fase 1 del plan de mantenibilidad (6 de noviembre de 2026)
 
 - Estilo: Prettier sobre los 44 ficheros propios que no cumplían; 7 ternarios anidados sustituidos por tablas

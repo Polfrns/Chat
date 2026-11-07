@@ -210,6 +210,7 @@ const {
   AgentCapabilities,
   hasActivePiiPatterns,
   isAgentsEndpoint,
+  isBridgeModel,
   isEphemeralAgentId,
   removeNullishValues,
   stripLangChainTroubleshootingUrl,
@@ -4469,6 +4470,9 @@ class AgentClient extends BaseClient {
         appConfig?.filters,
         appConfig?.messageFilter?.pii,
       ),
+      bridgeModel: isBridgeModel(
+        this.options.agent?.model_parameters?.model ?? this.options.agent?.model,
+      ),
     });
     const balanceConfig = getBalanceConfig(appConfig);
     const transactionsConfig = getTransactionsConfig(appConfig);
@@ -5371,6 +5375,9 @@ class AgentClient extends BaseClient {
       protectionEnabled: hasModelBoundContentProtection(
         appConfig?.filters,
         appConfig?.messageFilter?.pii,
+      ),
+      bridgeModel: isBridgeModel(
+        this.options.agent?.model_parameters?.model ?? this.options.agent?.model,
       ),
     });
     const balanceConfig = getBalanceConfig(appConfig);

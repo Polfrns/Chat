@@ -80,6 +80,7 @@ export function createTerminalRunErrorObserver({
   responseMessageId,
   source,
   protectionEnabled,
+  bridgeModel,
   maxProviderErrorChars,
   genericMessage = `${source} Error:`,
 }: {
@@ -93,6 +94,12 @@ export function createTerminalRunErrorObserver({
    * for JavaScript callers and older integrations.
    */
   protectionEnabled?: boolean;
+  /**
+   * Roko: the failing call went to the Bridge, a service of this deployment. Its "busy" answer (429)
+   * is operator-written text that never echoes user content, so it is shown even while a content
+   * policy is active; every other status keeps the rule above.
+   */
+  bridgeModel?: boolean;
   maxProviderErrorChars?: number;
   genericMessage?: string;
 }): TerminalRunErrorObserver {
@@ -120,7 +127,7 @@ export function createTerminalRunErrorObserver({
        *  rejection from a gateway or proxy carries it as the whole point of the 400. The status
        *  headlines it either way, so a deployment withholding provider text loses no taxonomy. */
       const providerMessage =
-        protectionEnabled !== false
+        protectionEnabled !== false && !(bridgeModel === true && status === 429)
           ? undefined
           : (getProviderErrorMessage(upstreamModelError, maxProviderErrorChars) ??
             getProviderErrorMessage(error, maxProviderErrorChars));

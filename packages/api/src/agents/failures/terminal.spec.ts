@@ -46,6 +46,45 @@ describe('terminal agent-run error logging', () => {
     expect(JSON.stringify(logger.error.mock.calls)).not.toContain('InternalServerException');
   });
 
+  /**
+   * El Bridge es un servicio de este despliegue: su «ocupado» (429) es texto del operador y se muestra
+   * aunque haya una política de contenido activa. Sin esto el usuario solo ve un aviso genérico.
+   */
+  describe('Roko hook: respuesta 429 del Bridge', () => {
+    const busy = Object.assign(new Error('429 Bridge busy: 2 requests already running'), {
+      status: 429,
+    });
+    const userFacing = (options: { bridgeModel?: boolean; status?: number }) => {
+      const observer = createTerminalRunErrorObserver({
+        logger: { error: jest.fn() },
+        source: '[Agent API]',
+        protectionEnabled: true,
+        bridgeModel: options.bridgeModel,
+      });
+      observer.modelCallback.handleLLMError(
+        options.status == null
+          ? busy
+          : Object.assign(new Error('Provider says no'), { status: options.status }),
+      );
+      return observer.getUserFacingError(busy, () => 'fallback');
+    };
+
+    it('muestra el texto original con un modelo Bridge', () => {
+      expect(userFacing({ bridgeModel: true })).toContain(
+        'Bridge busy: 2 requests already running',
+      );
+    });
+
+    it('con un modelo que no es Bridge sigue ocultándolo mientras haya política de contenido', () => {
+      expect(userFacing({ bridgeModel: false })).not.toContain('Bridge busy');
+    });
+
+    it('con un modelo Bridge solo se abre el 429, no otros errores', () => {
+      const text = userFacing({ bridgeModel: true, status: 500 });
+      expect(text).not.toContain('Provider says no');
+    });
+  });
+
   /** The rejection a gateway or privacy proxy answers with is only stated in its own message. */
   it('carries the provider explanation for an unclassified upstream failure', () => {
     const observer = createTerminalRunErrorObserver({

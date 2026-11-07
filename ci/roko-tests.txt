@@ -44,12 +44,14 @@ packages/api src/roko/observabilityPatch.spec.ts roko
 packages/api src/nextcloud/webdav.spec.ts roko
 packages/api src/nextcloud/service.spec.ts roko
 packages/api src/nextcloud/read.spec.ts roko
+packages/api src/agents/failures/terminal.spec.ts
 packages/api src/utils/env.spec.ts
 packages/api src/files/encode/document.spec.ts
 
 # --- api ---
 
 api server/utils/__tests__/runMiddlewareChain.spec.js roko
+api server/services/__tests__/ToolService.spec.js
 api server/services/MCP.spec.js
 api server/services/Tools/mcp.spec.js
 api server/services/initializeMCPs.spec.js

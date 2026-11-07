@@ -755,10 +755,18 @@ const nativeTools = new Set([
 
 
 const mcpServerPinPrefix = `${Constants.mcp_server}${Constants.mcp_delimiter}`;
+/**
+ * Roko: the execution workspace is best effort. Roko adds it to chats on its own, so a chat that
+ * cannot reach it continues without its tools instead of failing as "expected MCP tools unavailable".
+ */
+const isRokoWorkspaceTool = (toolName) =>
+  typeof toolName === 'string' &&
+  toolName.endsWith(`${Constants.mcp_delimiter}${Constants.roko_mcp_server}`);
 const isExpectedMCPTool = (toolName) =>
   toolName?.includes(Constants.mcp_delimiter) &&
   !toolName.startsWith(mcpServerPinPrefix) &&
-  !isActionTool(toolName);
+  !isActionTool(toolName) &&
+  !isRokoWorkspaceTool(toolName);
 const isExpectedMCPToolsUnavailableError = (error) =>
   error?.code === AGENT_EXPECTED_MCP_TOOLS_UNAVAILABLE;
 const createExpectedMCPToolsUnavailableError = (agentName, cause) => {
@@ -1133,6 +1141,20 @@ async function loadToolDefinitionsWrapper({
    *  spellings itself (direct identity first, alias fallback), so this
    *  closure must look up EXACTLY the name it is given. */
   const getOrFetchMCPServerTools = async (userId, serverName) => {
+    if (serverName !== Constants.roko_mcp_server) {
+      return fetchMCPServerTools(userId, serverName);
+    }
+    try {
+      return await fetchMCPServerTools(userId, serverName);
+    } catch (error) {
+      logger.warn('[Roko] Workspace unavailable; continuing without its tools', {
+        message: error?.message,
+      });
+      return null;
+    }
+  };
+
+  const fetchMCPServerTools = async (userId, serverName) => {
     const addPendingOAuthServer = async () => {
       const pendingOAuthStart = await getReplayablePendingMCPOAuthStart({
         flowManager,
