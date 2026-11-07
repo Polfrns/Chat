@@ -61,6 +61,7 @@ const {
   waitForKeyvRedisClient,
   warnOnUnreachableDeliveryPaths,
   createCodeApiUploadRegistry,
+  assertObservabilityPatch,
 } = require('@librechat/api');
 const { connectDb, indexSync } = require('~/db');
 const {
@@ -169,6 +170,12 @@ const configureGenerationStreams = () => {
 const SHUTDOWN_TEARDOWN_RESERVE_MS = 10_000;
 
 const startServer = async () => {
+  // Roko: la privacidad de las trazas depende de un parche de @librechat/agents; sin él no se arranca
+  // si se exportan trazas.
+  const unpatched = assertObservabilityPatch();
+  if (unpatched.length > 0) {
+    logger.warn('[Roko] Observability patch not applied; trace export is off, so nothing leaks.');
+  }
   await waitForKeyvRedisClient();
   await configureSubagentTaskRouting();
   const { metricsMiddleware, metricsRouter } = createMetrics({

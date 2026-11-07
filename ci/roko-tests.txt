@@ -40,6 +40,7 @@ packages/api src/endpoints/claude/oauth.spec.ts roko
 packages/api src/stream/__tests__/ownedGeneration.test.ts roko
 packages/api src/roko/agentTools.spec.ts roko
 packages/api src/roko/safeUser.spec.ts roko
+packages/api src/roko/observabilityPatch.spec.ts roko
 packages/api src/utils/env.spec.ts
 packages/api src/files/encode/document.spec.ts
 

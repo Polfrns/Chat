@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const privacy = require('../config/observability/privacy.cjs');
+const privacy = require('../packages/observability/privacy.cjs');
 for (const mode of ['redacted', 'debug', 'invalid']) {
   test(`content mode ${mode}: documents, secrets, commands and bytes never export`, () => {
     process.env.OBSERVABILITY_CONTENT_MODE = mode;

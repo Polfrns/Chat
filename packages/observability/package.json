@@ -1,0 +1,11 @@
+{
+  "name": "@roko/observability",
+  "version": "0.8.8",
+  "private": true,
+  "description": "Privacy filter and session context for trace export. CommonJS with no build step: the observability patch of @librechat/agents loads these files directly.",
+  "license": "MIT",
+  "exports": {
+    "./privacy": "./privacy.cjs",
+    "./context": "./context.cjs"
+  }
+}

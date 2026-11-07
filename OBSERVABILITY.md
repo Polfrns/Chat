@@ -45,7 +45,7 @@ que el contenedor no lea. No incluyas claves reales en ejemplos o diagnósticos.
 
 ## Frontera de privacidad
 
-[privacy.cjs](config/observability/privacy.cjs) filtra una **copia para exportación**;
+[privacy.cjs](packages/observability/privacy.cjs) filtra una **copia para exportación**;
 no modifica mensajes, adjuntos ni registros originales usados por el chat.
 
 - `redacted` conserva estados, tipos, métricas y valores técnicos permitidos;
@@ -86,6 +86,10 @@ en otro caso, OTLP/HTTP.
 npm ci
 npm run observability:patch
 ```
+
+Al arrancar, la API comprueba que el parche está en los tres ficheros de agents (CJS y ESM): si se exportan
+trazas (`OTEL_TRACING_ENABLED` o claves de Langfuse) y falta, **no arranca**; si no se exportan, lo registra
+como aviso. Los ficheros del filtro viven en [packages/observability](packages/observability).
 
 Docker aplica el parche antes de compilar. No se habilita instrumentación HTTP
 indiscriminada que capture cabeceras; el contexto se propaga en fronteras

@@ -1369,7 +1369,7 @@ export class MCPConnection extends EventEmitter {
           currentAllowedAddresses,
         );
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { trustedHeaders } = require('../../../../config/observability/context.cjs');
+        const { trustedHeaders } = require('@roko/observability/context');
         const outboundInit = {
           ...currentInit,
           headers: rokoWorkspaceHeaders(

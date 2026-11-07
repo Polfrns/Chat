@@ -66,7 +66,7 @@ function telemetryFor(
 ): TelemetryIdentity | undefined {
   // Same pseudonyms Roko and the bridge export to Langfuse, so traces share sessions.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { sessionIdentity } = require('../../../../config/observability/context.cjs') as {
+  const { sessionIdentity } = require('@roko/observability/context') as {
     sessionIdentity: SessionIdentity;
   };
   const telemetry = sessionIdentity(

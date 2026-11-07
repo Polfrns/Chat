@@ -63,8 +63,10 @@ aserción dentro de `convos.spec.js` (se ejecuta con `sh ci/test.sh`, no con `se
   reglas de documentos.
 - **Tests con Mongo en memoria** no corren en la imagen Alpine; están fuera de la CI a propósito (ver el final
   de `ci/roko-tests.txt`). Ejecútalos a mano en un entorno con Mongo antes de desplegar.
-- **Parche de observabilidad** de `@librechat/agents`: si cambia esa versión, el parche puede no aplicar y la
-  privacidad de las trazas depende de él. Comprueba `OBSERVABILITY.md`.
+- **Parche de observabilidad** de `@librechat/agents`: si cambia esa versión, `scripts/patch-observability.cjs`
+  se niega a continuar (versión fija y anclas exactas). Sin el parche, el servidor no arranca si se exportan
+  trazas (`assertObservabilityPatch`). Los ficheros del filtro viven en `packages/observability`. Detalle en
+  `OBSERVABILITY.md`.
 - **Finales de línea CRLF/LF.** Los ficheros mezclan ambos; edita sin reescribirlos enteros.
 
 ## Comprobación manual tras desplegar

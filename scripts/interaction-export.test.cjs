@@ -28,7 +28,7 @@ for (const mode of ['redacted', 'debug']) {
       const {RunnableLambda,RunnableSequence}=require('@langchain/core/runnables');
       const {HumanMessage,AIMessage}=require('@langchain/core/messages');
       const tracing=require('@langfuse/tracing');
-      const {trustedHeaders}=require('./config/observability/context.cjs');
+      const {trustedHeaders}=require('./packages/observability/context.cjs');
       (async()=>{
         for(let i=0;i<4;i++) {
           const controller=new AbortController();

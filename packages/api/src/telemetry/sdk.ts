@@ -357,7 +357,7 @@ function createPrivateSpanProcessors(): NodeSDKConfiguration['spanProcessors'] {
     process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL ?? process.env.OTEL_EXPORTER_OTLP_PROTOCOL;
   const exporter = protocol === 'grpc' ? new OTLPGrpcTraceExporter() : new OTLPTraceExporter();
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const privacy = require('../../../../config/observability/privacy.cjs');
+  const privacy = require('@roko/observability/privacy');
   return [privacy.protectProcessor(new BatchSpanProcessor(exporter), { provider: 'roko' })];
 }
 

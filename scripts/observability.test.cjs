@@ -7,8 +7,8 @@ const {
   sessionIdentity,
   withContext,
   trustedHeaders,
-} = require('../config/observability/context.cjs');
-const privacy = require('../config/observability/privacy.cjs');
+} = require('../packages/observability/context.cjs');
+const privacy = require('../packages/observability/privacy.cjs');
 context.setGlobalContextManager(new AsyncLocalStorageContextManager().enable());
 const key = 'k'.repeat(32),
   secret = 't'.repeat(32);

@@ -101,7 +101,7 @@ export function applyRokoBridgeContext({
     // Cast: Bun's `typeof fetch` adds a `preconnect` member a plain wrapper does not have.
     fetch: (async (input, init) => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { trustedHeaders } = require('../../../../config/observability/context.cjs');
+      const { trustedHeaders } = require('@roko/observability/context');
       const headers = Object.fromEntries(
         new Headers(
           init?.headers ?? (input instanceof Request ? input.headers : undefined),

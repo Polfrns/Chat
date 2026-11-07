@@ -30,6 +30,7 @@ COPY packages/data-provider/package*.json ./packages/data-provider/
 COPY packages/api/package*.json ./packages/api/
 COPY packages/data-schemas/package*.json ./packages/data-schemas/
 COPY packages/client/package*.json ./packages/client/
+COPY packages/observability/package*.json ./packages/observability/
 COPY client/package*.json ./client/
 COPY api/package*.json ./api/
 
@@ -70,7 +71,7 @@ RUN npm run build
 FROM base AS api-package-build
 WORKDIR /app/packages/api
 COPY packages/api ./
-COPY config/observability /app/config/observability
+COPY packages/observability /app/packages/observability
 COPY --from=data-provider-build /app/packages/data-provider/dist /app/packages/data-provider/dist
 COPY --from=data-schemas-build /app/packages/data-schemas/dist /app/packages/data-schemas/dist
 RUN npm run build
@@ -119,6 +120,7 @@ RUN apk add --no-cache --virtual .build-deps python3 make g++ || exit 1; \
     apk del .build-deps
 COPY api ./api
 COPY config ./config
+COPY packages/observability ./packages/observability
 COPY scripts/patch-observability.cjs ./scripts/patch-observability.cjs
 RUN node scripts/patch-observability.cjs
 COPY skill ./skill

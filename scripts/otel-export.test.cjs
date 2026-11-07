@@ -22,7 +22,7 @@ test('actual patched agents exporter groups sessions and removes document/model 
     require(path.join(base,'instrumentation.cjs'));
     const {withLangfuseAttributes}=require(path.join(base,'langfuse.cjs'));
     const t=require('@langfuse/tracing');
-    const {trustedHeaders}=require('./config/observability/context.cjs');
+    const {trustedHeaders}=require('./packages/observability/context.cjs');
     (async()=>{
       for(let i=0;i<2;i++)await withLangfuseAttributes({userId:'user1',sessionId:'conversation1'},()=>
         t.startActiveObservation('AgentRun',async span=>{

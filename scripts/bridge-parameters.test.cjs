@@ -30,8 +30,8 @@ const modules = Promise.all([
         .replace("'librechat-data-provider'", JSON.stringify(capabilitiesURL))
         .replace("'./bridgeParameters'", JSON.stringify(parametersURL))
         .replace(
-          "require('../../../../config/observability/context.cjs')",
-          `require(${JSON.stringify(resolve(root, 'config/observability/context.cjs'))})`,
+          "require('@roko/observability/context')",
+          `require(${JSON.stringify(resolve(root, 'packages/observability/context.cjs'))})`,
         )
         .replace(
           'import { createHmac }',

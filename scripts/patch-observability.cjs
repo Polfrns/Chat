@@ -9,8 +9,8 @@ for (const [dir, ext] of [
   ['cjs', 'cjs'],
   ['esm', 'mjs'],
 ]) {
-  const privacyPath = JSON.stringify(path.join(root, 'config/observability/privacy.cjs'));
-  const contextPath = JSON.stringify(path.join(root, 'config/observability/context.cjs'));
+  const privacyPath = JSON.stringify(path.join(root, 'packages/observability/privacy.cjs'));
+  const contextPath = JSON.stringify(path.join(root, 'packages/observability/context.cjs'));
   function patch(name, transform) {
     const file = path.join(base, 'dist', dir, name + '.' + ext);
     const source = fs.readFileSync(file, 'utf8');
