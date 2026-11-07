@@ -148,6 +148,7 @@
   "com_roko_nextcloud_link_incomplete": "Linking was not completed. Try again.",
   "com_roko_nextcloud_connect_error": "Could not connect to Nextcloud.",
   "com_roko_nextcloud_attach_error": "Could not attach the file. Check permissions and the model's size and format limits.",
+  "com_roko_nextcloud_skipped": "{{count}} item(s) with names Roko cannot use are not shown.",
   "com_roko_nextcloud_saved": "File saved to Nextcloud.",
   "com_roko_nextcloud_rejected": "Write rejected.",
   "com_roko_nextcloud_save_error": "Could not save: the file may have changed or the permission may have expired.",

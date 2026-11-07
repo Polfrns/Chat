@@ -1,7 +1,7 @@
 const express = require('express');
 const { identity } = require('~/server/services/Nextcloud/store');
 const { getNextcloudService } = require('~/server/services/Nextcloud/service');
-const { NextcloudError, MAX_DOWNLOAD_BYTES } = require('~/server/services/Nextcloud/webdav');
+const { NextcloudError, MAX_DOWNLOAD_BYTES } = require('@librechat/api');
 const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
 
 const router = express.Router();
@@ -44,7 +44,8 @@ router.get(
   route(async (req, res, service, owner) => {
     if (req.query.path != null && typeof req.query.path !== 'string')
       throw new NextcloudError('Invalid path');
-    res.json({ files: await service.list(owner, req.query.path || '') });
+    const { entries, skipped } = await service.list(owner, req.query.path || '');
+    res.json({ files: entries, skipped });
   }),
 );
 router.get(

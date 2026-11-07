@@ -23,6 +23,7 @@
   "com_roko_nextcloud_link_incomplete": "No se completó la vinculación. Vuelve a intentarlo.",
   "com_roko_nextcloud_connect_error": "No se pudo conectar con Nextcloud.",
   "com_roko_nextcloud_attach_error": "No se pudo adjuntar el archivo. Comprueba los permisos y los límites de tamaño y formato del modelo.",
+  "com_roko_nextcloud_skipped": "{{count}} elemento(s) con nombres que Roko no puede usar no se muestran.",
   "com_roko_nextcloud_saved": "Archivo guardado en Nextcloud.",
   "com_roko_nextcloud_rejected": "Escritura rechazada.",
   "com_roko_nextcloud_save_error": "No se pudo guardar: el archivo puede haber cambiado o el permiso haber caducado.",

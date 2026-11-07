@@ -3,7 +3,16 @@ const cookieParser = require('cookie-parser');
 const request = require('supertest');
 
 jest.mock('@librechat/data-schemas', () => ({ getTenantId: jest.fn(() => 'tenant-a') }));
-jest.mock('@librechat/api', () => ({ shouldUseSecureCookie: () => false, getBasePath: () => '' }));
+jest.mock('@librechat/api', () => ({
+  shouldUseSecureCookie: () => false,
+  getBasePath: () => '',
+  NextcloudError: class NextcloudError extends Error {
+    constructor(message, status = 400) {
+      super(message);
+      this.status = status;
+    }
+  },
+}));
 jest.mock('~/models', () => ({
   findUser: jest.fn(),
   getUserById: jest.fn(),

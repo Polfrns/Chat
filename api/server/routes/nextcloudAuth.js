@@ -2,14 +2,13 @@ const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const { randomBytes, createHash } = require('crypto');
 const { getTenantId } = require('@librechat/data-schemas');
-const { shouldUseSecureCookie, getBasePath } = require('@librechat/api');
+const { shouldUseSecureCookie, getBasePath, NextcloudError } = require('@librechat/api');
 const { SystemRoles } = require('librechat-data-provider');
 const { findUser, getUserById, createUser } = require('~/models');
 const { loginController } = require('~/server/controllers/auth/LoginController');
 const { getAppConfig } = require('~/server/services/Config');
 const { loginLimiter, checkBan } = require('~/server/middleware');
 const { getNextcloudService } = require('~/server/services/Nextcloud/service');
-const { NextcloudError } = require('~/server/services/Nextcloud/webdav');
 const {
   AccountIdentity,
   LoginAttempt,

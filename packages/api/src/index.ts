@@ -79,6 +79,8 @@ export * from './prompts';
 export * from './projects';
 /* Roko: execution-workspace service (signed identity, REST client) */
 export * from './roko';
+/* Roko: Nextcloud (WebDAV client and write-approval service) */
+export * from './nextcloud';
 /* Conversations */
 export * from './conversations';
 /* Skills */

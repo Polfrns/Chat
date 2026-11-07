@@ -1774,6 +1774,7 @@
   "com_roko_nextcloud_link_incomplete": "No s'ha completat la vinculació. Torna-ho a provar.",
   "com_roko_nextcloud_connect_error": "No s'ha pogut connectar amb Nextcloud.",
   "com_roko_nextcloud_attach_error": "No s'ha pogut adjuntar el fitxer. Comprova els permisos i els límits de mida i format del model.",
+  "com_roko_nextcloud_skipped": "{{count}} element(s) amb noms que Roko no pot fer servir no es mostren.",
   "com_roko_nextcloud_saved": "Fitxer desat a Nextcloud.",
   "com_roko_nextcloud_rejected": "Escriptura rebutjada.",
   "com_roko_nextcloud_save_error": "No s'ha pogut desar: el fitxer pot haver canviat o el permís haver caducat.",

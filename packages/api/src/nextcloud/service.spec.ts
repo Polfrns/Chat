@@ -1,13 +1,12 @@
-jest.mock('./store', () => ({}));
-const { NextcloudService } = require('./service');
-const { NextcloudError } = require('./webdav');
+import { NextcloudService } from './service';
+import { NextcloudError } from './webdav';
+import type { NextcloudRepository } from './service';
+import type { NextcloudWebDAV } from './webdav';
 
 class ScriptedDAV {
-  constructor() {
-    this.baseUrl = 'https://cloud.test';
-    this.read = jest.fn().mockResolvedValue({ buffer: Buffer.from('original'), etag: '"v1"' });
-    this.write = jest.fn().mockResolvedValue(undefined);
-  }
+  baseUrl = 'https://cloud.test';
+  read = jest.fn().mockResolvedValue({ buffer: Buffer.from('original'), etag: '"v1"' });
+  write = jest.fn().mockResolvedValue(undefined);
 }
 
 const owner = { owner: 'alice-roko', tenantId: 'tenant-a' };
@@ -42,15 +41,21 @@ function fixture() {
     },
     AccountIdentity: { findOneAndUpdate: jest.fn() },
     Proposal: {
-      create: jest.fn(async (value) => value),
-      findOneAndUpdate: jest.fn(() => ({ lean: async () => pending })),
+      create: jest.fn(async (value: object) => value),
+      findOneAndUpdate: jest.fn((..._args: unknown[]): { lean: () => Promise<unknown> } => ({
+        lean: async () => pending,
+      })),
       updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
       findOne: jest.fn(() => ({ lean: async () => null })),
     },
-    seal: async (value) => JSON.stringify(value),
-    unseal: async (value) => JSON.parse(value),
+    seal: async (value: unknown) => JSON.stringify(value),
+    unseal: async (value: string) => JSON.parse(value),
   };
-  return { dav, repository, service: new NextcloudService(dav, repository) };
+  const service = new NextcloudService(
+    dav as unknown as NextcloudWebDAV,
+    repository as unknown as NextcloudRepository,
+  );
+  return { dav, repository, service };
 }
 
 describe('Nextcloud write approval', () => {

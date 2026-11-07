@@ -349,6 +349,11 @@ export default function NextcloudPanel({
                     <p role="alert">{localize('com_roko_nextcloud_folder_error')}</p>
                   )}
                   {files.data?.files.length === 0 && <p>{localize('com_roko_nextcloud_empty')}</p>}
+                  {(files.data?.skipped ?? 0) > 0 && (
+                    <p role="status" className="text-xs text-text-secondary">
+                      {localize('com_roko_nextcloud_skipped', { count: files.data?.skipped ?? 0 })}
+                    </p>
+                  )}
                   <NextcloudFiles
                     entries={files.data?.files ?? []}
                     busy={busy}

@@ -37,7 +37,7 @@ de git, así que no forma parte de la etapa `ci` del Dockerfile.
 | `api/server/routes/__tests__/skills-library.spec.js` y `packages/api/src/endpoints/claude/tokens.spec.ts` (fuera de CI: necesitan `mongodb-memory-server`, sin binarios para la imagen Alpine) | Con Mongo y permisos reales: rutas REST de skills tras el refactor, el chat crea/edita, el borrado solo ocurre tras aprobar el popup, otro usuario no ve ni puede pedir borrar skills ajenas ni decidir solicitudes ajenas |
 | `SkillDeletionRequests.spec.tsx` | El popup muestra la skill y envía la decisión explícita del usuario |
 | `useSubmitMessage.spec.ts` | Un envío bloqueado se propaga a quien llama (dictado) para que conserve el texto |
-| `api/server/services/Nextcloud/{webdav,service}.spec.js`, `api/server/routes/nextcloudAuth.spec.js` | Rutas bajo el UID del usuario y sin traversal, XML con entidades rechazado, límites de descarga, redirecciones no aceptadas; ninguna escritura antes de aprobar, consulta ligada a propietario y tenant, ETag sin sobrescritura silenciosa; flujo de navegador con cookie, origen y tenant, sin secretos en las respuestas |
+| `packages/api/src/nextcloud/{webdav,service,read}.spec.ts`, `api/app/clients/tools/structured/specs/Nextcloud.spec.js`, `api/server/routes/nextcloudAuth.spec.js` | Rutas bajo el UID del usuario y sin traversal, XML con entidades rechazado, límites de descarga, redirecciones no aceptadas; ninguna escritura antes de aprobar, consulta ligada a propietario y tenant, ETag sin sobrescritura silenciosa; flujo de navegador con cookie, origen y tenant, sin secretos en las respuestas |
 | `api/server/services/Files/output.spec.js` | Las salidas de archivo del Bridge se reconocen solo en un payload válido; el texto normal del asistente no se toca |
 | `packages/api/src/endpoints/claude/{fetch,llm,oauth}.spec.ts` | Claude nativo: el cliente sustituye la clave por el bearer OAuth y antepone la identidad de Claude Code sin duplicarla; PKCE S256 y URL de autorización; pegado de código |
 | `packages/api/src/stream/__tests__/ownedGeneration.test.ts` | Solo el dueño (y su tenant) puede parar una generación; la de otro usuario se comporta como inexistente |
@@ -265,11 +265,11 @@ están en `scratchpad/run-all-tests.cjs` y `scratchpad/summarize-all-tests.cjs`.
 
 ### Nextcloud e inicio de sesión persistente
 
-- `api/server/services/Nextcloud/webdav.spec.js`: transporte simulado para rutas
+- `packages/api/src/nextcloud/webdav.spec.ts`: transporte simulado para rutas
   bajo el UID del usuario, traversal, DAV con namespaces y entidades XML básicas,
   rechazo de entidades declaradas y de entradas ajenas, límites de descarga,
   rechazo de redirecciones y precondiciones atómicas para crear/reemplazar.
-- `api/server/services/Nextcloud/service.spec.js`: adaptador DAV programado y
+- `packages/api/src/nextcloud/service.spec.ts`: adaptador DAV programado y
   repositorios simulados. Protege la ausencia de escritura antes de aprobación,
   consultas vinculadas a propietario/tenant, caducidad/consumo de propuestas,
   invalidación tras volver a vincular y errores ETag sin sobrescritura silenciosa.
@@ -289,7 +289,7 @@ npm 11.19.1. `npm run build:packages` pasó. La selección siguiente pasó con
 **4 suites y 84 pruebas**:
 
 ```powershell
-npm.cmd test --workspace=@librechat/backend -- --runInBand --coverage=false server/services/Nextcloud/webdav.spec.js server/services/Nextcloud/service.spec.js server/routes/nextcloudAuth.spec.js server/services/AuthService.spec.js
+npm.cmd test --workspace=@librechat/backend -- --runInBand --coverage=false server/routes/nextcloudAuth.spec.js app/clients/tools/structured/specs/Nextcloud.spec.js server/services/AuthService.spec.js
 ```
 
 Se corrigió una expectativa nueva que rechazaba indebidamente un balance

@@ -1,11 +1,11 @@
-const { NextcloudWebDAV, NextcloudError, filePath, MAX_FILE_BYTES } = require('./webdav');
+import { NextcloudWebDAV, NextcloudError, filePath, MAX_FILE_BYTES } from './webdav';
 
 const credentials = {
   loginName: 'alice@example.com',
   appPassword: 'app-secret',
   uid: 'alice@example.com',
 };
-const davResponse = (body) => new Response(body, { status: 207 });
+const davResponse = (body: string) => new Response(body, { status: 207 });
 
 describe('Nextcloud WebDAV boundary', () => {
   it.each(['../bob/file', 'a/../b', 'a\\b', 'a/%2e%2e/b', 'a\0b'])(
@@ -53,10 +53,38 @@ describe('Nextcloud WebDAV boundary', () => {
       <d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>`),
     );
     const dav = new NextcloudWebDAV('https://cloud.test', transport);
-    expect(await dav.list(credentials)).toEqual([
-      { path: 'report.txt', name: 'report.txt', directory: false, bytes: 7, etag: '"v1"' },
-    ]);
+    expect(await dav.list(credentials)).toEqual({
+      entries: [
+        { path: 'report.txt', name: 'report.txt', directory: false, bytes: 7, etag: '"v1"' },
+      ],
+      skipped: 0,
+    });
     expect(transport.mock.calls[0][1].headers.Depth).toBe('1');
+  });
+
+  /** Un solo archivo con un nombre raro no debe dejar ilegible toda la carpeta. */
+  it('skips entries whose names cannot be used and still lists the rest', async () => {
+    const entry = (name: string) => `<d:response>
+      <d:href>/remote.php/dav/files/alice@example.com/${name}</d:href>
+      <d:propstat><d:prop><d:getcontentlength>1</d:getcontentlength><d:getetag>&quot;e&quot;</d:getetag><d:resourcetype/></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
+    const transport = jest
+      .fn()
+      .mockResolvedValue(
+        davResponse(
+          `<d:multistatus xmlns:d="DAV:">${[
+            entry('good.txt'),
+            entry('100%2541.txt'),
+            entry('bad%5Cname.txt'),
+            entry('broken%E0%A4%A.txt'),
+            entry('also good.txt'),
+          ].join('')}</d:multistatus>`,
+        ),
+      );
+    const listing = await new NextcloudWebDAV('https://cloud.test', transport).list(credentials);
+
+    expect(listing.entries.map((item) => item.name)).toEqual(['good.txt', 'also good.txt']);
+    expect(listing.skipped).toBe(3);
   });
 
   it('rejects a directory entry belonging to another user', async () => {

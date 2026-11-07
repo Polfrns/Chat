@@ -60,7 +60,8 @@ en una copia del chat no se sincronizan solos con Nextcloud.
 
 Con `NEXTCLOUD_URL` configurado, los chats de agentes disponen de
 `nextcloud_files`, también al utilizar endpoints personalizados compatibles
-con llamadas de herramientas. Permite listar, leer texto, proponer contenido
+con llamadas de herramientas. Permite listar, leer texto, PDF y documentos de
+ofimática (docx, xlsx, xls, odt, ods), proponer contenido
 nuevo y guardar archivos del chat que pertenezcan al usuario. Cada invocación
 resuelve las credenciales del usuario autenticado en el servidor.
 
@@ -98,8 +99,14 @@ adjuntan como binarios genéricos y el modelo puede no analizar su contenido.
 Las propuestas de escritura siguen limitadas a 8 MiB por el tamaño máximo del
 documento MongoDB que las guarda cifradas; leer y adjuntar desde `/backups` está
 permitido, pero crear o reemplazar archivos en esa carpeta o sus descendientes
-se rechaza en el servidor. Leer/proponer texto conserva el límite de 512 KiB y
-el listado de carpeta el de 2 MiB. Esta versión no incluye borrado, movimientos,
+se rechaza en el servidor. Proponer texto conserva el límite de 512 KiB. La
+herramienta lee ficheros de hasta 15 MiB: extrae el texto de PDF y ofimática con
+el analizador de documentos de LibreChat y lo devuelve en páginas de 50.000
+caracteres (`offset` / `next_offset`), de modo que un documento largo se lee por
+tramos. El listado de carpeta conserva el límite de 2 MiB; un elemento cuyo nombre
+no se puede usar con seguridad (caracteres de control, barras invertidas,
+secuencias `%41` literales) se omite y se cuenta, sin impedir el resto del
+listado. Esta versión no incluye borrado, movimientos,
 edición colaborativa ni sincronización en segundo plano.
 
 Desvincular elimina las credenciales guardadas y las propuestas, e intenta
