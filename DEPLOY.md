@@ -114,6 +114,23 @@ El timeout de Roko deja margen sobre el del Bridge (habitualmente `600000` ms en
 su configuración actual). Verifica los valores privados del host: cambiar el
 default del código no sustituye un `REQUEST_TIMEOUT_MS` ya definido en su `.env`.
 
+## Ajustes opcionales de rendimiento y superficie
+
+Son solo configuración del host; ninguno cambia código.
+
+- **Chats programados con un solo proceso.** Si el API corre en una réplica y sin Redis, define
+  `SCHEDULES_SINGLE_PROCESS=true` en `.env`. Sin esa variable los chats programados se niegan a arrancar.
+- **Plazas del Bridge.** El Bridge atiende `MAX_CONCURRENT_REQUESTS` peticiones a la vez (2 por defecto, en
+  el `.env` del Bridge). Cada mensaje puede ocupar más de una plaza: el agente de memoria y el de títulos
+  también hablan con el modelo. Si ves 429 intermitentes, sube ese valor dentro de lo que aguanten las
+  credenciales de CLI, o saca el agente de memoria del Bridge (`memory.agent` en `runtime-config.yaml`, con un
+  proveedor que no sea Bridge).
+- **Interfaz.** Lo que los usuarios no necesiten se oculta con `interface:` en `runtime-config.yaml`; no hay
+  que quitar código.
+- **Imagen sin Python ni `uv`.** La imagen de producción no los incluye: Roko solo usa su servidor MCP
+  interno. Si algún día añades un servidor MCP por línea de comandos (`uvx`, `python`), vuelve a poner
+  `python3 py3-pip uv` en la etapa `runtime` del `Dockerfile`.
+
 ## Comprobaciones posteriores
 
 Comprueba `/health`, inicio de sesión, registro duplicado, una conversación con

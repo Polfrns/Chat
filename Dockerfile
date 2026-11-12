@@ -5,7 +5,6 @@ FROM node:24.22.1-alpine AS runtime
 
 RUN apk upgrade --no-cache
 RUN apk add --no-cache jemalloc
-RUN apk add --no-cache python3 py3-pip py3-setuptools uv
 # The npm bundled with the base image ships vulnerable brace-expansion, undici and
 # http-cache-semantics; stay on npm 11 so lockfile and allowScripts handling match.
 RUN npm install -g npm@11.21.1 --no-audit --no-fund && rm -rf /root/.npm
@@ -15,16 +14,15 @@ ENV LD_PRELOAD=/usr/lib/libjemalloc.so.2
 # Disable dependency installation analytics before any npm lifecycle scripts run.
 ENV SCARF_ANALYTICS=false
 
-# Add `uv` for extended MCP support
-COPY --from=ghcr.io/astral-sh/uv:0.9.5-python3.12-alpine /usr/local/bin/uv /usr/local/bin/uvx /bin/
-RUN uv --version
-
 RUN mkdir -p /app && chown node:node /app
 
 # Build stage. make/g++ were needed by better-sqlite3 (packages/roko-server, removed). No remaining
 # dependency compiles native code; they stay until a build without them has been verified.
+# python3 is here only for node-gyp: the production image has no Python or uv, because Roko
+# configures no command-line MCP servers (only its internal workspace). To run one (uvx, python),
+# add `python3 py3-pip uv` back to the runtime stage.
 FROM runtime AS node
-RUN apk add --no-cache make g++
+RUN apk add --no-cache make g++ python3
 
 # Set configurable max-old-space-size with default
 ARG NODE_MAX_OLD_SPACE_SIZE=6144

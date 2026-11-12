@@ -21,6 +21,17 @@ nueva versión del paquete raíz.
   su entrada de `allowScripts`. El compilador (`make g++`) se mantiene en los Dockerfile hasta poder
   verificar una construcción sin él.
 
+### Fase 4 del plan de mantenibilidad (12 de noviembre de 2026)
+
+- La imagen de producción deja de incluir Python, `pip` y `uv` (el servicio MCP interno del workspace es el
+  único; confirmado). La etapa de compilación conserva `python3` para `node-gyp`. **Sin verificar con una
+  construcción real** (Docker apagado): el primer build en el NAS lo comprueba.
+- `DEPLOY.md` documenta los ajustes de solo configuración: `SCHEDULES_SINGLE_PROCESS`, plazas del Bridge,
+  agente de memoria fuera del Bridge y `interface:`.
+- Precarga de `mermaid` y de las devtools de React Query: causa localizada (el ayudante de precarga de Vite cae
+  dentro del trozo `mermaid` y el punto de entrada lo importa de forma estática). Una regla en `manualChunks` no
+  lo cambia, así que no se toca; ver `scratchpad/PLAN-MANTENIBILIDAD.md`.
+
 ### Fase 3 del plan de mantenibilidad (7 de noviembre de 2026)
 
 - `config/observability` pasa a ser el paquete `@roko/observability` (`packages/observability`); desaparecen los
