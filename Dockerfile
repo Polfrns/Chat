@@ -1,7 +1,7 @@
 # v0.8.8
 
 # Runtime base: everything the API needs at run time, without the compiler toolchain.
-FROM node:24.22.1-alpine AS runtime
+FROM node:24.22.3-alpine AS runtime
 
 RUN apk upgrade --no-cache
 RUN apk add --no-cache jemalloc
